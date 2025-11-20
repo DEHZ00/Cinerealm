@@ -50,15 +50,68 @@ function showError(message) {
   setTimeout(() => errorDiv.remove(), 4000);
 }
 
-function switchPage(page) {
+function switchPage(page, pushState = true) {
   currentPage = page;
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-  document.getElementById(page + "Page").classList.add("active");
+  const pageEl = document.getElementById(page + "Page");
+  if (pageEl) pageEl.classList.add("active");
+
   document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.remove("active"));
-  document.getElementById(page + "Btn").classList.add("active");
+  const btnEl = document.getElementById(page + "Btn");
+  if (btnEl) btnEl.classList.add("active");
+
   playerDiv.innerHTML = "";
   window.scrollTo(0, 0);
+
+  // Update meta 
+  const metaDesc = document.querySelector('meta[name="description"]');
+  if (page === "home") {
+    document.title = "CineRealm – Watch Movies & TV Shows Online";
+    metaDesc.setAttribute("content", "Watch the latest movies, TV shows, and anime online");
+  } else if (page === "popular") {
+    document.title = "Popular Movies & TV Shows – CineRealm";
+    metaDesc.setAttribute("content", "Check out the most popular movies and TV shows trending now");
+  } else if (page === "trending") {
+    document.title = "Trending Movies & TV Shows – CineRealm";
+    metaDesc.setAttribute("content", "See what's trending this week.");
+  } else if (page === "watchlist") {
+    document.title = "My Watchlist – CineRealm";
+    metaDesc.setAttribute("content", "Manage your watchlist of movies and TV shows at CineRealm.");
+  }
+
+  if (pushState) {
+    history.pushState({ page }, "", "/" + page);
+  }
 }
+
+
+
+
+window.addEventListener("popstate", (event) => {
+  const state = event.state;
+  if (state && state.page) {
+    switchPage(state.page, false);
+    if (state.page === "watchlist") renderWatchlist();
+    if (state.page === "trending") renderTrending();
+  }
+});
+
+
+function initPageFromUrl() {
+  const path = window.location.pathname.slice(1); // remove leading '/'
+  const validPages = ["home", "watchlist", "trending", "popular"];
+  const page = validPages.includes(path) ? path : "home";
+
+  switchPage(page, false);
+
+  // Fetch content for dynamic pages
+  if (page === "watchlist") renderWatchlist();
+  if (page === "trending") renderTrending();
+}
+
+window.addEventListener("DOMContentLoaded", initPageFromUrl);
+
+
 
 // ---- API Call Helper ----
 async function apiCall(endpoint, params = {}) {
