@@ -270,7 +270,6 @@ function buildProviderUrl(providerKey, media, opts = {}) {
     opacity: opts.opacity ?? 0.5,
     setting: true,   // required now
     pip: true,       // required now
-    logourl: opts.logourl || "https://i.ibb.co/67wTJd9R/pngimg-com-netflix-PNG11.png",
     server: opts.server ?? undefined,
     progress: opts.progress ?? 0,
     dub: opts.dub ?? false
