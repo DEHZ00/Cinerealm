@@ -56,9 +56,16 @@ function switchPage(page, pushState = true) {
   const pageEl = document.getElementById(page + "Page");
   if (pageEl) pageEl.classList.add("active");
 
-  document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.remove("active"));
-  const btnEl = document.getElementById(page + "Btn");
-  if (btnEl) btnEl.classList.add("active");
+document.querySelectorAll(".nav-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const page = btn.dataset.page;
+    switchPage(page);
+    
+    if (page === "watchlist") renderWatchlist();
+    if (page === "trending") renderTrending();
+    if (page === "popular") renderPopular();
+  });
+});
 
   playerDiv.innerHTML = "";
   window.scrollTo(0, 0);
@@ -294,12 +301,16 @@ function buildProviderUrl(providerKey, media, opts = {}) {
   }
 
   if (providerKey === "vidplus") {
-    // player.vidplus.to 
     let base = "";
+    let season = media.season || 1;
+    let episode = media.episode || 1;
+
     if (t === "movie") base = `https://player.vidplus.to/embed/movie/${id}`;
-    if (t === "tv") base = `https://player.vidplus.to/embed/tv/${id}/${media.season || 1}/${media.episode || 1}`;
-    if (t === "anime") base = `https://player.vidplus.to/embed/anime/${media.anilistId || id}/${media.episode || 1}`;
+    if (t === "tv") base = `https://player.vidplus.to/embed/tv/${id}/${season}/${episode}`;
+    if (t === "anime") base = `https://player.vidplus.to/embed/anime/${media.anilistId || id}/${episode}?dub=${opts.dub ? "true" : "false"}`;
+
     const params = {};
+
     if (opts.color) params.primarycolor = opts.color.replace("#", "");
     if (opts.secondaryColor) params.secondarycolor = opts.secondaryColor.replace("#", "");
     if (opts.iconColor) params.iconcolor = opts.iconColor.replace("#", "");
@@ -318,8 +329,11 @@ function buildProviderUrl(providerKey, media, opts = {}) {
     if (opts.fontsize) params.fontsize = opts.fontsize;
     if (opts.opacity !== undefined) params.opacity = opts.opacity;
     if (opts.servericon !== undefined) params.servericon = opts.servericon ? "true" : "false";
+
     return base + buildQuery(params);
   }
+
+
 
   if (providerKey === "vidfast") {
     // vidfast.pro 
@@ -665,6 +679,35 @@ if (extraOpts.season) {
   loadEpisodes(seasons[0].season_number);
 }
 
+async function renderPopular() {
+  const container = document.getElementById("popularContent");
+  if (!container) return;
+
+  const movieData = await apiCall("/movie/popular");
+  const tvData = await apiCall("/tv/popular");
+
+  container.innerHTML = "";
+
+  if (movieData && movieData.results) {
+    movieData.results
+      .filter(item => item.poster_path)
+      .slice(0, 10)
+      .forEach(item => {
+        const card = createMovieCard(item, "movie");
+        if (card) container.appendChild(card);
+      });
+  }
+
+  if (tvData && tvData.results) {
+    tvData.results
+      .filter(item => item.poster_path)
+      .slice(0, 10)
+      .forEach(item => {
+        const card = createMovieCard(item, "tv");
+        if (card) container.appendChild(card);
+      });
+  }
+}
 
 
 function getHistoryProgress(tmdbId, type, season, episode) {
@@ -833,8 +876,10 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
     
     if (page === "watchlist") renderWatchlist();
     if (page === "trending") renderTrending();
+    if (page === "popular") renderPopular();
   });
 });
+
 
 // ---- Listen for Vidking progress events ----
 window.addEventListener("message", function(event) {
