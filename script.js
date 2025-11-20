@@ -50,75 +50,15 @@ function showError(message) {
   setTimeout(() => errorDiv.remove(), 4000);
 }
 
-function switchPage(page, pushState = true) {
+function switchPage(page) {
   currentPage = page;
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-  const pageEl = document.getElementById(page + "Page");
-  if (pageEl) pageEl.classList.add("active");
-
-document.querySelectorAll(".nav-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const page = btn.dataset.page;
-    switchPage(page);
-    
-    if (page === "watchlist") renderWatchlist();
-    if (page === "trending") renderTrending();
-    if (page === "popular") renderPopular();
-  });
-});
-
+  document.getElementById(page + "Page").classList.add("active");
+  document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.remove("active"));
+  document.getElementById(page + "Btn").classList.add("active");
   playerDiv.innerHTML = "";
   window.scrollTo(0, 0);
-
-  // Update meta 
-  const metaDesc = document.querySelector('meta[name="description"]');
-  if (page === "home") {
-    document.title = "CineRealm – Watch Movies & TV Shows Online";
-    metaDesc.setAttribute("content", "Watch the latest movies, TV shows, and anime online");
-  } else if (page === "popular") {
-    document.title = "Popular Movies & TV Shows – CineRealm";
-    metaDesc.setAttribute("content", "Check out the most popular movies and TV shows trending now");
-  } else if (page === "trending") {
-    document.title = "Trending Movies & TV Shows – CineRealm";
-    metaDesc.setAttribute("content", "See what's trending this week.");
-  } else if (page === "watchlist") {
-    document.title = "My Watchlist – CineRealm";
-    metaDesc.setAttribute("content", "Manage your watchlist of movies and TV shows at CineRealm.");
-  }
-
-  if (pushState) {
-    history.pushState({ page }, "", "/" + page);
-  }
 }
-
-
-
-
-window.addEventListener("popstate", (event) => {
-  const state = event.state;
-  if (state && state.page) {
-    switchPage(state.page, false);
-    if (state.page === "watchlist") renderWatchlist();
-    if (state.page === "trending") renderTrending();
-  }
-});
-
-
-function initPageFromUrl() {
-  const path = window.location.pathname.slice(1); // remove leading '/'
-  const validPages = ["home", "watchlist", "trending", "popular"];
-  const page = validPages.includes(path) ? path : "home";
-
-  switchPage(page, false);
-
-  // Fetch content for dynamic pages
-  if (page === "watchlist") renderWatchlist();
-  if (page === "trending") renderTrending();
-}
-
-window.addEventListener("DOMContentLoaded", initPageFromUrl);
-
-
 
 // ---- API Call Helper ----
 async function apiCall(endpoint, params = {}) {
@@ -301,16 +241,12 @@ function buildProviderUrl(providerKey, media, opts = {}) {
   }
 
   if (providerKey === "vidplus") {
+    // player.vidplus.to 
     let base = "";
-    let season = media.season || 1;
-    let episode = media.episode || 1;
-
     if (t === "movie") base = `https://player.vidplus.to/embed/movie/${id}`;
-    if (t === "tv") base = `https://player.vidplus.to/embed/tv/${id}/${season}/${episode}`;
-    if (t === "anime") base = `https://player.vidplus.to/embed/anime/${media.anilistId || id}/${episode}?dub=${opts.dub ? "true" : "false"}`;
-
+    if (t === "tv") base = `https://player.vidplus.to/embed/tv/${id}/${media.season || 1}/${media.episode || 1}`;
+    if (t === "anime") base = `https://player.vidplus.to/embed/anime/${media.anilistId || id}/${media.episode || 1}`;
     const params = {};
-
     if (opts.color) params.primarycolor = opts.color.replace("#", "");
     if (opts.secondaryColor) params.secondarycolor = opts.secondaryColor.replace("#", "");
     if (opts.iconColor) params.iconcolor = opts.iconColor.replace("#", "");
@@ -329,11 +265,8 @@ function buildProviderUrl(providerKey, media, opts = {}) {
     if (opts.fontsize) params.fontsize = opts.fontsize;
     if (opts.opacity !== undefined) params.opacity = opts.opacity;
     if (opts.servericon !== undefined) params.servericon = opts.servericon ? "true" : "false";
-
     return base + buildQuery(params);
   }
-
-
 
   if (providerKey === "vidfast") {
     // vidfast.pro 
@@ -679,35 +612,6 @@ if (extraOpts.season) {
   loadEpisodes(seasons[0].season_number);
 }
 
-async function renderPopular() {
-  const container = document.getElementById("popularContent");
-  if (!container) return;
-
-  const movieData = await apiCall("/movie/popular");
-  const tvData = await apiCall("/tv/popular");
-
-  container.innerHTML = "";
-
-  if (movieData && movieData.results) {
-    movieData.results
-      .filter(item => item.poster_path)
-      .slice(0, 10)
-      .forEach(item => {
-        const card = createMovieCard(item, "movie");
-        if (card) container.appendChild(card);
-      });
-  }
-
-  if (tvData && tvData.results) {
-    tvData.results
-      .filter(item => item.poster_path)
-      .slice(0, 10)
-      .forEach(item => {
-        const card = createMovieCard(item, "tv");
-        if (card) container.appendChild(card);
-      });
-  }
-}
 
 
 function getHistoryProgress(tmdbId, type, season, episode) {
@@ -876,10 +780,8 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
     
     if (page === "watchlist") renderWatchlist();
     if (page === "trending") renderTrending();
-    if (page === "popular") renderPopular();
   });
 });
-
 
 // ---- Listen for Vidking progress events ----
 window.addEventListener("message", function(event) {

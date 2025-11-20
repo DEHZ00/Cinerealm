@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aw Hell Na Streaming</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Favicon - Movie camera emoji as icon -->
+  <link rel="icon" type="image/png" href="https://r2.fivemanage.com/yhlF0A9ZrohxF6sKvC9qv/2023-05-0821_32_55-THEYKEEPGETTINGINMYHOUSE!_AlternateWatch-YouTube-Opera.png">
+</head>
+<body>
+
+<div id="loadingSpinner" class="loading-spinner" style="display:none;">
+  <div class="spinner"></div>
+  <p>Loading...</p>
+</div>
+
+
+<header>
+  <div class="header-left">
+    <h1 id="homeLink" style="cursor: pointer;">🎬 Aw Hell Nah streaming</h1>
+  </div>
+  <input type="text" id="searchBar" placeholder="Search movies or shows..." autocomplete="off">
+  <nav class="nav-links">
+    <button id="homeBtn" class="nav-btn active" data-page="home">Home</button>
+    <button id="searchBtn" class="nav-btn" data-page="search">Search Results</button>
+    <button id="watchlistBtn" class="nav-btn" data-page="watchlist">My Watchlist</button>
+    <button id="trendingBtn" class="nav-btn" data-page="trending">Trending</button>
+
+
+  </nav>
+</header>
+
+<!-- Home Page -->
+<div id="homePage" class="page active">
+  <section>
+    <h2>Continue Watching</h2>
+    <div id="continueWatching" class="movie-row">
+      <p class="placeholder">You haven't watched anything yet. Start watching to see it here!</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>New Releases</h2>
+    <div id="newMovies" class="movie-row"></div>
+  </section>
+
+
+
+
+
+  <section>
+    <h2>Popular Movies</h2>
+    <div id="popularMovies" class="movie-row"></div>
+  </section>
+
+  <section>
+    <h2>Top Rated Movies</h2>
+    <div id="topRatedMovies" class="movie-row"></div>
+  </section>
+
+  <section>
+    <h2>Popular TV Shows</h2>
+    <div id="popularTV" class="movie-row"></div>
+  </section>
+
+  <section>
+    <h2>Top Rated TV Shows</h2>
+    <div id="topRatedTV" class="movie-row"></div>
+  </section>
+</div>
+
+<!-- Watchlist Page -->
+<div id="watchlistPage" class="page">
+  <section>
+    <h2>My Watchlist</h2>
+    <div id="watchlistContent" class="movie-row">
+      <p class="placeholder">Your watchlist is empty. Add movies or shows to watch later!</p>
+    </div>
+  </section>
+</div>
+
+<!-- Trending Page -->
+<div id="trendingPage" class="page">
+  <section>
+    <h2>Trending This Week</h2>
+    <div id="trendingContent" class="movie-row"></div>
+  </section>
+</div>
+
+<!-- Player -->
+<div id="player">
+  <div id="player-season-dropdown"></div>
+  <div id="player-tabs-placeholder"></div>
+  <div id="player-iframe-placeholder" class="iframe-placeholder"></div>
+</div>
+
+<!-- Movie Details Modal -->
+<div id="detailsModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <span class="close-btn">&times;</span>
+    <div id="detailsBody"></div>
+  </div>
+</div>
+
+
+
+
+<script src="script.js"></script>
+</body>
+</html>
