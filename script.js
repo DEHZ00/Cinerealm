@@ -252,12 +252,12 @@ function buildProviderUrl(providerKey, media, opts = {}) {
 
   // Set default options
   const params = {
-    autoplay: opts.autoplay ?? true,
-    autoNext: opts.autoNext ?? true,
-    nextButton: opts.nextButton ?? true,
-    poster: opts.poster ?? true,
-    title: opts.title ?? true,
-    watchparty: opts.watchparty ?? false,
+    autoplay: opts.autoplay ?? false,
+    autoNext: opts.autoNext ?? false,
+    nextButton: opts.nextButton ?? false,
+    poster: opts.poster ?? false,
+    title: opts.title ?? false,
+    watchparty: opts.watchparty ?? true,
     chromecast: opts.chromecast ?? true,
     episodelist: opts.episodeSelector ?? true,
     servericon: opts.servericon ?? true,
@@ -273,6 +273,7 @@ function buildProviderUrl(providerKey, media, opts = {}) {
     server: opts.server ?? undefined,
     progress: opts.progress ?? 0,
     dub: opts.dub ?? false
+    logourl: opts.logourl || "",
   };
 
   return base + buildQuery(params);
