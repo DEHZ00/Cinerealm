@@ -266,7 +266,7 @@ function buildProviderUrl(providerKey, media, opts = {}) {
     if (opts.opacity !== undefined) params.opacity = opts.opacity;
     if (opts.servericon !== undefined) params.servericon = opts.servericon ? "true" : "false";
     return base + buildQuery(params);
-
+  }
   if (providerKey === "vidfast") {
     // vidfast.pro 
     const baseDomain = "https://vidfast.pro";
