@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Search movies and TV shows">
+  <title>Search Results - Cine Realm</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="icon" type="image/png" href="https://i.postimg.cc/yNK6ySqX/17b32ddf-5bb4-4d2b-999c-689ffbaeac8a.png">
+</head>
+<body>
+
+<div id="loadingSpinner" class="loading-spinner" style="display:none;">
+  <div class="spinner"></div>
+  <p>Loading...</p>
+</div>
+
+<header>
+  <div class="header-left">
+    <h1><a href="/" style="color:#ff2c2c;text-decoration:none;">🎬 Cine Realm</a></h1>
+  </div>
+  <input type="text" id="searchBar" placeholder="Search movies or shows..." autocomplete="off">
+  <nav class="nav-links">
+    <a href="/" class="nav-btn">Home</a>
+    <a href="/watchlist.html" class="nav-btn">Watchlist</a>
+    <a href="/trending.html" class="nav-btn">Trending</a>
+  </nav>
+</header>
+
+<main>
+  <section>
+    <h2 id="searchTitle">Search Results</h2>
+    <div id="searchResults" class="movie-row">
+      <p class="placeholder">Enter a search term to find movies and shows</p>
+    </div>
+  </section>
+</main>
+
+<div id="detailsModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <span class="close-btn">&times;</span>
+    <div id="detailsBody"></div>
+  </div>
+</div>
+
+<script src="/script.js"></script>
+<script>
+// Search page specific logic
+const BACKEND_URL = "https://ez-streaming-api.vercel.app";
+const IMG_BASE = "https://image.tmdb.org/t/p/w500";
+
+// Get search query from URL
+function getSearchQuery() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('q');
+}
+
+// Perform search
+async function performSearch(query) {
+  if (!query) return;
+  
+  const title = document.getElementById('searchTitle');
+  const container = document.getElementById('searchResults');
+  
+  title.textContent = `Search Results for "${query}"`;
+  container.innerHTML = '<p class="placeholder">Searching...</p>';
+  
+  try {
+    showLoading(true);
+    const response = await fetch(`${BACKEND_URL}/api/tmdb/search/multi?query=${encodeURIComponent(query)}`);
+    const data = await response.json();
+    
+    showLoading(false);
+    container.innerHTML = '';
+    
+    if (!data || !data.results || data.results.length === 0) {
+      container.innerHTML = '<p class="placeholder">No results found. Try a different search term.</p>';
+      return;
+    }
+    
+    const filtered = data.results.filter(item => 
+      item.poster_path && (item.media_type === "movie" || item.media_type === "tv")
+    );
+    
+    if (filtered.length === 0) {
+      container.innerHTML = '<p class="placeholder">No results with posters found.</p>';
+      return;
+    }
+    
+    filtered.forEach(item => {
+      const card = createMovieCard(item, item.media_type);
+      if (card) container.appendChild(card);
+    });
+    
+  } catch (error) {
+    console.error('Search error:', error);
+    showLoading(false);
+    container.innerHTML = '<p class="placeholder">Error loading search results. Please try again.</p>';
+  }
+}
+
+// Handle search bar on this page
+document.getElementById('searchBar').addEventListener('keyup', (e) => {
+  if (e.key === 'Enter') {
+    const query = e.target.value.trim();
+    if (query) {
+      window.location.href = `/search?q=${encodeURIComponent(query)}`;
+    }
+  }
+});
+
+// Load search results on page load
+const searchQuery = getSearchQuery();
+if (searchQuery) {
+  document.getElementById('searchBar').value = searchQuery;
+  performSearch(searchQuery);
+}
+</script>
+</body>
+</html>

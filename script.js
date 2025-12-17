@@ -137,10 +137,10 @@ function createMovieCard(movie, type = "movie") {
     <p>${title}</p>
   `;
 
-  card.querySelector(".play-btn").onclick = (e) => {
-    e.stopPropagation();
-    loadPlayer(movie.id, type, title);
-  };
+card.querySelector(".play-btn").onclick = (e) => {
+  e.stopPropagation();
+  window.location.href = `/watch/${type}/${movie.id}`;  
+};
 
   card.querySelector(".watchlist-btn").onclick = (e) => {
     e.stopPropagation();

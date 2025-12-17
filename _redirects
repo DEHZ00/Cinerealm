@@ -1,0 +1,15 @@
+
+# Watch pages
+/watch/movie/*  /watch.html  200
+/watch/tv/*     /watch.html  200
+
+# Static pages
+/search         /search.html     200
+/watchlist      /watchlist.html  200
+/trending       /trending.html   200
+
+# Home page
+/               /index.html  200
+
+# Fallback for 404
+/*              /index.html  404

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Your personal watchlist - Save movies and TV shows to watch later">
+  <title>My Watchlist - Cine Realm</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="icon" type="image/png" href="https://i.postimg.cc/yNK6ySqX/17b32ddf-5bb4-4d2b-999c-689ffbaeac8a.png">
+</head>
+<body>
+
+<div id="loadingSpinner" class="loading-spinner" style="display:none;">
+  <div class="spinner"></div>
+  <p>Loading...</p>
+</div>
+
+<header>
+  <div class="header-left">
+    <h1><a href="/" style="color:#ff2c2c;text-decoration:none;">🎬 Cine Realm</a></h1>
+  </div>
+  <input type="text" id="searchBar" placeholder="Search movies or shows..." autocomplete="off">
+  <nav class="nav-links">
+    <a href="/" class="nav-btn">Home</a>
+    <a href="/watchlist.html" class="nav-btn active">Watchlist</a>
+    <a href="/trending.html" class="nav-btn">Trending</a>
+  </nav>
+</header>
+
+<main>
+  <section>
+    <h2>My Watchlist</h2>
+    <div id="watchlistContent" class="movie-row">
+      <p class="placeholder">Your watchlist is empty. Add movies or shows to watch later!</p>
+    </div>
+  </section>
+</main>
+
+<div id="detailsModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <span class="close-btn">&times;</span>
+    <div id="detailsBody"></div>
+  </div>
+</div>
+
+<script src="/script.js"></script>
+<script>
+// Load and render watchlist on page load
+async function renderWatchlistPage() {
+  loadWatchlist();
+  const container = document.getElementById("watchlistContent");
+  container.innerHTML = "";
+
+  if (watchlistData.length === 0) {
+    container.innerHTML = `<p class="placeholder">Your watchlist is empty. Add movies or shows to watch later!</p>`;
+    return;
+  }
+
+  for (const item of watchlistData) {
+    try {
+      const data = await apiCall(`/${item.type}/${item.id}`);
+      if (data) {
+        const card = createMovieCard(data, item.type);
+        if (card) container.appendChild(card);
+      }
+    } catch (err) {
+      console.error("Failed to fetch watchlist item:", err);
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', renderWatchlistPage);
+</script>
+</body>
+</html>

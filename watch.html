@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Watch movies and TV shows online free">
+  <meta property="og:type" content="video.movie">
+  <title>Watch - Cine Realm</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="icon" type="image/png" href="https://i.postimg.cc/yNK6ySqX/17b32ddf-5bb4-4d2b-999c-689ffbaeac8a.png">
+</head>
+<body>
+
+<div id="loadingSpinner" class="loading-spinner" style="display:none;">
+  <div class="spinner"></div>
+  <p>Loading...</p>
+</div>
+
+<header>
+  <div class="header-left">
+    <h1><a href="/" style="color:#ff2c2c;text-decoration:none;">🎬 Cine Realm</a></h1>
+  </div>
+  <input type="text" id="searchBar" placeholder="Search movies or shows..." autocomplete="off">
+  <nav class="nav-links">
+    <a href="/" class="nav-btn">Home</a>
+    <a href="/watchlist.html" class="nav-btn">Watchlist</a>
+    <a href="/trending.html" class="nav-btn">Trending</a>
+  </nav>
+</header>
+
+<main id="watchContainer" class="watch-container">
+  <div id="videoWrapper" class="video-wrapper"></div>
+  
+  <div id="sourceTabsContainer" class="source-tabs-bar" style="display:none;">
+    <div id="sourceTabsScroll" class="source-tabs-scroll"></div>
+  </div>
+  
+  <div id="watchInfo" class="watch-info"></div>
+  
+  <div id="seasonSelector" class="season-selector" style="display:none;"></div>
+  
+  <section>
+    <h2>You May Also Like</h2>
+    <div id="recommendations" class="movie-row"></div>
+  </section>
+</main>
+
+<div id="detailsModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <span class="close-btn">&times;</span>
+    <div id="detailsBody"></div>
+  </div>
+</div>
+
+<script src="/script.js"></script>
+<script src="/watch.js"></script>
+</body>
+</html>

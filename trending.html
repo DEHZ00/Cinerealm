@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Discover trending movies and TV shows this week">
+  <title>Trending Now - Cine Realm</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="icon" type="image/png" href="https://i.postimg.cc/yNK6ySqX/17b32ddf-5bb4-4d2b-999c-689ffbaeac8a.png">
+</head>
+<body>
+
+<div id="loadingSpinner" class="loading-spinner" style="display:none;">
+  <div class="spinner"></div>
+  <p>Loading...</p>
+</div>
+
+<header>
+  <div class="header-left">
+    <h1><a href="/" style="color:#ff2c2c;text-decoration:none;">🎬 Cine Realm</a></h1>
+  </div>
+  <input type="text" id="searchBar" placeholder="Search movies or shows..." autocomplete="off">
+  <nav class="nav-links">
+    <a href="/" class="nav-btn">Home</a>
+    <a href="/watchlist.html" class="nav-btn">Watchlist</a>
+    <a href="/trending.html" class="nav-btn active">Trending</a>
+  </nav>
+</header>
+
+<main>
+  <section>
+    <h2>Trending This Week</h2>
+    <div id="trendingContent" class="movie-row"></div>
+  </section>
+</main>
+
+<div id="detailsModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <span class="close-btn">&times;</span>
+    <div id="detailsBody"></div>
+  </div>
+</div>
+
+<script src="/script.js"></script>
+<script>
+// Load trending content
+async function renderTrendingPage() {
+  const container = document.getElementById("trendingContent");
+  
+  const movieData = await apiCall("/trending/movie/week");
+  const tvData = await apiCall("/trending/tv/week");
+
+  container.innerHTML = "";
+
+  if (movieData && movieData.results) {
+    movieData.results
+      .filter(item => item.poster_path)
+      .slice(0, 10)
+      .forEach(item => {
+        const card = createMovieCard(item, "movie");
+        if (card) container.appendChild(card);
+      });
+  }
+
+  if (tvData && tvData.results) {
+    tvData.results
+      .filter(item => item.poster_path)
+      .slice(0, 10)
+      .forEach(item => {
+        const card = createMovieCard(item, "tv");
+        if (card) container.appendChild(card);
+      });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', renderTrendingPage);
+</script>
+</body>
+</html>
