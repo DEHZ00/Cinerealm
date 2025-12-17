@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/watch/:type/:id", "destination": "/watch.html" },
+    { "source": "/watch/tv/:id/season/:season/episode/:episode", "destination": "/watch.html" },
+    { "source": "/search", "destination": "/search.html" }
+  ]
+}

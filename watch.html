@@ -53,6 +53,121 @@
 </div>
 
 <script src="/script.js"></script>
-<script src="/watch.js"></script>
+<script>
+  function setSeo({ title, overview, image, type }) {
+    document.title = title ? `${title} - Cine Realm` : "Watch - Cine Realm";
+
+    const desc = (overview || "Watch movies and TV shows online.").slice(0, 155);
+
+    // description
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement("meta");
+      metaDesc.setAttribute("name", "description");
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute("content", desc);
+
+    // canonical
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.setAttribute("rel", "canonical");
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute("href", window.location.href);
+
+    // OG basics
+    const og = (prop, val) => {
+      let tag = document.querySelector(`meta[property="${prop}"]`);
+      if (!tag) {
+        tag = document.createElement("meta");
+        tag.setAttribute("property", prop);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute("content", val);
+    };
+
+    og("og:title", title ? `${title} - Cine Realm` : "Watch - Cine Realm");
+    og("og:description", desc);
+    og("og:type", type === "tv" ? "video.tv_show" : "video.movie");
+    if (image) og("og:image", image);
+  }
+
+  function parseWatchPath(pathname) {
+    // Supports:
+    // /watch/movie/123
+    // /watch/tv/123
+    // /watch/tv/123/season/1/episode/1
+    const parts = pathname.replace(/\/+$/, "").split("/"); // trim trailing slash
+    // ["", "watch", "tv", "123", "season", "1", "episode", "1"]
+    if (parts[1] !== "watch") return null;
+
+    const type = parts[2];
+    const id = parseInt(parts[3], 10);
+
+    let season = null, episode = null;
+    const seasonIndex = parts.indexOf("season");
+    const episodeIndex = parts.indexOf("episode");
+    if (seasonIndex !== -1) season = parseInt(parts[seasonIndex + 1], 10);
+    if (episodeIndex !== -1) episode = parseInt(parts[episodeIndex + 1], 10);
+
+    if (!type || !id || Number.isNaN(id)) return null;
+    return { type, id, season, episode };
+  }
+
+  function go(url, { replace = false } = {}) {
+    if (replace) history.replaceState({}, "", url);
+    else history.pushState({}, "", url);
+  }
+
+  async function loadFromUrl({ replace = false } = {}) {
+    const parsed = parseWatchPath(window.location.pathname);
+    if (!parsed) {
+      console.error("Invalid watch URL:", window.location.pathname);
+      return;
+    }
+
+    const { type, id, season, episode } = parsed;
+
+    // Auto-redirect TV short route -> S1E1
+    if (type === "tv" && (!season || !episode)) {
+      const target = `/watch/tv/${id}/season/1/episode/1`;
+      go(target, { replace: true });
+      return loadFromUrl({ replace: true });
+    }
+
+    // init saved data
+    loadHistory();
+    loadWatchlist();
+
+    // fetch details (your apiCall already exists in script.js)
+    const data = await apiCall(`/${type}/${id}`);
+    const title = data?.title || data?.name || "";
+    const overview = data?.overview || "";
+    const img = data?.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : "";
+
+    setSeo({ title, overview, image: img, type });
+
+    // Load your existing player
+    // If your loadPlayer supports tv season/episode, pass them (safe even if ignored)
+    try {
+      loadPlayer(id, type, title, season, episode);
+    } catch (e) {
+      // fallback if your loadPlayer only accepts (id, type, title)
+      loadPlayer(id, type, title);
+    }
+  }
+
+  // Back/forward button support
+  window.addEventListener("popstate", () => {
+    loadFromUrl({ replace: true });
+  });
+
+  // Initial load
+  loadFromUrl();
+</script>
+
+
 </body>
 </html>
