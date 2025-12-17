@@ -29,11 +29,14 @@
 </header>
 
 <main id="watchContainer" class="watch-container">
-  <div id="videoWrapper" class="video-wrapper"></div>
+<div id="player">
+  <div id="player-season-dropdown"></div>
+  <div id="player-tabs-placeholder"></div>
+  <div id="player-iframe-placeholder" class="iframe-placeholder"></div>
+</div>
+
   
-  <div id="sourceTabsContainer" class="source-tabs-bar" style="display:none;">
-    <div id="sourceTabsScroll" class="source-tabs-scroll"></div>
-  </div>
+
   
   <div id="watchInfo" class="watch-info"></div>
   
@@ -120,6 +123,22 @@
     if (replace) history.replaceState({}, "", url);
     else history.pushState({}, "", url);
   }
+function switchPage(page) {
+  currentPage = page;
+
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+
+  const pageEl = document.getElementById(page + "Page");
+  if (pageEl) pageEl.classList.add("active");
+
+  document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.remove("active"));
+
+  const btnEl = document.getElementById(page + "Btn");
+  if (btnEl) btnEl.classList.add("active");
+
+  if (playerDiv) playerDiv.innerHTML = "";
+  window.scrollTo(0, 0);
+}
 
   async function loadFromUrl({ replace = false } = {}) {
     const parsed = parseWatchPath(window.location.pathname);
@@ -151,12 +170,11 @@
 
     // Load your existing player
     // If your loadPlayer supports tv season/episode, pass them (safe even if ignored)
-    try {
-      loadPlayer(id, type, title, season, episode);
-    } catch (e) {
-      // fallback if your loadPlayer only accepts (id, type, title)
-      loadPlayer(id, type, title);
-    }
+   loadPlayer(id, type, title, {
+  season: season || 1,
+  episode: episode || 1
+});
+
   }
 
   // Back/forward button support
