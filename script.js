@@ -628,11 +628,12 @@ if (extraOpts.season) {
       epDiv.addEventListener("click", () => {
         const lastProgress = getHistoryProgress(tvId, "tv", seasonNumber, ep.episode_number);
         loadPlayer(tvId, "tv", media.title || media.name || "", {
-          ...extraOpts,
-          season: seasonNumber,
-          episode: ep.episode_number,
-          progress: lastProgress
-        });
+  ...extraOpts,
+  season: seasonNumber,
+  episode: ep.episode_number,
+  progress: lastProgress
+});
+
       });
 
       episodeList.appendChild(epDiv);
@@ -756,52 +757,16 @@ async function renderTrending() {
 }
 
 // ---- Search Movies & TV ----
-document.getElementById("searchBar").addEventListener("keyup", async (e) => {
-  if (e.key !== "Enter") return;
-  const query = e.target.value.trim();
-  if (!query) {
-    showError("Please enter a search term");
-    return;
-  }
-
-  console.log("Searching for:", query);
-  const data = await apiCall("/search/multi", { query });
-  
-  console.log("Search results:", data);
-  
-  if (!data || !data.results) {
-    console.warn("No results in response");
-    playerDiv.innerHTML = "<p class='placeholder'>No results found</p>";
-    return;
-  }
-
-  console.log("Total results:", data.results.length);
-  
-  // Create search results container
-  playerDiv.innerHTML = "";
-  const searchSection = document.createElement("section");
-  searchSection.innerHTML = "<h2>Search Results</h2>";
-  
-  const row = document.createElement("div");
-  row.className = "movie-row";
-
-  const filtered = data.results.filter(item => item.poster_path && (item.media_type === "movie" || item.media_type === "tv"));
-  console.log("Filtered results:", filtered.length);
-
-  filtered.forEach(item => {
-    const card = createMovieCard(item, item.media_type);
-    if (card) row.appendChild(card);
+const searchBar = document.getElementById("searchBar");
+if (searchBar) {
+  searchBar.addEventListener("keyup", (e) => {
+    if (e.key !== "Enter") return;
+    const q = e.target.value.trim();
+    if (!q) return;
+    window.location.href = `/search?q=${encodeURIComponent(q)}`;
   });
+}
 
-  if (row.children.length === 0) {
-    searchSection.innerHTML += "<p class='placeholder'>No results with posters found</p>";
-  } else {
-    searchSection.appendChild(row);
-  }
-
-  playerDiv.appendChild(searchSection);
-  playerDiv.scrollIntoView({ behavior: 'smooth' });
-});
 
 // ---- Navigation ----
 const homeLink = document.getElementById("homeLink");
