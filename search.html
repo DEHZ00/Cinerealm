@@ -49,14 +49,11 @@
 
 <script src="/script.js"></script>
 <script>
-// Search page specific logic
-const BACKEND_URL = "https://ez-streaming-api.vercel.app";
-const IMG_BASE = "https://image.tmdb.org/t/p/w500";
 
-// Get search query from URL
+
 function getSearchQuery() {
   const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get('q');
+  return (urlParams.get('q') || "").trim)();
 }
 
 // Perform search
