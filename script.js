@@ -757,12 +757,13 @@ async function renderTrending() {
 }
 
 // ---- Search Movies & TV ----
-const searchBar = document.getElementById("searchBar");
-if (searchBar) {
-  searchBar.addEventListener("keyup", (e) => {
+
+const sb = document.getElementById("searchBar");
+if (sb) {
+  sb.addEventListener("keyup", (e) => {
     if (e.key !== "Enter") return;
-    const q = e.target.value.trim();
-    if (!q) return;
+    const q = sb.value.trim();
+    if (!q) return showError("Please enter a search term");
     window.location.href = `/search?q=${encodeURIComponent(q)}`;
   });
 }
