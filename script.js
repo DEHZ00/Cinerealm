@@ -41,7 +41,7 @@ window.addEventListener("load", () => {
   setTimeout(() => {
     intro.classList.add("fade-out");
     setTimeout(() => intro.remove(), 700);
-  }, 450); // small delay so it feels intentional
+  }, 450);
 });
 
 // ---- UI Helpers ----
