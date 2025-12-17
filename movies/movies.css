@@ -1,0 +1,86 @@
+.movies-filterbar{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  margin-bottom: 12px;
+}
+
+.movies-filter{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  background: rgba(0,0,0,0.45);
+  border: 2px solid rgba(255,44,44,0.55);
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+
+.movies-filter select,
+.movies-filter input{
+  background: transparent;
+  border: none;
+  color: #fff;
+  outline: none;
+  font-size: 14px;
+}
+
+.genres-panel{
+  margin: 10px 0 14px;
+  padding: 10px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  max-height: 220px;
+  overflow:auto;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.genre-chip{
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid transparent;
+  cursor:pointer;
+  user-select:none;
+  font-size: 13px;
+}
+.genre-chip:hover{
+  border-color: rgba(255,44,44,0.25);
+}
+.genre-chip.active{
+  background: rgba(255,44,44,0.18);
+  border-color: rgba(255,44,44,0.7);
+}
+
+.movies-meta{
+  opacity: .85;
+  margin: 8px 0 10px;
+  font-size: 13px;
+}
+
+.movies-pager{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  justify-content:center;
+  margin-top: 14px;
+  flex-wrap:wrap;
+}
+
+.page-btns{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+
+.page-btn{
+  min-width: 40px;
+}
+.page-btn.active{
+  background:#ff2c2c !important;
+  color:#081117 !important;
+}

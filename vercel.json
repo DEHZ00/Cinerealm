@@ -2,6 +2,16 @@
   "rewrites": [
     { "source": "/watch/:type/:id", "destination": "/watch.html" },
     { "source": "/watch/tv/:id/season/:season/episode/:episode", "destination": "/watch.html" },
-    { "source": "/search", "destination": "/search.html" }
+
+    { "source": "/search", "destination": "/search.html" },
+    { "source": "/trending", "destination": "/trending.html" },
+    { "source": "/watchlist", "destination": "/watchlist.html" },
+    { "source": "/movies", "destination": "/movies.html" }
+  ],
+  "redirects": [
+    { "source": "/search.html", "destination": "/search", "permanent": true },
+    { "source": "/trending.html", "destination": "/trending", "permanent": true },
+    { "source": "/watchlist.html", "destination": "/watchlist", "permanent": true },
+    { "source": "/movies.html", "destination": "/movies", "permanent": true }
   ]
 }

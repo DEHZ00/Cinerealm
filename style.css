@@ -25,6 +25,36 @@ body {
   justify-content: center;
   z-index: 9999;
 }
+#appIntro {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #1a0000, #4E0000, #8a0000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  transition: opacity 600ms ease, transform 600ms ease;
+}
+
+#appIntro.fade-out {
+  opacity: 0;
+  transform: scale(1.02);
+  pointer-events: none;
+}
+
+.intro-logo {
+  font-size: 44px;
+  letter-spacing: 2px;
+  font-weight: 800;
+  color: #ff2c2c;
+  text-shadow: 0 0 30px rgba(255,44,44,.25);
+  animation: introPop 900ms ease;
+}
+
+@keyframes introPop {
+  from { opacity: 0; transform: translateY(10px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 /* Erick Spinning Face */
 .erick-spin-wrapper {

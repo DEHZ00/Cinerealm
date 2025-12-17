@@ -35,6 +35,14 @@ function saveHistory() {
 function saveWatchlist() {
   localStorage.setItem("watchlist", JSON.stringify(watchlistData));
 }
+window.addEventListener("load", () => {
+  const intro = document.getElementById("appIntro");
+  if (!intro) return;
+  setTimeout(() => {
+    intro.classList.add("fade-out");
+    setTimeout(() => intro.remove(), 700);
+  }, 450); // small delay so it feels intentional
+});
 
 // ---- UI Helpers ----
 function showLoading(show = true) {
