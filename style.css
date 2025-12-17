@@ -376,7 +376,8 @@ h2 {
 .player-header {
   padding: 15px 20px;
   background: rgba(0, 0, 0, 0.9);
-  border-bottom: 2px solid #ff2c2c#66ccff;
+border-bottom: 2px solid rgba(255, 44, 44, 0.6);
+
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -564,17 +565,14 @@ iframe {
 /* source player */
 
 
+}
 
-/* responsive tweaks */
 @media (max-width: 640px) {
   .source-tab { padding: 6px 10px; font-size: 12px; }
   iframe { height: 420px; }
 }
 
 
-
-
-}
 
 /* Tabs reset + pill style (cross-browser) */
 .source-tabs-bar, .source-tabs-scroll, .source-tab {

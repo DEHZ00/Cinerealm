@@ -9,6 +9,8 @@ const loadingSpinner = document.getElementById("loadingSpinner");
 const detailsModal = document.getElementById("detailsModal");
 const detailsBody = document.getElementById("detailsBody");
 const closeBtn = document.querySelector(".close-btn");
+// ---- THEME ----
+const THEME_COLOR = "#4E0000"; // main CineRealm red
 
 // State
 let historyData = [];
@@ -209,7 +211,8 @@ const PROVIDERS = [
   { name: "FluxLine",  key: "vidplus",   supports: { movie: true, tv: true, anime: true } }, // default
   { name: "PulseView", key: "vidfast",   supports: { movie: true, tv: true, anime: false } },
   { name: "King",      key: "vidking",   supports: { movie: true, tv: true, anime: false } },
-  { name: "Ez",        key: "videasy",   supports: { movie: true, tv: true, anime: true } }
+  { name: "Ez",        key: "videasy",   supports: { movie: true, tv: true, anime: true } },
+  { name: "Seenima", key: "vidora",   supports: { movie: true, tv: true, anime: false } }
 ];
 
 
@@ -348,6 +351,27 @@ function buildProviderUrl(providerKey, media, opts = {}) {
       return base + buildQuery(params);
     }
   }
+  if (providerKey === "vidora") {
+    // vidora.su routes:
+    // Movie: https://vidora.su/movie/{tmdbId or imdbId}
+    // TV:    https://vidora.su/tv/{tmdbId or imdbId}/{season}/{episode}
+
+    let base = "";
+    if (t === "movie") base = `https://vidora.su/movie/${id}`;
+    if (t === "tv") base = `https://vidora.su/tv/${id}/${media.season || 1}/${media.episode || 1}`;
+
+    const params = {};
+    // Vidora params from docs
+    if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? "true" : "false";
+    if (opts.colour || opts.color) params.colour = (opts.colour || opts.color).replace("#", "");
+    if (opts.autonextepisode !== undefined) params.autonextepisode = opts.autonextepisode ? "true" : "false";
+    if (opts.backbutton) params.backbutton = opts.backbutton;
+    if (opts.logo) params.logo = opts.logo;
+    if (opts.pausescreen !== undefined) params.pausescreen = opts.pausescreen ? "true" : "false";
+    if (opts.idlecheck !== undefined) params.idlecheck = opts.idlecheck;
+
+    return base + buildQuery(params);
+  }
 
   // fallback
   return "";
@@ -459,6 +483,9 @@ function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
   // Build options object for provider mapping
   const opts = {
     color: extraOpts.color || "#ffffff",
+    colour: extraOpts.color || "#ffffff",
+    autonextepisode: extraOpts.autoplayNextEpisode ?? true,
+
     theme: extraOpts.theme || "#ffffff",
     autoplay: extraOpts.autoplay ?? true,
     autoNext: extraOpts.autoNext ?? true,
@@ -617,7 +644,8 @@ function getHistoryProgress(tmdbId, type, season, episode) {
   if (!historyData || !Array.isArray(historyData)) return 0;
 
   const match = historyData.find(item => {
-    if (item.type !== type || item.tmdbId !== tmdbId) return false;
+    if (item.type !== type || item.id !== tmdbId) return false;
+
     if (type === "tv") {
       return item.season === season && item.episode === episode;
     }
@@ -822,6 +850,41 @@ window.addEventListener("message", function(event) {
     // Ignore
   }
 });
+
+window.addEventListener("message", function (event) {
+  try {
+    const msg = event.data;
+
+    if (!msg || msg.type !== "MEDIA_DATA" || !msg.data) return;
+
+    const mediaData = msg.data;
+
+ 
+    const id = mediaData.id;
+    const mediaType = mediaData.type;
+
+    
+    const watched = mediaData.progress?.watched ?? mediaData.progress?.watchedTime ?? mediaData.progress?.time ?? 0;
+    const duration = mediaData.progress?.duration ?? 0;
+
+    let entry = historyData.find(m => String(m.id) === String(id) && m.type === mediaType);
+
+    if (!entry) {
+      entry = { id: isNaN(Number(id)) ? id : Number(id), type: mediaType, progress: 0, duration: 0, addedAt: Date.now() };
+      historyData.push(entry);
+    }
+
+    entry.progress = watched;
+    entry.duration = duration;
+    entry.addedAt = Date.now();
+    saveHistory();
+
+  } catch (e) {
+    // ignore
+  }
+});
+
+
 
 // ---- Initial Load ----
 loadHistory();
