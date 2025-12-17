@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<cons!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -91,15 +91,7 @@ async function performSearch(query) {
   }
 }
 
-// Enter in search bar goes to /search?q=
-const sb = document.getElementById("searchBar");
-if (sb) {
-  sb.addEventListener("keyup", (e) => {
-    if (e.key !== "Enter") return;
-    const q = e.target.value.trim();
-    if (q) window.location.href = `/search?q=${encodeURIComponent(q)}`;
-  });
-}
+
 
 document.addEventListener("DOMContentLoaded", () => {
   const q = getSearchQuery();
