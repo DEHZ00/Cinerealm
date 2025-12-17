@@ -241,44 +241,32 @@ function buildProviderUrl(providerKey, media, opts = {}) {
   }
 
   if (providerKey === "vidplus") {
-  let base = "";
-  if (t === "movie") {
-    base = `https://player.vidplus.to/embed/movie/${id}`;
-  } else if (t === "tv") {
-    base = `https://player.vidplus.to/embed/tv/${id}/${media.season || 1}/${media.episode || 1}`;
-  } else if (t === "anime") {
-    base = `https://player.vidplus.to/embed/anime/${media.anilistId || id}/${media.episode || 1}`;
+  // player.vidplus.to 
+    let base = "";
+    if (t === "movie") base = `https://player.vidplus.to/embed/movie/${id}`;
+    if (t === "tv") base = `https://player.vidplus.to/embed/tv/${id}/${media.season || 1}/${media.episode || 1}`;
+    if (t === "anime") base = `https://player.vidplus.to/embed/anime/${media.anilistId || id}/${media.episode || 1}`;
+    const params = {};
+    if (opts.color) params.primarycolor = opts.color.replace("#", "");
+    if (opts.secondaryColor) params.secondarycolor = opts.secondaryColor.replace("#", "");
+    if (opts.iconColor) params.iconcolor = opts.iconColor.replace("#", "");
+    if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? "true" : "false";
+    if (opts.autoNext !== undefined) params.autoNext = opts.autoNext ? "true" : "false";
+    if (opts.nextButton !== undefined) params.nextButton = opts.nextButton ? "true" : "false";
+    if (opts.progress !== undefined) params.progress = Math.floor(opts.progress);
+    if (opts.watchparty !== undefined) params.watchparty = opts.watchparty ? "true" : "false";
+    if (opts.chromecast !== undefined) params.chromecast = opts.chromecast ? "true" : "false";
+    if (opts.episodelist !== undefined) params.episodelist = opts.episodelist ? "true" : "false";
+    if (opts.server !== undefined) params.server = opts.server;
+    if (opts.poster !== undefined) params.poster = opts.poster ? "true" : "false";
+    if (opts.title !== undefined) params.title = opts.title ? "true" : "false";
+    if (opts.icons !== undefined) params.icons = opts.icons;
+    if (opts.fontcolor) params.fontcolor = opts.fontcolor.replace("#", "");
+    if (opts.fontsize) params.fontsize = opts.fontsize;
+    if (opts.opacity !== undefined) params.opacity = opts.opacity;
+    if (opts.servericon !== undefined) params.servericon = opts.servericon ? "true" : "false";
+    return base + buildQuery(params);
   }
-
-  // Set default options
-  const params = {
-    autoplay: opts.autoplay ?? true,
-    autoNext: opts.autoNext ?? true,
-    nextButton: opts.nextButton ?? true,
-    poster: opts.poster ?? true,
-    title: opts.title ?? true,
-    watchparty: opts.watchparty ?? false,
-    chromecast: opts.chromecast ?? true,
-    episodelist: opts.episodeSelector ?? true,
-    servericon: opts.servericon ?? true,
-    primarycolor: (opts.color || "#6C63FF").replace("#", ""),
-    secondarycolor: (opts.secondaryColor || "#9F9BFF").replace("#", ""),
-    iconcolor: (opts.iconColor || "#FFFFFF").replace("#", ""),
-    font: opts.font || "Roboto",
-    fontcolor: (opts.fontcolor || "#FFFFFF").replace("#", ""),
-    fontsize: opts.fontsize || 20,
-    opacity: opts.opacity ?? 0.5,
-    setting: true,   // required now
-    pip: true,       // required now
-    logourl: opts.logourl || "https://i.ibb.co/67wTJd9R/pngimg-com-netflix-PNG11.png",
-    server: opts.server ?? undefined,
-    progress: opts.progress ?? 0,
-    dub: opts.dub ?? false
-  };
-
-  return base + buildQuery(params);
-}
-
   if (providerKey === "vidfast") {
     // vidfast.pro 
     const baseDomain = "https://vidfast.pro";
