@@ -207,10 +207,22 @@ function createMovieCard(movie, type = "movie") {
 
 card.querySelector(".play-btn").onclick = (e) => {
   e.stopPropagation();
+
+  
+  let url;
+  if (type === "tv") {
+
+    url = `/watch/tv/${movie.id}`;
+  } else {
+    url = `/watch/movie/${movie.id}`;
+  }
+
+
   showDisclaimerThen(() => {
-    window.location.href = `/watch/${type}/${movie.id}`;
+    window.location.href = url;
   });
 };
+
 
 
   card.querySelector(".watchlist-btn").onclick = (e) => {
