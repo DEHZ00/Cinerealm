@@ -31,8 +31,9 @@
   <a href="/movies" class="nav-btn">Movies</a>
   <a href="/trending" class="nav-btn">Trending</a>
   <a href="/watchlist" class="nav-btn">Watchlist</a>
-  <a href="/search" class="nav-btn">Search</a>
+  <a href="/legal" class="nav-btn">Legal</a>
 </nav>
+
 
 
 </header>
@@ -179,10 +180,14 @@ function switchPage(page) {
 
     // Load your existing player
     // If your loadPlayer supports tv season/episode, pass them (safe even if ignored)
-   loadPlayer(id, type, title, {
-  season: season || 1,
-  episode: episode || 1
-});
+    // Show disclaimer before starting playback
+    showDisclaimerThen(() => {
+      loadPlayer(id, type, title, {
+        season: season || 1,
+        episode: episode || 1
+      });
+    });
+
 
   }
 
