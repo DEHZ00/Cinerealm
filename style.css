@@ -756,3 +756,8 @@ iframe {
   border: 2px solid #ff2c2c;
   box-shadow: 0 0 8px #ff2c2c;
 }
+.last-episode-tag {
+  font-size: 11px;
+  color: #ffb347;
+  opacity: 0.9;
+}

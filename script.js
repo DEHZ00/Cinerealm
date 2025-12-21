@@ -187,23 +187,37 @@ function createMovieCard(movie, type = "movie") {
   let entry = historyData.find(m => m.id === movie.id && m.type === type);
   let percent = entry && entry.duration ? (entry.progress / entry.duration) * 100 : 0;
   let inWatchlist = isInWatchlist(movie.id, type);
+let lastEpisodeLabel = "";
+if (type === "tv" && historyData && historyData.length) {
+  const lastEntry = historyData
+    .filter(e => e.type === "tv" && e.tmdbId === movie.id)
+    .sort((a, b) => b.addedAt - a.addedAt)[0];
+
+  if (lastEntry && lastEntry.season && lastEntry.episode) {
+    lastEpisodeLabel = `S${lastEntry.season} · E${lastEntry.episode}`;
+  }
+}
 
   const title = movie.title || movie.name || "Unknown";
   
-  card.innerHTML = `
-    <div class="card-image-wrapper">
-      <img src="${IMG_BASE + movie.poster_path}" alt="${title}" loading="lazy">
-      ${percent > 0 ? `<div class="progress-bar" style="width:${percent}%"></div>` : ""}
-      <div class="card-overlay">
-        <button class="play-btn">▶ Play</button>
-        <div class="card-buttons">
-          <button class="watchlist-btn" title="Add to watchlist">${inWatchlist ? "★" : "☆"}</button>
-          <button class="info-btn" title="More info">ⓘ</button>
-        </div>
+ card.innerHTML = `
+  <div class="card-image-wrapper">
+    <img src="${IMG_BASE + movie.poster_path}" alt="${title}" loading="lazy">
+    ${percent > 0 ? `<div class="progress-bar" style="width:${percent}%"></div>` : ""}
+    <div class="card-overlay">
+      <button class="play-btn">▶ Play</button>
+      <div class="card-buttons">
+        <button class="watchlist-btn" title="Add to watchlist">${inWatchlist ? "★" : "☆"}</button>
+        <button class="info-btn" title="More info">ⓘ</button>
       </div>
     </div>
-    <p>${title}</p>
-  `;
+  </div>
+  <p>
+    ${title}
+    ${lastEpisodeLabel && type === "tv" ? `<br><span class="last-episode-tag">${lastEpisodeLabel}</span>` : ""}
+  </p>
+`;
+
 
 card.querySelector(".play-btn").onclick = (e) => {
   e.stopPropagation();
@@ -708,6 +722,10 @@ if (extraOpts.season) {
       episode: ep.episode_number,
       progress: lastProgress
     });
+
+    // 🔥 Update the URL without reloading the page
+    const newUrl = `/watch/tv/${tvId}/season/${seasonNumber}/episode/${ep.episode_number}`;
+    window.history.pushState({}, "", newUrl);
   });
 });
 
@@ -867,8 +885,9 @@ document.querySelectorAll(".nav-btn[data-page]").forEach(btn => {
 });
 
 
-// ---- Listen for Vidking progress events ----
-window.addEventListener("message", function(event) {
+
+// ---- Listen for player progress events
+window.addEventListener("message", function (event) {
   try {
     let msg = event.data;
     if (typeof msg === "string") {
@@ -881,11 +900,42 @@ window.addEventListener("message", function(event) {
 
     if (!msg || msg.type !== "PLAYER_EVENT" || !msg.data) return;
 
-    const { currentTime, duration, id, mediaType } = msg.data;
-    let entry = historyData.find(m => m.id === parseInt(id) && m.type === mediaType);
+    const {
+      currentTime,
+      duration,
+      id,
+      mediaType,
+      season,
+      episode,
+      event: evtName
+    } = msg.data;
+
+    const tmdbId = parseInt(id);
+
+    let entry = historyData.find((m) => {
+      if (m.type !== mediaType) return false;
+      if (m.tmdbId !== tmdbId) return false;
+
+      if (mediaType === "tv") {
+        return m.season === season && m.episode === episode;
+      }
+      return true; // movie
+    });
 
     if (!entry) {
-      entry = { id: parseInt(id), type: mediaType, progress: 0, duration: 0, addedAt: Date.now() };
+      entry = {
+        tmdbId,
+        type: mediaType,
+        progress: 0,
+        duration: 0,
+        addedAt: Date.now(),
+      };
+
+      if (mediaType === "tv") {
+        entry.season = season;
+        entry.episode = episode;
+      }
+
       historyData.push(entry);
     }
 
@@ -893,12 +943,12 @@ window.addEventListener("message", function(event) {
     entry.duration = duration;
     entry.addedAt = Date.now();
     saveHistory();
-    
-    if (msg.data.event === "ended") {
+
+    if (evtName === "ended") {
       renderContinueWatching();
     }
   } catch (err) {
-    // Ignore
+    // ignore
   }
 });
 
