@@ -514,6 +514,13 @@ function renderSourcePills(media, defaultName, opts) {
   scroll.className = "source-tabs-scroll";
   bar.appendChild(scroll);
 
+  //  last provider from localStorage (if valid for this media type)
+  const savedProvider = localStorage.getItem("cine_last_provider");
+  const initialName =
+    savedProvider && PROVIDERS.some(p => p.name === savedProvider && p.supports[media.type])
+      ? savedProvider
+      : defaultName;
+
   PROVIDERS.forEach(p => {
     if (!p.supports[media.type]) return; // skip incompatible providers
     const btn = document.createElement("button");
@@ -521,15 +528,21 @@ function renderSourcePills(media, defaultName, opts) {
     btn.type = "button";
     btn.dataset.key = p.key;
     btn.textContent = p.name;
-    if (p.name === defaultName) btn.classList.add("active");
+
+    if (p.name === initialName) btn.classList.add("active");
 
     btn.addEventListener("click", () => {
       // highlight
       scroll.querySelectorAll(".source-tab").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
+
+      // remember choice
+      localStorage.setItem("cine_last_provider", p.name);
+
       // hide previous error
       const err = document.getElementById("player-error");
       if (err) err.style.display = "none";
+
       // Build provider-specific URL and load
       const url = buildProviderUrl(p.key, media, opts);
       insertIframe(url);
@@ -540,6 +553,7 @@ function renderSourcePills(media, defaultName, opts) {
 
   return bar;
 }
+
 
 // Unified loadPlayer you call from cards
 function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
@@ -768,36 +782,71 @@ function formatTime(s) {
 
 
 // ---- Render Continue Watching ----
- 
-
-async function renderContinueWatching() {
-  const container = document.getElementById('continueWatching');
+ async function renderContinueWatching() {
+  const container = document.getElementById("continueWatching");
   if (!container) return;
-  container.innerHTML = ''; // Clear previous content
 
-  if (!historyData || historyData.length === 0) {
-    container.innerHTML = `<p class="placeholder">No movies to continue watching</p>`;
-    return;
-  }
- 
-  const validEntries = historyData.filter(item => item && item.id);
-  if (validEntries.length === 0) {
-    container.innerHTML = `<p class="placeholder">No movies to continue watching</p>`;
+  container.innerHTML = "";
+
+  if (!Array.isArray(historyData) || historyData.length === 0) {
+    container.innerHTML = `<p class="placeholder">You haven't watched anything yet. Start watching to see it here!</p>`;
     return;
   }
 
+  // Sort newest first
+  const sorted = [...historyData].sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
 
-  for (const entry of validEntries) {
-    const type = entry.type || "movie"; // default to movie
-    const movieId = entry.id;
+  const seen = new Set();
+  const compact = [];
 
-    const data = await apiCall(`/${type}/${movieId}`);
-    if (!data) continue; // skip failed fetches
+  for (const item of sorted) {
+    if (!item || !item.type || !item.tmdbId) continue;
 
-    const card = createMovieCard(data, type);
-    if (card) container.appendChild(card);
+    // skip if no real progress
+    if (!item.progress || !item.duration || item.duration < 60) continue;
+
+    // skip if basically finished (last ~60s)
+    if (item.progress >= item.duration - 60) continue;
+
+    const key = `${item.type}-${item.tmdbId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    compact.push(item);
+
+    if (compact.length >= 20) break; // limit row size
+  }
+
+  if (compact.length === 0) {
+    container.innerHTML = `<p class="placeholder">No movies or shows to continue. Start watching to see them here!</p>`;
+    return;
+  }
+
+  for (const entry of compact) {
+    try {
+      const type = entry.type || "movie";
+      const tmdbId = entry.tmdbId;
+
+      const data = await apiCall(`/${type}/${tmdbId}`);
+      if (!data) continue;
+
+      const card = createMovieCard(data, type);
+      if (!card) continue;
+
+      // Add "Resume at" badge under title
+      const label = card.querySelector("p");
+      if (label && entry.progress) {
+        label.innerHTML += `<br><span class="resume-badge">Resume at ${formatTime(entry.progress)}</span>`;
+      }
+
+      container.appendChild(card);
+    } catch (err) {
+      console.error("Failed to build continue-watching card:", err);
+    }
   }
 }
+
+
+
 // ---- Render Watchlist Page ----
 async function renderWatchlist() {
   const container = document.getElementById("watchlistContent");

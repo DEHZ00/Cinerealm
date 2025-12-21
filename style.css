@@ -761,3 +761,10 @@ iframe {
   color: #ffb347;
   opacity: 0.9;
 }
+.resume-badge {
+  display: inline-block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: #ffb347;
+  opacity: 0.9;
+}
