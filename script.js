@@ -698,19 +698,19 @@ if (extraOpts.season) {
         </div>
       `;
 
-    epDiv.addEventListener("click", () => {
+ epDiv.addEventListener("click", () => {
   const lastProgress = getHistoryProgress(tvId, "tv", seasonNumber, ep.episode_number);
 
-  // Show disclaimer 
   showDisclaimerThen(() => {
-    loadPlayer(tvId, "tv", media.title || media.name || "", {
-      ...extraOpts,              
+    loadPlayer(tvId, "tv", tvData.name || tvData.original_name || "", {
+      ...extraOpts,
       season: seasonNumber,
       episode: ep.episode_number,
       progress: lastProgress
     });
   });
 });
+
 
 
       episodeList.appendChild(epDiv);
