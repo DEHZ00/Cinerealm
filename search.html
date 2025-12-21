@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<cons!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -53,76 +53,56 @@
 
 <script src="/script.js"></script>
 <script>
-// Search page specific logic
-const BACKEND_URL = "https://ez-streaming-api.vercel.app";
-const IMG_BASE = "https://image.tmdb.org/t/p/w500";
-
-// Get search query from URL
 function getSearchQuery() {
   const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get('q');
+  return (urlParams.get("q") || "").trim();
 }
 
-// Perform search
 async function performSearch(query) {
-  if (!query) return;
-  
-  const title = document.getElementById('searchTitle');
-  const container = document.getElementById('searchResults');
-  
+  const title = document.getElementById("searchTitle");
+  const container = document.getElementById("searchResults");
+  if (!title || !container) return;
+
+  if (!query) {
+    title.textContent = "Search Results";
+    container.innerHTML = `<p class="placeholder">Enter a search term to find movies and shows</p>`;
+    return;
+  }
+
   title.textContent = `Search Results for "${query}"`;
-  container.innerHTML = '<p class="placeholder">Searching...</p>';
-  
-  try {
-    showLoading(true);
-    const response = await fetch(`${BACKEND_URL}/api/tmdb/search/multi?query=${encodeURIComponent(query)}`);
-    const data = await response.json();
-    
-    showLoading(false);
-    container.innerHTML = '';
-    
-    if (!data || !data.results || data.results.length === 0) {
-      container.innerHTML = '<p class="placeholder">No results found. Try a different search term.</p>';
-      return;
-    }
-    
-    const filtered = data.results.filter(item => 
-      item.poster_path && (item.media_type === "movie" || item.media_type === "tv")
-    );
-    
-    if (filtered.length === 0) {
-      container.innerHTML = '<p class="placeholder">No results with posters found.</p>';
-      return;
-    }
-    
-    filtered.forEach(item => {
-      const card = createMovieCard(item, item.media_type);
-      if (card) container.appendChild(card);
-    });
-    
-  } catch (error) {
-    console.error('Search error:', error);
-    showLoading(false);
-    container.innerHTML = '<p class="placeholder">Error loading search results. Please try again.</p>';
+  container.innerHTML = `<p class="placeholder">Searching...</p>`;
+
+  const data = await apiCall("/search/multi", { query });
+  const results = (data?.results || [])
+    .filter(x => x.media_type === "movie" || x.media_type === "tv");
+
+  container.innerHTML = "";
+
+  if (!results.length) {
+    container.innerHTML = `<p class="placeholder">No results found. Try a different search term.</p>`;
+    return;
+  }
+
+  // Don’t kill results just because poster_path is missing
+  results.forEach(item => {
+    if (!item.poster_path && item.backdrop_path) item.poster_path = item.backdrop_path;
+    const card = createMovieCard(item, item.media_type);
+    if (card) container.appendChild(card);
+  });
+
+  if (!container.children.length) {
+    container.innerHTML = `<p class="placeholder">No results with posters found.</p>`;
   }
 }
 
-// Handle search bar on this page
-document.getElementById('searchBar').addEventListener('keyup', (e) => {
-  if (e.key === 'Enter') {
-    const query = e.target.value.trim();
-    if (query) {
-      window.location.href = `/search?q=${encodeURIComponent(query)}`;
-    }
-  }
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const q = getSearchQuery();
+  const sb = document.getElementById("searchBar");
+  if (sb && q) sb.value = q;
+  performSearch(q);
 });
-
-// Load search results on page load
-const searchQuery = getSearchQuery();
-if (searchQuery) {
-  document.getElementById('searchBar').value = searchQuery;
-  performSearch(searchQuery);
-}
 </script>
 </body>
 </html>
