@@ -80,5 +80,28 @@ async function renderTrendingPage() {
 
 document.addEventListener('DOMContentLoaded', renderTrendingPage);
 </script>
+
+<!-- Disclaimer Modal -->
+<div id="disclaimerModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h2>Before You Watch</h2>
+    <p>
+      Some third-party sources may show pop-ups or ads outside of our control.
+      CineRealm does not host or manage any of the media streams and is not responsible
+      for external content or behavior of those sites.
+    </p>
+    <label style="display:flex;align-items:center;gap:8px;margin:12px 0;">
+      <input type="checkbox" id="dontShowAgain">
+      <span>Don't show this again on this device</span>
+    </label>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;">
+      <button id="cancelDisclaimer" class="nav-btn" type="button">Cancel</button>
+      <button id="acceptDisclaimer" class="nav-btn" type="button">I Understand</button>
+    </div>
+  </div>
+</div>
+
+
+
 </body>
 </html>
