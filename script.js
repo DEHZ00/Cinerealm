@@ -665,8 +665,10 @@ async function fetchMovies(endpoint, containerId, type = "movie") {
   // Show options
 
  // ---- Render Seasons & Episodes Dropdown ----
-async function renderSeasonsDropdown(tvId, media, extraOpts) {
+async function renderSeasonsDropdown(tvId, media, extraOpts = {}) {
   const container = document.getElementById("player-season-dropdown");
+  if (!container) return;
+
   container.innerHTML = "";
 
   const tvData = await apiCall(`/tv/${tvId}`);
@@ -682,11 +684,8 @@ async function renderSeasonsDropdown(tvId, media, extraOpts) {
   seasonSelect.innerHTML = seasons
     .map(s => `<option value="${s.season_number}">Season ${s.season_number} - ${s.name || ""}</option>`)
     .join("");
+
   container.appendChild(seasonSelect);
-// Set the dropdown to the season currently playing
-if (extraOpts.season) {
-  seasonSelect.value = extraOpts.season;
-}
 
   // --- Create Episode Row ---
   const wrapper = document.createElement("div");
@@ -708,9 +707,13 @@ if (extraOpts.season) {
   wrapper.appendChild(rightBtn);
   container.appendChild(wrapper);
 
-  // Scroll functionality
-  leftBtn.addEventListener("click", () => episodeList.scrollBy({ left: -300, behavior: "smooth" }));
-  rightBtn.addEventListener("click", () => episodeList.scrollBy({ left: 300, behavior: "smooth" }));
+  // scroll buttons
+  leftBtn.addEventListener("click", () => {
+    episodeList.scrollBy({ left: -300, behavior: "smooth" });
+  });
+  rightBtn.addEventListener("click", () => {
+    episodeList.scrollBy({ left: 300, behavior: "smooth" });
+  });
 
   // --- Load Episodes for a Season ---
   async function loadEpisodes(seasonNumber) {
@@ -736,35 +739,33 @@ if (extraOpts.season) {
         </div>
       `;
 
- epDiv.addEventListener("click", () => {
-  const lastProgress = getHistoryProgress(tvId, "tv", seasonNumber, ep.episode_number);
+      epDiv.addEventListener("click", () => {
+        const lastProgress = getHistoryProgress(tvId, "tv", seasonNumber, ep.episode_number);
 
-  showDisclaimerThen(() => {
-    loadPlayer(tvId, "tv", tvData.name || tvData.original_name || "", {
-      ...extraOpts,
-      season: seasonNumber,
-      episode: ep.episode_number,
-      progress: lastProgress
-    });
-
-    // 🔥 Update the URL without reloading the page
-    const newUrl = `/watch/tv/${tvId}/season/${seasonNumber}/episode/${ep.episode_number}`;
-    window.history.pushState({}, "", newUrl);
-  });
-});
-
-
+        loadPlayer(tvId, "tv", media.title || media.name || "", {
+          ...extraOpts,
+          season: seasonNumber,
+          episode: ep.episode_number,
+          progress: lastProgress
+        });
+      });
 
       episodeList.appendChild(epDiv);
     });
   }
 
-  // Listen to dropdown changes
-  seasonSelect.addEventListener("change", (e) => loadEpisodes(parseInt(e.target.value)));
+  // Season dropdown change → load episodes for selected season
+  seasonSelect.addEventListener("change", (e) => {
+    const chosen = parseInt(e.target.value, 10);
+    loadEpisodes(chosen);
+  });
 
-  // Load first season by default
-  loadEpisodes(seasons[0].season_number);
+  // 🔑 Initial season: use extraOpts.season if present, otherwise first season
+  const initialSeason = extraOpts.season || seasons[0].season_number;
+  seasonSelect.value = initialSeason;
+  loadEpisodes(initialSeason);
 }
+
 
 
 
