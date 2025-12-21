@@ -756,3 +756,93 @@ iframe {
   border: 2px solid #ff2c2c;
   box-shadow: 0 0 8px #ff2c2c;
 }
+.disclaimer-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.disclaimer-box {
+  background: #120000;
+  border: 2px solid #ff2c2c;
+  border-radius: 14px;
+  padding: 28px;
+  max-width: 460px;
+  width: 92%;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(255,44,44,0.35);
+}
+
+.dontshow{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  justify-content:center;
+  margin: 14px 0 18px;
+  font-size: 14px;
+  opacity: .9;
+  cursor:pointer;
+}
+
+.disc-actions{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+
+.disc-secondary{
+  background: rgba(255,255,255,0.12);
+  color:#fff;
+  border: 1px solid rgba(255,255,255,0.18);
+  padding: 12px 18px;
+  border-radius: 30px;
+  cursor:pointer;
+}
+
+#acceptDisclaimer {
+  background: #ff2c2c;
+  border: none;
+  color: black;
+  font-weight: bold;
+  padding: 12px 18px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+#acceptDisclaimer:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(255,44,44,0.65);
+}
+
+/* Netflix-ish intro */
+.intro {
+  position: fixed;
+  inset: 0;
+  background: black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.intro.hidden { display:none; }
+
+.intro-logo {
+  font-size: 64px;
+  font-weight: 900;
+  color: #ff2c2c;
+  letter-spacing: 2px;
+  animation: introZoom 2.5s ease forwards;
+}
+
+@keyframes introZoom {
+  0% { opacity: 0; transform: scale(1.6); }
+  40% { opacity: 1; transform: scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: scale(0.9); }
+}

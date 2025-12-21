@@ -7,7 +7,11 @@
   <meta property="og:type" content="video.movie">
   <title>Watch - Cine Realm</title>
   <link rel="stylesheet" href="/style.css">
-  <link rel="icon" type="image/png" href="https://i.postimg.cc/yNK6ySqX/17b32ddf-5bb4-4d2b-999c-689ffbaeac8a.png">
+  <link rel="icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
 </head>
 <body>
 <div id="appIntro">
@@ -193,6 +197,33 @@ function switchPage(page) {
   loadFromUrl();
 </script>
 
+<div id="disclaimerModal" class="disclaimer-modal" style="display:none;">
+  <div class="disclaimer-box">
+    <h2>⚠️ Disclaimer</h2>
+    <p>
+      CineRealm does not host or control any media streams.
+      Some third-party sources may contain ads or pop-ups that are outside of our control.
+    </p>
+    <p>
+      By continuing, you acknowledge that all content is provided by external sources and
+      CineRealm is not responsible for third-party behavior.
+    </p>
+
+    <label class="dontshow">
+      <input type="checkbox" id="dontShowAgain">
+      Don’t show again
+    </label>
+
+    <div class="disc-actions">
+      <button id="acceptDisclaimer">Accept & Continue</button>
+      <button id="cancelDisclaimer" class="disc-secondary">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="appIntro" class="intro hidden">
+  <div class="intro-logo">CineRealm</div>
+</div>
 
 </body>
 </html>

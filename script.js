@@ -60,6 +60,64 @@ function showError(message) {
   setTimeout(() => errorDiv.remove(), 4000);
 }
 
+
+
+// --- Disclaimer  (show before first play) ---
+const DISCLAIMER_KEY = "cine_disclaimer_accepted";
+
+let pendingPlayAction = null;
+
+function playIntroAnimation() {
+  const intro = document.getElementById("appIntro");
+  if (!intro) return;
+  intro.classList.remove("hidden");
+  setTimeout(() => intro.classList.add("hidden"), 2600);
+}
+
+function showDisclaimerThen(runAfterAccept) {
+  // If already accepted, just run immediately
+  const accepted = localStorage.getItem(DISCLAIMER_KEY) === "true";
+  if (accepted) return runAfterAccept();
+
+  pendingPlayAction = runAfterAccept;
+
+  const modal = document.getElementById("disclaimerModal");
+  if (!modal) {
+    // Fallback: no modal on this page, just run
+    return runAfterAccept();
+  }
+
+  modal.style.display = "flex";
+
+  const acceptBtn = document.getElementById("acceptDisclaimer");
+  const cancelBtn = document.getElementById("cancelDisclaimer");
+  const dontShow = document.getElementById("dontShowAgain");
+
+  // prevent stacking handlers
+  acceptBtn.onclick = null;
+  cancelBtn.onclick = null;
+
+  acceptBtn.onclick = () => {
+    if (dontShow && dontShow.checked) {
+      localStorage.setItem(DISCLAIMER_KEY, "true");
+    }
+    modal.style.display = "none";
+    playIntroAnimation();
+
+    const fn = pendingPlayAction;
+    pendingPlayAction = null;
+    if (typeof fn === "function") fn();
+  };
+
+  cancelBtn.onclick = () => {
+    modal.style.display = "none";
+    pendingPlayAction = null;
+  };
+}
+
+
+
+
 function switchPage(page) {
   currentPage = page;
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
@@ -149,8 +207,11 @@ function createMovieCard(movie, type = "movie") {
 
 card.querySelector(".play-btn").onclick = (e) => {
   e.stopPropagation();
-  window.location.href = `/watch/${type}/${movie.id}`;  
+  showDisclaimerThen(() => {
+    window.location.href = `/watch/${type}/${movie.id}`;
+  });
 };
+
 
   card.querySelector(".watchlist-btn").onclick = (e) => {
     e.stopPropagation();
