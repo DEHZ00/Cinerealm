@@ -6,13 +6,11 @@
     { "source": "/search", "destination": "/search.html" },
     { "source": "/trending", "destination": "/trending/trending.html" },
     { "source": "/watchlist", "destination": "/watchlist.html" },
-    { "source": "/movies", "destination": "/movies/movies.html" },
-    { "source": "/.well-known/discord.html", "destination": "/.well-known/discord" }
+    { "source": "/movies", "destination": "/movies/movies.html" }
   ],
   "redirects": [
     { "source": "/trending.html", "destination": "/trending", "permanent": true },
     { "source": "/movies.html", "destination": "/movies", "permanent": true },
-    { "source": "/watch.html", "destination": "/watch/movie/0", "permanent": false },
-    { "source" : "/.well-known/discord.html", "destination" : "/.well-known/discord", "permanent": true}
+    { "source": "/watch.html", "destination": "/watch/movie/0", "permanent": false }
   ]
 }
