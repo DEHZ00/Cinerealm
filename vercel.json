@@ -11,6 +11,7 @@
   "redirects": [
     { "source": "/trending.html", "destination": "/trending", "permanent": true },
     { "source": "/movies.html", "destination": "/movies", "permanent": true },
-    { "source": "/watch.html", "destination": "/watch/movie/0", "permanent": false }
+    { "source": "/watch.html", "destination": "/watch/movie/0", "permanent": false },
+    { "source" : "/discord.html", "destination" : "/discord", "permanent": true}
   ]
 }
