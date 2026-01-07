@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Games – CineRealm</title>
+  <meta name="description" content="Play on CineRealm." />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1><a href="/" style="color:#ff2c2c;text-decoration:none;">🎬 CineRealm</a></h1>
+  </div>
+
+  <input type="text" id="gamesSearch" placeholder="Search games..." autocomplete="off">
+
+  <nav class="nav-links">
+    <a href="/" class="nav-btn">Home</a>
+    <a href="/movies" class="nav-btn">Movies</a>
+    <a href="/trending" class="nav-btn">Trending</a>
+    <a href="/watchlist" class="nav-btn">Watchlist</a>
+    <a href="/games" class="nav-btn active">Games</a>
+    <a href="/legal" class="nav-btn">Legal</a>
+  </nav>
+</header>
+
+<main>
+  <section>
+    <h2>Games</h2>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+      <select id="gamesSort" class="season-select" style="max-width:240px;">
+        <option value="az">Sort: A → Z</option>
+        <option value="za">Sort: Z → A</option>
+      </select>
+
+      <span id="gamesCount" class="placeholder" style="padding:0;margin:0;"></span>
+    </div>
+
+    <div id="gamesGrid" class="games-grid"></div>
+    <p id="gamesStatus" class="placeholder">Loading games…</p>
+  </section>
+</main>
+
+<!-- Game Modal -->
+<div id="gameModal" class="modal" style="display:none;">
+  <div class="modal-content" style="max-width:1100px;width:96%;height:82vh;display:flex;flex-direction:column;">
+    <span class="close-btn" id="closeGameModal">&times;</span>
+
+    <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <h2 id="gameTitle" style="margin:0;color:#ff2c2c;font-size:20px;"></h2>
+      <a id="openNewTab" class="nav-btn" href="#" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
+        Open in new tab
+      </a>
+    </div>
+
+    <div style="flex:1;overflow:hidden;border-radius:10px;background:#000;">
+      <iframe id="gameFrame"
+        src=""
+        style="width:100%;height:100%;border:none;display:block;"
+        allow="fullscreen; autoplay; clipboard-read; clipboard-write"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allowfullscreen>
+      </iframe>
+    </div>
+  </div>
+</div>
+
+<script src="/games.js"></script>
+</body>
+</html>

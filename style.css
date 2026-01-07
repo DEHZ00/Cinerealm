@@ -919,3 +919,11 @@ iframe {
   text-overflow: ellipsis;
   overflow: hidden;
 }
+.games-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.games-grid .movie-card {
+  flex: 0 0 auto;
+}
