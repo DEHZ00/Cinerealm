@@ -317,7 +317,8 @@ const PROVIDERS = [
   { name: "PulseView", key: "vidfast",   supports: { movie: true, tv: true, anime: false } },
   { name: "King",      key: "vidking",   supports: { movie: true, tv: true, anime: false } },
   { name: "Ez",        key: "videasy",   supports: { movie: true, tv: true, anime: true } },
-  { name: "Seenima", key: "vidora",   supports: { movie: true, tv: true, anime: false } }
+  { name: "Seenima",   key: "vidora",   supports: { movie: true, tv: true, anime: false } },
+  { name: "Saturn",    key: "VidSrc",    supports: { movie: true, tv: true, anime: false} }
 ];
 
 
@@ -335,6 +336,7 @@ function buildProviderUrl(providerKey, media, opts = {}) {
   const t = media.type;
   const id = media.tmdbId || media.id || (media.anilistId && t === "anime" ? media.anilistId : "");
   if (!id) return "";
+  
 
 
   if (providerKey === "spenEmbed") {
@@ -436,6 +438,7 @@ function buildProviderUrl(providerKey, media, opts = {}) {
       if (opts.dub !== undefined) params.dub = opts.dub ? "true" : "false";
       return base + buildQuery(params);
     }
+    
     if (t === "tv") {
       const base = `https://player.videasy.net/tv/${id}/${media.season || 1}/${media.episode || 1}`;
       const params = {};
@@ -478,10 +481,37 @@ function buildProviderUrl(providerKey, media, opts = {}) {
     return base + buildQuery(params);
   }
 
-  // fallback
-  return "";
-}
+  // NEW PROVIDER, VIDSRC
+ if (providerKey === "VidSrc") {
+  let base = "";
 
+  // USE v3
+  if (t === "movie") {
+    base = `https://vidsrc.cc/v3/embed/movie/${id}`;
+  }
+
+  if (t === "tv") {
+    base = `https://vidsrc.cc/v3/embed/tv/${id}/${media.season || 1}/${media.episode || 1}`;
+  }
+
+  const params = {};
+
+  if (opts.autoPlay !== undefined) {
+    params.autoPlay = opts.autoPlay ? "true" : "false";
+  }
+
+  if (opts.poster !== undefined) {
+    params.poster = opts.poster ? "true" : "false";
+  }
+
+  // RESUME SUPPORT 4 VIDSRC
+  if (Number.isFinite(opts.startAt) && opts.startAt > 0) {
+    params.startAt = Math.floor(opts.startAt);
+  }
+
+  return base + buildQuery(params);
+}
+}
 // Iframe lifecycle
 let currentIframe = null;
 function unloadIframe() {
