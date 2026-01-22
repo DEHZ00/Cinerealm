@@ -312,13 +312,14 @@ let DEFAULT_SOURCE = "FluxLine";
 
 // Provider
 const PROVIDERS = [
-  { name: "NovaReel",  key: "spenEmbed", supports: { movie: true, tv: true, anime: true } },
-  { name: "FluxLine",  key: "vidplus",   supports: { movie: true, tv: true, anime: true } }, // default
+  { name: "NovaReel",  key: "spenEmbed", supports: { movie: true, tv: true, anime: true }  },
+  { name: "FluxLine",  key: "vidplus",   supports: { movie: true, tv: true, anime: true }  }, // default
   { name: "PulseView", key: "vidfast",   supports: { movie: true, tv: true, anime: false } },
   { name: "King",      key: "vidking",   supports: { movie: true, tv: true, anime: false } },
-  { name: "Ez",        key: "videasy",   supports: { movie: true, tv: true, anime: true } },
-  { name: "Seenima",   key: "vidora",   supports: { movie: true, tv: true, anime: false } },
-  { name: "Saturn",    key: "VidSrc",    supports: { movie: true, tv: true, anime: false} }
+  { name: "Ez",        key: "videasy",   supports: { movie: true, tv: true, anime: true }  },
+  { name: "Seenima",   key: "vidora",   supports: { movie: true, tv: true, anime: false }  },
+  { name: "Saturn",    key: "VidSrc",   supports: { movie: true, tv: true, anime: false}   },
+  { name: "Mars" ,     key: "vidlink",  supports: { movie: true, tv: true, anime: false}   }
 ];
 
 
@@ -477,6 +478,26 @@ function buildProviderUrl(providerKey, media, opts = {}) {
     if (opts.logo) params.logo = opts.logo;
     if (opts.pausescreen !== undefined) params.pausescreen = opts.pausescreen ? "true" : "false";
     if (opts.idlecheck !== undefined) params.idlecheck = opts.idlecheck;
+
+    return base + buildQuery(params);
+  }
+
+
+   if (providerKey === "vidlink") {
+   
+
+    let base = "";
+    if (t === "movie") base = `https://vidlink.pro/movie/${id}`;
+    if (t === "tv") base = `https://vidlink.pro/tv/${id}/${media.season || 1}/${media.episode || 1}`;
+
+    const params = {};
+    
+    if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? "true" : "false";
+    if (opts.colour || opts.color) params.colour = (opts.colour || opts.color).replace("#", "");
+    if (opts.autonextepisode !== undefined) params.autonextepisode = opts.autonextepisode ? "true" : "false";
+    if (opts.backbutton) params.backbutton = opts.backbutton;
+    if (opts.logo) params.logo = opts.logo;
+
 
     return base + buildQuery(params);
   }
