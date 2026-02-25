@@ -228,7 +228,8 @@ card.querySelector(".play-btn").onclick = (e) => {
 
   // Determine if an Anime based on TMDB
   const isAnimation = movie.genre_ids?.includes(16);
-const isAnime = type === "tv" && isAnimation;
+  const isJapanese = movie.origin_country?.includes("JP");
+  const isAnime = type === "tv" && isAnimation && isJapanese;
   
   const effectiveType = isAnime ? "anime" : type;
 
@@ -477,10 +478,12 @@ function buildProviderUrl(providerKey, media, opts = {}) {
       if (opts.dub !== undefined) params.dub = opts.dub ? "true" : "false";
       return base + buildQuery(params);
     }
-  if (t === "anime") {
-  if (!media.anilistId) return "";
-
-  const base = `https://player.videasy.net/anime/${media.anilistId}/${media.episode || 1}`;
+    if (t === "anime") {
+      // Shows need episode
+      const isMovie = !media.episode; 
+      const base = isMovie 
+        ? `https://player.videasy.net/anime/${media.anilistId || id}`
+        : `https://player.videasy.net/anime/${media.anilistId || id}/${media.episode || 1}`;
         
       const params = {};
       if (opts.dub !== undefined) params.dub = opts.dub ? "true" : "false"; //
@@ -518,18 +521,20 @@ function buildProviderUrl(providerKey, media, opts = {}) {
     if (t === "movie") base = `https://vidlink.pro/movie/${id}`;
     if (t === "tv") base = `https://vidlink.pro/tv/${id}/${media.season || 1}/${media.episode || 1}`;
 if (t === "anime") {
-  const subOrDub = opts.dub ? "dub" : "sub";
-  if (!media.malId) return "";
-
-  const base = `https://vidlink.pro/anime/${media.malId}/${media.episode || 1}/${subOrDub}`;
-  const params = { fallback: "true" };
-
-  if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? "true" : "false";
-  if (opts.startAt !== undefined && opts.startAt > 0) params.startAt = Math.floor(opts.startAt);
-
-  return base + buildQuery(params);
-}
-
+      const subOrDub = opts.dub ? "dub" : "sub"; //
+     
+      const malId = media.malId || media.anilistId || id; 
+      
+      base = `https://vidlink.pro/anime/${malId}/${media.episode || 1}/${subOrDub}`;
+      const params = { fallback: "true" }; // Forces fallback if dub/sub isn't found
+      
+      if (opts.color) params.primaryColor = opts.color.replace("#", ""); //
+      if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? "true" : "false";
+      if (opts.nextButton !== undefined) params.nextbutton = opts.nextButton ? "true" : "false";
+      if (opts.startAt !== undefined && opts.startAt > 0) params.startAt = Math.floor(opts.startAt); //
+      
+      return base + buildQuery(params);
+    }
   }
 
   // NEW PROVIDER, VIDSRC
@@ -542,14 +547,18 @@ if (providerKey === "VidSrc") {
     } else if (t === "tv") {
       base = `https://vidsrc.cc/v3/embed/tv/${id}/${media.season || 1}/${media.episode || 1}`;
     } else if (t === "anime") {
-  const subOrDub = opts.dub ? "dub" : "sub";
-  if (!media.anilistId) return "";
+      const subOrDub = opts.dub ? "dub" : "sub";
+      let idString = "";
+      
+      // VidSrc v2 for Anime requires specific prefixes
+      if (media.anilistId) idString = `ani${media.anilistId}`;
+      else if (media.tmdbId) idString = `tmdb${media.tmdbId}`;
+      else idString = id;
 
-  base = `https://vidsrc.cc/v2/embed/anime/ani${media.anilistId}/${media.episode || 1}/${subOrDub}`;
+      base = `https://vidsrc.cc/v2/embed/anime/${idString}/${media.episode || 1}/${subOrDub}`;
+      if (opts.autoSkipIntro !== undefined) params.autoSkipIntro = opts.autoSkipIntro ? "true" : "false";
+    }
 
-  if (opts.autoSkipIntro !== undefined)
-    params.autoSkipIntro = opts.autoSkipIntro ? "true" : "false";
-}
     if (opts.autoplay !== undefined) params.autoPlay = opts.autoplay ? "true" : "false";
     
     if (Number.isFinite(opts.startAt) && opts.startAt > 0) {
@@ -565,6 +574,12 @@ if (providerKey === "VidSrc") {
 
 
 
+  // RESUME SUPPORT 4 VIDSRC
+  if (Number.isFinite(opts.startAt) && opts.startAt > 0) {
+    params.startAt = Math.floor(opts.startAt);
+  }
+
+ 
 
 
 // Iframe lifecycle
@@ -682,35 +697,28 @@ async function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
   // anime, fetch the MAL ID for VidLink compatibility
   let malId = extraOpts.malId;
  if (type === "anime" && !anilistId) {
-  showLoading(true);
-  const ids = await getAnimeIdsFromTmdb(id);
-  if (ids) {
-    anilistId = ids.anilistId || null;
-    malId = ids.malId || null;
+    showLoading(true);
+    const ids = await getAnimeIdsFromTmdb(id);
+    if (ids) {
+      anilistId = ids.anilistId;
+      malId = ids.malId;
+    }
+    showLoading(false);
   }
-  showLoading(false);
-
-  // Fallbacks
-if (!anilistId) {
-  console.warn("No AniList ID found. Anime providers may fail.");
-}
-if (!malId && anilistId) {
-  malId = await getMalIdFromAnilist(anilistId);
-}
-}
 
   // anilist but no MAL (needed for VidLink/Mars)
   if (type === "anime" && anilistId && !malId) {
     malId = await getMalIdFromAnilist(anilistId);
   }
   const media = {
-  type,
-  tmdbId: id,
-  season: type === "anime" ? 1 : extraOpts.season,
-  episode: extraOpts.episode || 1,
-  anilistId: anilistId,
-  malId: malId
-};
+    type,
+    tmdbId: id,
+    season: extraOpts.season,
+    episode: extraOpts.episode,
+    anilistId: anilistId,
+    malId: malId // Passed down to buildProviderUrl
+  };
+
   const lastProgress = getHistoryProgress(id, type, extraOpts.season, extraOpts.episode);
 
   const animeControls = type === "anime" ? `
@@ -942,7 +950,7 @@ function getHistoryProgress(tmdbId, type, season, episode) {
 
   const match = historyData.find((item) => {
     if (item.type !== type || item.tmdbId !== tmdbId) return false;
-    if (type === "tv" || type === "anime") {
+    if (type === "tv") {
       return item.season === season && item.episode === episode;
     }
     return true;
@@ -1230,7 +1238,7 @@ window.addEventListener("message", function (event) {
     let entry = historyData.find((m) => {
       if (m.type !== mediaType) return false;
       if (m.tmdbId !== tmdbId) return false;
-      if (mediaType === "tv" || mediaType === "anime") {
+      if (mediaType === "tv") {
         return m.season === season && m.episode === episode;
       }
       return true; // movie
@@ -1245,7 +1253,7 @@ window.addEventListener("message", function (event) {
         addedAt: Date.now(),
       };
 
-      if (mediaType === "tv" || mediaType === "anime") {
+      if (mediaType === "tv") {
         entry.season = season;
         entry.episode = episode;
       }

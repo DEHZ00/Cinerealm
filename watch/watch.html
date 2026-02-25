@@ -166,36 +166,39 @@ function switchPage(page) {
     }
 
     const { type, id, season, episode } = parsed;
-const tmdbType = (type === "anime") ? "tv" : type;
+
     // Auto-redirect TV short route -> S1E1
-   if ((type === "tv" || type === "anime") && (!season || !episode)) {
-    const target = `/watch/${type}/${id}/season/1/episode/1`;
-    go(target, { replace: true });
-    return loadFromUrl({ replace: true });
-  }
+    if (type === "tv" && (!season || !episode)) {
+      const target = `/watch/tv/${id}/season/1/episode/1`;
+      go(target, { replace: true });
+      return loadFromUrl({ replace: true });
+    }
 
     // init saved data
     loadHistory();
     loadWatchlist();
 
     // fetch details (your apiCall already exists in script.js)
-   const data = await apiCall(`/${tmdbType}/${id}`);
-  const title = data?.title || data?.name || "";
-  const overview = data?.overview || "";
-  const img = data?.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : "";
+    const data = await apiCall(`/${type}/${id}`);
+    const title = data?.title || data?.name || "";
+    const overview = data?.overview || "";
+    const img = data?.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : "";
 
     setSeo({ title, overview, image: img, type });
 
     // Load your existing player
     // If your loadPlayer supports tv season/episode, pass them (safe even if ignored)
     // Show disclaimer before starting playback
-  showDisclaimerThen(() => {
-    loadPlayer(id, type, title, {
-      season: season || 1,
-      episode: episode || 1
+    showDisclaimerThen(() => {
+      loadPlayer(id, type, title, {
+        season: season || 1,
+        episode: episode || 1
+      });
     });
-  });
-}
+
+
+  }
+
   // Back/forward button support
   window.addEventListener("popstate", () => {
     loadFromUrl({ replace: true });
