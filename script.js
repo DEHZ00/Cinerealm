@@ -574,12 +574,6 @@ if (providerKey === "VidSrc") {
 
 
 
-  // RESUME SUPPORT 4 VIDSRC
-  if (Number.isFinite(opts.startAt) && opts.startAt > 0) {
-    params.startAt = Math.floor(opts.startAt);
-  }
-
- 
 
 
 // Iframe lifecycle
