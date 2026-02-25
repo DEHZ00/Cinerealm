@@ -226,10 +226,16 @@ if (type === "tv" && historyData && historyData.length) {
 card.querySelector(".play-btn").onclick = (e) => {
   e.stopPropagation();
 
-  if (type === "tv") {
-    // Find last watched episode for this show
+  // Determine if an Anime based on TMDB
+  const isAnimation = movie.genre_ids?.includes(16);
+  const isJapanese = movie.origin_country?.includes("JP");
+  const isAnime = type === "tv" && isAnimation && isJapanese;
+  
+  const effectiveType = isAnime ? "anime" : type;
+
+  if (effectiveType === "tv" || effectiveType === "anime") {
     const tvEntries = (historyData || [])
-      .filter(h => h.type === "tv" && h.tmdbId === movie.id && h.season && h.episode)
+      .filter(h => h.tmdbId === movie.id && h.season && h.episode)
       .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
 
     let season = 1;
@@ -240,9 +246,9 @@ card.querySelector(".play-btn").onclick = (e) => {
       episode = tvEntries[0].episode;
     }
 
-    window.location.href = `/watch/tv/${movie.id}/season/${season}/episode/${episode}`;
+    // Redirect with type=anime if detected
+    window.location.href = `/watch/${effectiveType}/${movie.id}/season/${season}/episode/${episode}`;
   } else {
-    // Movies: simple
     window.location.href = `/watch/movie/${movie.id}`;
   }
 };
@@ -264,6 +270,26 @@ card.querySelector(".play-btn").onclick = (e) => {
   return card;
 }
 
+async function getAnimeIdsFromTmdb(tmdbId) {
+  try {
+  
+  
+    const res = await fetch(`${BACKEND_URL}/api/tmdb/tv/${tmdbId}/external_ids`);
+    const external = await res.json();
+    
+  
+    const mappingRes = await fetch(`https://api.consumet.org/meta/anilist/info/${tmdbId}?provider=tmdb`);
+    const data = await mappingRes.json();
+    
+    return {
+      anilistId: data.id,
+      malId: data.malId
+    };
+  } catch (e) {
+    console.error("Mapping error:", e);
+    return null;
+  }
+}
 // ---- Show Movie Details in Modal ----
 async function showMovieDetails(movie, type) {
   const data = await apiCall(`/${type}/${movie.id}`);
@@ -313,13 +339,13 @@ let DEFAULT_SOURCE = "FluxLine";
 // Provider
 const PROVIDERS = [
   { name: "NovaReel",  key: "spenEmbed", supports: { movie: true, tv: true, anime: true }  },
-  { name: "FluxLine",  key: "vidplus",   supports: { movie: true, tv: true, anime: true }  }, // default
+  { name: "FluxLine",  key: "vidplus",   supports: { movie: true, tv: true, anime: true }  }, 
   { name: "PulseView", key: "vidfast",   supports: { movie: true, tv: true, anime: false } },
   { name: "King",      key: "vidking",   supports: { movie: true, tv: true, anime: false } },
-  { name: "Ez",        key: "videasy",   supports: { movie: true, tv: true, anime: true }  },
-  { name: "Seenima",   key: "vidora",   supports: { movie: true, tv: true, anime: false }  },
-  { name: "Saturn",    key: "VidSrc",   supports: { movie: true, tv: true, anime: false}   },
-  { name: "Mars" ,     key: "vidlink",  supports: { movie: true, tv: true, anime: false}   }
+  { name: "Ez",        key: "videasy",   supports: { movie: true, tv: true, anime: true }  }, // Updated
+  { name: "Seenima",   key: "vidora",    supports: { movie: true, tv: true, anime: false } },
+  { name: "Saturn",    key: "VidSrc",    supports: { movie: true, tv: true, anime: true }  }, // Updated
+  { name: "Mars" ,     key: "vidlink",   supports: { movie: true, tv: true, anime: true }  }  // Updated
 ];
 
 
@@ -453,9 +479,14 @@ function buildProviderUrl(providerKey, media, opts = {}) {
       return base + buildQuery(params);
     }
     if (t === "anime") {
-      const base = `https://player.videasy.net/anime/${media.anilistId || id}/${media.episode || 1}`;
+      // Shows need episode
+      const isMovie = !media.episode; 
+      const base = isMovie 
+        ? `https://player.videasy.net/anime/${media.anilistId || id}`
+        : `https://player.videasy.net/anime/${media.anilistId || id}/${media.episode || 1}`;
+        
       const params = {};
-      if (opts.dub !== undefined) params.dub = opts.dub ? "true" : "false";
+      if (opts.dub !== undefined) params.dub = opts.dub ? "true" : "false"; //
       if (opts.color) params.color = opts.color.replace("#", "");
       return base + buildQuery(params);
     }
@@ -489,50 +520,68 @@ function buildProviderUrl(providerKey, media, opts = {}) {
     let base = "";
     if (t === "movie") base = `https://vidlink.pro/movie/${id}`;
     if (t === "tv") base = `https://vidlink.pro/tv/${id}/${media.season || 1}/${media.episode || 1}`;
+if (t === "anime") {
+      const subOrDub = opts.dub ? "dub" : "sub"; //
+     
+      const malId = media.malId || media.anilistId || id; 
+      
+      base = `https://vidlink.pro/anime/${malId}/${media.episode || 1}/${subOrDub}`;
+      const params = { fallback: "true" }; // Forces fallback if dub/sub isn't found
+      
+      if (opts.color) params.primaryColor = opts.color.replace("#", ""); //
+      if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? "true" : "false";
+      if (opts.nextButton !== undefined) params.nextbutton = opts.nextButton ? "true" : "false";
+      if (opts.startAt !== undefined && opts.startAt > 0) params.startAt = Math.floor(opts.startAt); //
+      
+      return base + buildQuery(params);
+    }
+  }
 
+  // NEW PROVIDER, VIDSRC
+if (providerKey === "VidSrc") {
+    let base = "";
     const params = {};
-    
-    if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? "true" : "false";
-    if (opts.colour || opts.color) params.colour = (opts.colour || opts.color).replace("#", "");
-    if (opts.autonextepisode !== undefined) params.autonextepisode = opts.autonextepisode ? "true" : "false";
-    if (opts.backbutton) params.backbutton = opts.backbutton;
-    if (opts.logo) params.logo = opts.logo;
 
+    if (t === "movie") {
+      base = `https://vidsrc.cc/v3/embed/movie/${id}`;
+    } else if (t === "tv") {
+      base = `https://vidsrc.cc/v3/embed/tv/${id}/${media.season || 1}/${media.episode || 1}`;
+    } else if (t === "anime") {
+      const subOrDub = opts.dub ? "dub" : "sub";
+      let idString = "";
+      
+      // VidSrc v2 for Anime requires specific prefixes
+      if (media.anilistId) idString = `ani${media.anilistId}`;
+      else if (media.tmdbId) idString = `tmdb${media.tmdbId}`;
+      else idString = id;
+
+      base = `https://vidsrc.cc/v2/embed/anime/${idString}/${media.episode || 1}/${subOrDub}`;
+      if (opts.autoSkipIntro !== undefined) params.autoSkipIntro = opts.autoSkipIntro ? "true" : "false";
+    }
+
+    if (opts.autoplay !== undefined) params.autoPlay = opts.autoplay ? "true" : "false";
+    
+    if (Number.isFinite(opts.startAt) && opts.startAt > 0) {
+      params.startAt = Math.floor(opts.startAt);
+    }
 
     return base + buildQuery(params);
   }
 
-  // NEW PROVIDER, VIDSRC
- if (providerKey === "VidSrc") {
-  let base = "";
+  
+  return ""; 
+}
 
-  // USE v3
-  if (t === "movie") {
-    base = `https://vidsrc.cc/v3/embed/movie/${id}`;
-  }
 
-  if (t === "tv") {
-    base = `https://vidsrc.cc/v3/embed/tv/${id}/${media.season || 1}/${media.episode || 1}`;
-  }
-
-  const params = {};
-
-  if (opts.autoPlay !== undefined) {
-    params.autoPlay = opts.autoPlay ? "true" : "false";
-  }
-
-  if (opts.poster !== undefined) {
-    params.poster = opts.poster ? "true" : "false";
-  }
 
   // RESUME SUPPORT 4 VIDSRC
   if (Number.isFinite(opts.startAt) && opts.startAt > 0) {
     params.startAt = Math.floor(opts.startAt);
   }
 
-  return base + buildQuery(params);
-}
-}
+ 
+
+
 // Iframe lifecycle
 let currentIframe = null;
 function unloadIframe() {
@@ -615,20 +664,76 @@ function renderSourcePills(media, defaultName, opts) {
   return bar;
 }
 
+// ---- ID Mapping Helper ----
+async function getMalIdFromAnilist(anilistId) {
+  if (!anilistId) return null;
+  try {
+    const query = `
+      query ($id: Int) {
+        Media (id: $id, type: ANIME) {
+          idMal
+        }
+      }
+    `;
+    const response = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json' 
+      },
+      body: JSON.stringify({ query, variables: { id: parseInt(anilistId) } })
+    });
+    
+    const data = await response.json();
+    return data?.data?.Media?.idMal || null;
+  } catch (e) {
+    console.error("Failed to fetch MAL ID:", e);
+    return null;
+  }
+}
+// Unified loadPlayer  call from cards
+async function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
+  let anilistId = extraOpts.anilistId;
+  // anime, fetch the MAL ID for VidLink compatibility
+  let malId = extraOpts.malId;
+ if (type === "anime" && !anilistId) {
+    showLoading(true);
+    const ids = await getAnimeIdsFromTmdb(id);
+    if (ids) {
+      anilistId = ids.anilistId;
+      malId = ids.malId;
+    }
+    showLoading(false);
+  }
 
-// Unified loadPlayer you call from cards
-function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
+  // anilist but no MAL (needed for VidLink/Mars)
+  if (type === "anime" && anilistId && !malId) {
+    malId = await getMalIdFromAnilist(anilistId);
+  }
   const media = {
     type,
     tmdbId: id,
     season: extraOpts.season,
     episode: extraOpts.episode,
-    anilistId: extraOpts.anilistId
+    anilistId: anilistId,
+    malId: malId // Passed down to buildProviderUrl
   };
 
   const lastProgress = getHistoryProgress(id, type, extraOpts.season, extraOpts.episode);
 
-
+  const animeControls = type === "anime" ? `
+    <div class="anime-options" style="margin-bottom: 10px; display: flex; gap: 10px; align-items: center;">
+      <label style="color: white; cursor: pointer;">
+        <input type="checkbox" id="dubToggle" ${extraOpts.dub ? "checked" : ""}>
+        Watch Dubbed
+      </label>
+      <label style="color: white; cursor: pointer;">
+        <input type="checkbox" id="skipIntroToggle" ${extraOpts.autoSkipIntro ? "checked" : ""}>
+        Auto Skip Intro
+      </label>
+    </div>
+  ` : "";
+  
   // render player wrapper
   playerDiv.innerHTML = `
     <div class="player-wrapper">
@@ -636,6 +741,7 @@ function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
         <h3>${title || ""}</h3>
         <span class="player-type">${type === "tv" ? "TV Show" : (type === "anime" ? "Anime" : "Movie")}</span>
       </div>
+      ${animeControls}
       <div id="player-season-dropdown"></div>
       <div id="player-tabs-placeholder"></div>
       <div id="player-iframe-placeholder" class="iframe-placeholder"></div>
@@ -655,7 +761,6 @@ function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
     color: extraOpts.color || "#ffffff",
     colour: extraOpts.color || "#ffffff",
     autonextepisode: extraOpts.autoplayNextEpisode ?? true,
-
     theme: extraOpts.theme || "#ffffff",
     autoplay: extraOpts.autoplay ?? true,
     autoNext: extraOpts.autoNext ?? true,
@@ -663,7 +768,6 @@ function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
     nextButton: extraOpts.nextButton ?? true,
     episodeSelector: extraOpts.episodeSelector ?? true,
     overlay: extraOpts.overlay ?? true,
-    dub: extraOpts.dub ?? true,
     poster: extraOpts.poster ?? true,
     title: extraOpts.title ?? true,
     icons: extraOpts.icons ?? "true",
@@ -671,13 +775,14 @@ function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
     chromecast: extraOpts.chromecast ?? true,
     hideServerControls: extraOpts.hideServerControls ?? false,
     fullscreenButton: extraOpts.fullscreenButton ?? true,
-    progress: extraOpts.progress ?? 0,
     startAt: extraOpts.startAt ?? 0,
     server: extraOpts.server ?? undefined,
     fontcolor: extraOpts.fontcolor ?? undefined,
     fontsize: extraOpts.fontsize ?? undefined,
-    progress: lastProgress ?? 0,
-    opacity: extraOpts.opacity ?? undefined
+    opacity: extraOpts.opacity ?? undefined,
+    dub: extraOpts.dub ?? false, // Default to sub
+    autoSkipIntro: extraOpts.autoSkipIntro ?? false,
+    progress: lastProgress ?? 0
   };
 
   // Render provider pills
@@ -689,9 +794,29 @@ function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
 
   currentlyPlaying = { id, type, title, media, opts };
   setTimeout(() => playerDiv.scrollIntoView({ behavior: "smooth" }), 80);
+
+  // FIX: Properly scoped Event Listeners for Anime Toggles
+  if (type === "anime") {
+    const dubToggle = document.getElementById("dubToggle");
+    const skipToggle = document.getElementById("skipIntroToggle");
+
+    if (dubToggle) {
+      dubToggle.addEventListener("change", (e) => {
+        opts.dub = e.target.checked;
+        const currentActive = tabs.querySelector(".source-tab.active");
+        if (currentActive) currentActive.click(); // Reload active source
+      });
+    }
+    
+    if (skipToggle) {
+      skipToggle.addEventListener("change", (e) => {
+        opts.autoSkipIntro = e.target.checked;
+        const currentActive = tabs.querySelector(".source-tab.active");
+        if (currentActive) currentActive.click(); 
+      });
+    }
+  }
 }
-
-
 // ---- Fetch Movies or TV ----
 async function fetchMovies(endpoint, containerId, type = "movie") {
   const container = document.getElementById(containerId);
