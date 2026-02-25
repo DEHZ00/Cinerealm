@@ -1,26 +1,19 @@
 {
   "rewrites": [
     {
-      "source": "/watch/:type/:id",
-      "destination": "/watch.html"
+      "source": "/watch/:path*",
+      "destination": "/watch/watch.html"
     },
-    {
-      "source": "/watch/:type/:id/season/:s/episode/:e",
-      "destination": "/watch.html"
-    },
- { "source": "/legal", "destination": "/legal.html" },
+    { "source": "/legal", "destination": "/legal.html" },
     { "source": "/search", "destination": "/search.html" },
     { "source": "/trending", "destination": "/trending/trending.html" },
     { "source": "/watchlist", "destination": "/watchlist.html" },
     { "source": "/movies", "destination": "/movies/movies.html" },
     { "source": "/games", "destination": "/games.html" }
-
   ],
   "redirects": [
     { "source": "/trending.html", "destination": "/trending", "permanent": true },
     { "source": "/movies.html", "destination": "/movies", "permanent": true },
-    { "source": "/watch.html", "destination": "/watch/movie/0", "permanent": false },
     { "source": "/games.html", "destination": "/games", "permanent": true }
-
   ]
 }
