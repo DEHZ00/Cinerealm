@@ -2,6 +2,6 @@
   "active": true,
   "type": "warning",
   "title": "Source Issue",
-  "message": "The Jupiter source is currently having issues. The issue is not on our end, the source may not load."
-    "updated": "March 11, 2026 10:40 AM PST."
+  "message": "The Jupiter source is currently having issues. The issue is not on our end nor able to be fixed on our end, the source may not load.",
+  "updated": "March 11, 2026 11:15 AM PST."
 }
