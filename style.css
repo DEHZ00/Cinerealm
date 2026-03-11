@@ -996,9 +996,25 @@ iframe {
 }
 
 /* CSS for the new SIMPLE notification system. */
+.notification-banner {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffb020;
+  padding: 12px 18px;
+  border-radius: 10px;
+  z-index: 9999;
+}
+
+.notification-content {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .notification-time {
   display: block;
   font-size: 12px;
   opacity: 0.7;
-  margin-top: 3px;
 }
