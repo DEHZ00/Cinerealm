@@ -23,7 +23,7 @@
 <div id="appIntro" class="intro hidden">
   <div class="intro-logo">CineRealm</div>
 </div>
-
+<div id ="site-notification"></div>
 
 <header>
   <div class="header-left">
@@ -119,6 +119,35 @@
   window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
 </script>
 <script defer src="/_vercel/speed-insights/script.js"></script>
+<!-- Notifications for any issues that may come.-->
+  
+<script>
+async function loadNotification() {
+  try {
+    const res = await fetch("/notification.json?cache=" + Date.now());
+    const data = await res.json();
 
+    if (!data.active) return;
+
+    const container = document.getElementById("site-notification");
+
+    container.innerHTML = `
+      <div class="notification-banner ${data.type}">
+        <div class="notification-content">
+          <strong>${data.title}</strong>
+          <span>${data.message}</span>
+${data.updated ? `<small class="notification-time">Updated: ${data.updated}</small>` : ""}
+          <button onclick="this.parentElement.parentElement.remove()">✕</button>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    console.error("Notification load failed", err);
+  }
+}
+
+loadNotification();
+setInterval(loadNotification, 30000);
+</script>
 </body>
 </html>
