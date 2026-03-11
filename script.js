@@ -319,7 +319,8 @@ const PROVIDERS = [
   { name: "Ez",        key: "videasy",   supports: { movie: true, tv: true, anime: true }  },
   { name: "Seenima",   key: "vidora",   supports: { movie: true, tv: true, anime: false }  },
   { name: "Saturn",    key: "VidSrc",   supports: { movie: true, tv: true, anime: false}   },
-  { name: "Mars" ,     key: "vidlink",  supports: { movie: true, tv: true, anime: false}   }
+  { name: "Mars" ,     key: "vidlink",  supports: { movie: true, tv: true, anime: false}   },
+  { name: "Jupiter" ,     key: "VidZen",  supports: { movie: true, tv: true, anime: true} }
 ];
 
 
@@ -498,6 +499,20 @@ function buildProviderUrl(providerKey, media, opts = {}) {
     if (opts.backbutton) params.backbutton = opts.backbutton;
     if (opts.logo) params.logo = opts.logo;
 
+
+    return base + buildQuery(params);
+  }
+ if (providerKey === "VidZen") {
+   
+
+    let base = "";
+    if (t === "movie") base = `https://vidzen.fun/movie/${id}`;
+    if (t === "tv") base = `https://vidzen.fun/tv/${id}/${media.season || 1}/${media.episode || 1}`;
+
+    const params = {};
+    
+    if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? "true" : "false";
+    if (opts.server) params.server = opts.server;
 
     return base + buildQuery(params);
   }
