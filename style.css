@@ -994,3 +994,11 @@ iframe {
 .source-tab:hover {
   color: white;
 }
+
+/* CSS for the new SIMPLE notification system. */
+.notification-time {
+  display: block;
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 3px;
+}
