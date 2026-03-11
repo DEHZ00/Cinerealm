@@ -1,0 +1,6 @@
+{
+  "active": true,
+  "type": "warning",
+  "title": "Source Issue",
+  "message": "The Jupiter source API is currently having issues. The source may not load."
+}
