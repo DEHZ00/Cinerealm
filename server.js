@@ -83,23 +83,24 @@ app.use(express.static(path.join(__dirname, "public"), {
 // Maps clean URLs → HTML files in /public
 const routes = {
   "/":          "index.html",
-  "/movies":    "movies.html",
-  "/trending":  "trending.html",
+  "/movies":    "movies/movies.html",
+  "/trending":  "trending/trending.html",
   "/watchlist": "watchlist.html",
   "/search":    "search.html",
   "/legal":     "legal.html",
   "/games":     "games.html",
+  "/genres":    "genres.html",
 };
 
 // Dynamic watch routes: /watch/movie/:id  /watch/tv/:id/season/:s/episode/:e
 app.get("/watch/:type/:id", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "watch.html"), err => {
-    if (err) res.status(404).sendFile(path.join(__dirname, "public", "404.html"));
+  res.sendFile(path.join(__dirname, "public", "watch", "watch.html"), err => {
+    if (err) res.status(404).send("Not Found");
   });
 });
 app.get("/watch/:type/:id/season/:season/episode/:episode", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "watch.html"), err => {
-    if (err) res.status(404).sendFile(path.join(__dirname, "public", "404.html"));
+  res.sendFile(path.join(__dirname, "public", "watch", "watch.html"), err => {
+    if (err) res.status(404).send("Not Found");
   });
 });
 
@@ -108,16 +109,14 @@ Object.entries(routes).forEach(([route, file]) => {
   app.get(route, (req, res) => {
     const filePath = path.join(__dirname, "public", file);
     res.sendFile(filePath, err => {
-      if (err) res.status(404).sendFile(path.join(__dirname, "public", "404.html"));
+      if (err) res.status(404).send("Not Found");
     });
   });
 });
 
 // ── 404 Fallback ──────────────────────────────────────────────────────────
 app.use((req, res) => {
-  res.status(404).sendFile(path.join(__dirname, "public", "404.html"), err => {
-    if (err) res.status(404).send("404 - Not Found");
-  });
+  res.status(404).send("404 - Not Found");
 });
 
 // ── Start ──────────────────────────────────────────────────────────────────

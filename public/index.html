@@ -67,6 +67,20 @@
 </section>
 
 
+  <!-- Genre Filter Row -->
+  <section id="genreFilterSection" style="padding-bottom:0;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+      <h2 style="margin:0;">Browse by Genre</h2>
+      <div style="display:flex;gap:8px;">
+        <button class="genre-home-type active" data-type="movie" style="padding:6px 16px;border-radius:999px;border:1.5px solid rgba(255,255,255,0.15);background:rgba(255,44,44,0.15);color:#ff2c2c;font-size:12px;font-weight:700;cursor:pointer;">🎬 Movies</button>
+        <button class="genre-home-type" data-type="tv" style="padding:6px 16px;border-radius:999px;border:1.5px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);font-size:12px;font-weight:700;cursor:pointer;">📺 TV</button>
+      </div>
+    </div>
+    <div id="homeGenreChips" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;"></div>
+    <div id="homeGenreResults" class="movie-row" style="margin-top:14px;"></div>
+    <a href="/genres" style="display:inline-block;margin-top:10px;font-size:13px;color:#ff2c2c;text-decoration:none;font-weight:600;">View full genres page →</a>
+  </section>
+
   <section>
     <h2>Continue Watching</h2>
     <div id="continueWatching" class="movie-row">
@@ -218,6 +232,95 @@ ${data.updated ? `<small class="notification-time">Updated: ${data.updated}</sma
 loadNotification();
 setInterval(loadNotification, 30000);
 </script>
+<!-- Genre filter row on home page -->
+<script>
+(async function initHomeGenreFilter() {
+  let activeType    = "movie";
+  let activeGenreId = null;
+
+  const chipsRow   = document.getElementById("homeGenreChips");
+  const resultsRow = document.getElementById("homeGenreResults");
+
+  async function loadChips(type) {
+    chipsRow.innerHTML = `<span style="color:rgba(255,255,255,0.3);font-size:13px;padding:6px 0;">Loading…</span>`;
+    const data = await apiCall(`/genre/${type}/list`);
+    const genres = data?.genres || [];
+    chipsRow.innerHTML = "";
+
+    genres.slice(0, 18).forEach((g, i) => {
+      const chip = document.createElement("button");
+      chip.textContent = g.name;
+      chip.dataset.id = g.id;
+      chip.style.cssText = `
+        flex-shrink:0; padding:6px 14px; border-radius:999px;
+        border:1.5px solid rgba(255,255,255,0.13);
+        background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.75);
+        font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;
+        transition:all 0.15s;
+      `;
+      if (i === 0) activateChip(chip, g.id, g.name);
+
+      chip.addEventListener("click", () => {
+        chipsRow.querySelectorAll("button").forEach(c => {
+          c.style.background = "rgba(255,255,255,0.05)";
+          c.style.borderColor = "rgba(255,255,255,0.13)";
+          c.style.color = "rgba(255,255,255,0.75)";
+        });
+        activateChip(chip, g.id, g.name);
+      });
+      chipsRow.appendChild(chip);
+    });
+  }
+
+  function activateChip(chip, genreId, genreName) {
+    chip.style.background   = "#ff2c2c";
+    chip.style.borderColor  = "#ff2c2c";
+    chip.style.color        = "#fff";
+    activeGenreId = genreId;
+    loadGenreResults(activeType, genreId);
+  }
+
+  async function loadGenreResults(type, genreId) {
+    resultsRow.innerHTML = `<p class="placeholder">Loading…</p>`;
+    const data = await apiCall(`/discover/${type}`, {
+      with_genres: genreId,
+      sort_by: "popularity.desc",
+      page: 1
+    });
+    const items = (data?.results || []).filter(i => i.poster_path).slice(0, 14);
+    resultsRow.innerHTML = "";
+    if (!items.length) {
+      resultsRow.innerHTML = `<p class="placeholder">No results found.</p>`;
+      return;
+    }
+    items.forEach(item => {
+      const card = createMovieCard(item, type);
+      if (card) resultsRow.appendChild(card);
+    });
+  }
+
+  // Type toggle
+  document.querySelectorAll(".genre-home-type").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".genre-home-type").forEach(b => {
+        b.style.background = "rgba(255,255,255,0.05)";
+        b.style.color = "rgba(255,255,255,0.7)";
+        b.style.borderColor = "rgba(255,255,255,0.12)";
+        b.classList.remove("active");
+      });
+      btn.style.background  = "rgba(255,44,44,0.15)";
+      btn.style.color       = "#ff2c2c";
+      btn.style.borderColor = "rgba(255,44,44,0.4)";
+      btn.classList.add("active");
+      activeType = btn.dataset.type;
+      loadChips(activeType);
+    });
+  });
+
+  loadChips(activeType);
+})();
+</script>
+
 <script src="https://uptime.betterstack.com/widgets/announcement.js" data-id="240420" async="async" type="text/javascript"></script>
 <iframe src="https://status.cinerealm.online/badge?theme=dark"
 width="250" height="30" frameborder="0" scrolling="no" 

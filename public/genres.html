@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browse by Genre — CineRealm</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="icon" href="/favicon.ico">
+  <meta property="og:title" content="Browse Genres — CineRealm">
+  <meta property="og:description" content="Browse movies and TV shows by genre.">
+  <meta property="og:image" content="https://cinerealm.online/android-chrome-512x512.png">
+  <style>
+    .genres-page { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+
+    /* Type toggle */
+    .genre-type-toggle {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .genre-type-btn {
+      padding: 9px 22px;
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .genre-type-btn.active {
+      background: #ff2c2c;
+      border-color: #ff2c2c;
+      color: #fff;
+    }
+    .genre-type-btn:hover:not(.active) {
+      border-color: rgba(255,44,44,0.5);
+      background: rgba(255,44,44,0.1);
+    }
+
+    /* Genre chip grid */
+    .genre-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+    .genre-chip {
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: 1.5px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.05);
+      color: rgba(255,255,255,0.75);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s;
+      user-select: none;
+    }
+    .genre-chip:hover {
+      border-color: #ff2c2c;
+      color: #fff;
+      background: rgba(255,44,44,0.1);
+    }
+    .genre-chip.active {
+      background: #ff2c2c;
+      border-color: #ff2c2c;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(255,44,44,0.3);
+    }
+
+    /* Results header row */
+    .genre-results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .genre-results-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #ff2c2c;
+      margin: 0;
+    }
+    .genre-sort-select {
+      padding: 7px 12px;
+      border-radius: 8px;
+      border: 1.5px solid rgba(255,255,255,0.15);
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .genre-sort-select option { background: #1c1c1c; }
+
+    /* Results grid */
+    .genre-results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 16px;
+    }
+
+    /* Load more */
+    .load-more-btn {
+      display: block;
+      margin: 28px auto 0;
+      padding: 12px 36px;
+      background: rgba(255,44,44,0.15);
+      border: 2px solid #ff2c2c;
+      color: #ff2c2c;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .load-more-btn:hover { background: #ff2c2c; color: #fff; }
+    .load-more-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Skeleton chips */
+    .genre-chip-skeleton {
+      display: inline-block;
+      width: 80px;
+      height: 34px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      animation: shimmer 1.4s infinite;
+      background-size: 200% 100%;
+      background-image: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 75%);
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="appIntro" class="intro hidden">
+  <div class="intro-logo">CineRealm</div>
+</div>
+
+<div id="site-notification"></div>
+
+<header>
+  <div class="header-left">
+    <h1><a href="/" style="color:#ff2c2c;text-decoration:none;">🎬 Cine Realm</a></h1>
+  </div>
+  <input type="text" id="searchBar" placeholder="Search movies or shows..." autocomplete="off">
+  <nav class="nav-links">
+    <a href="/" class="nav-btn">Home</a>
+    <a href="/movies" class="nav-btn">Movies</a>
+    <a href="/trending" class="nav-btn">Trending</a>
+    <a href="/genres" class="nav-btn active">Genres</a>
+    <a href="/watchlist" class="nav-btn">Watchlist</a>
+    <a href="/legal" class="nav-btn">Legal</a>
+    <a href="/games" class="nav-btn">Games</a>
+  </nav>
+</header>
+
+<main class="genres-page">
+  <h2 style="margin-bottom:20px;">Browse by Genre</h2>
+
+  <!-- Movie / TV toggle -->
+  <div class="genre-type-toggle">
+    <button class="genre-type-btn active" data-type="movie">🎬 Movies</button>
+    <button class="genre-type-btn" data-type="tv">📺 TV Shows</button>
+  </div>
+
+  <!-- Genre chips -->
+  <div class="genre-chips" id="genreChips">
+    <!-- Skeleton placeholders while loading -->
+    ${Array(12).fill('<span class="genre-chip-skeleton"></span>').join("")}
+  </div>
+
+  <!-- Results -->
+  <div class="genre-results-header" id="resultsHeader" style="display:none;">
+    <h3 class="genre-results-title" id="resultsTitle">All Movies</h3>
+    <select class="genre-sort-select" id="sortSelect">
+      <option value="popularity.desc">Most Popular</option>
+      <option value="vote_average.desc">Highest Rated</option>
+      <option value="release_date.desc">Newest First</option>
+      <option value="revenue.desc">Highest Grossing</option>
+    </select>
+  </div>
+
+  <div class="genre-results-grid" id="genreResults"></div>
+  <button class="load-more-btn" id="loadMoreBtn" style="display:none;">Load More</button>
+</main>
+
+<!-- Details Modal -->
+<div id="detailsModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <span class="close-btn">&times;</span>
+    <div id="detailsBody"></div>
+  </div>
+</div>
+
+<!-- Disclaimer Modal -->
+<div id="disclaimerModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h2>Before You Watch</h2>
+    <p>Some third-party sources may show pop-ups or ads outside of our control.</p>
+    <label style="display:flex;align-items:center;gap:8px;margin:12px 0;">
+      <input type="checkbox" id="dontShowAgain">
+      <span>Don't show this again on this device</span>
+    </label>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;">
+      <button id="cancelDisclaimer" class="nav-btn" type="button">Cancel</button>
+      <button id="acceptDisclaimer" class="nav-btn" type="button">I Understand</button>
+    </div>
+  </div>
+</div>
+
+<script src="/script.js"></script>
+<script>
+(async function initGenresPage() {
+  let currentType    = "movie";
+  let currentGenreId = null;
+  let currentGenreName = "All";
+  let currentPage    = 1;
+  let currentSort    = "popularity.desc";
+  let isLoadingMore  = false;
+
+  const chipsContainer = document.getElementById("genreChips");
+  const resultsHeader  = document.getElementById("resultsHeader");
+  const resultsTitle   = document.getElementById("resultsTitle");
+  const resultsGrid    = document.getElementById("genreResults");
+  const loadMoreBtn    = document.getElementById("loadMoreBtn");
+  const sortSelect     = document.getElementById("sortSelect");
+
+  // ── Load genre list ───────────────────────────────────────────────────
+  async function loadGenres(type) {
+    chipsContainer.innerHTML = Array(12).fill('<span class="genre-chip-skeleton"></span>').join("");
+
+    const data = await apiCall(`/genre/${type}/list`);
+    const genres = data?.genres || [];
+
+    chipsContainer.innerHTML = "";
+
+    // "All" chip
+    const allChip = document.createElement("span");
+    allChip.className = "genre-chip" + (currentGenreId === null ? " active" : "");
+    allChip.textContent = "All";
+    allChip.dataset.id = "";
+    chipsContainer.appendChild(allChip);
+
+    genres.forEach(g => {
+      const chip = document.createElement("span");
+      chip.className = "genre-chip" + (currentGenreId === g.id ? " active" : "");
+      chip.textContent = g.name;
+      chip.dataset.id   = g.id;
+      chip.dataset.name = g.name;
+      chipsContainer.appendChild(chip);
+    });
+
+    // Delegate click
+    chipsContainer.onclick = (e) => {
+      const chip = e.target.closest(".genre-chip");
+      if (!chip) return;
+      chipsContainer.querySelectorAll(".genre-chip").forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      currentGenreId   = chip.dataset.id ? parseInt(chip.dataset.id) : null;
+      currentGenreName = chip.textContent;
+      currentPage = 1;
+      loadResults(true);
+    };
+  }
+
+  // ── Load results ──────────────────────────────────────────────────────
+  async function loadResults(reset = false) {
+    if (reset) {
+      resultsGrid.innerHTML = "";
+      currentPage = 1;
+    }
+
+    resultsHeader.style.display = "flex";
+    const typeLabel = currentType === "movie" ? "Movies" : "TV Shows";
+    resultsTitle.textContent = currentGenreId
+      ? `${currentGenreName} ${typeLabel}`
+      : `All ${typeLabel}`;
+
+    const params = {
+      sort_by: currentSort,
+      page: currentPage,
+    };
+    if (currentGenreId) params.with_genres = currentGenreId;
+
+    const data = await apiCall(`/discover/${currentType}`, params);
+    const items = (data?.results || []).filter(i => i.poster_path);
+
+    items.forEach(item => {
+      const card = createMovieCard(item, currentType);
+      if (card) resultsGrid.appendChild(card);
+    });
+
+    // Show/hide load more
+    const hasMore = data?.page < data?.total_pages;
+    loadMoreBtn.style.display = hasMore ? "block" : "none";
+    loadMoreBtn.disabled = false;
+  }
+
+  // ── Load more ─────────────────────────────────────────────────────────
+  loadMoreBtn.addEventListener("click", async () => {
+    if (isLoadingMore) return;
+    isLoadingMore = true;
+    loadMoreBtn.disabled = true;
+    loadMoreBtn.textContent = "Loading…";
+    currentPage++;
+    await loadResults(false);
+    loadMoreBtn.textContent = "Load More";
+    isLoadingMore = false;
+  });
+
+  // ── Sort change ───────────────────────────────────────────────────────
+  sortSelect.addEventListener("change", () => {
+    currentSort = sortSelect.value;
+    currentPage = 1;
+    loadResults(true);
+  });
+
+  // ── Type toggle ───────────────────────────────────────────────────────
+  document.querySelectorAll(".genre-type-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".genre-type-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentType    = btn.dataset.type;
+      currentGenreId = null;
+      currentPage    = 1;
+      loadGenres(currentType);
+      loadResults(true);
+    });
+  });
+
+  // ── Init ──────────────────────────────────────────────────────────────
+  await loadGenres(currentType);
+  await loadResults(true);
+
+})();
+</script>
+
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<script>
+  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/speed-insights/script.js"></script>
+<script src="https://uptime.betterstack.com/widgets/announcement.js" data-id="240420" async="async" type="text/javascript"></script>
+
+</body>
+</html>
