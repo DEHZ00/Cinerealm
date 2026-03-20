@@ -234,12 +234,15 @@ setInterval(loadNotification, 30000);
 </script>
 <!-- Genre filter row on home page -->
 <script>
-(async function initHomeGenreFilter() {
-  let activeType    = "movie";
-  let activeGenreId = null;
+document.addEventListener("DOMContentLoaded", function() {
+  if (!document.getElementById("homeGenreChips")) return; // only run on home page
 
-  const chipsRow   = document.getElementById("homeGenreChips");
-  const resultsRow = document.getElementById("homeGenreResults");
+  (async function initHomeGenreFilter() {
+    let activeType    = "movie";
+    let activeGenreId = null;
+
+    const chipsRow   = document.getElementById("homeGenreChips");
+    const resultsRow = document.getElementById("homeGenreResults");
 
   async function loadChips(type) {
     chipsRow.innerHTML = `<span style="color:rgba(255,255,255,0.3);font-size:13px;padding:6px 0;">Loading…</span>`;
@@ -318,7 +321,8 @@ setInterval(loadNotification, 30000);
   });
 
   loadChips(activeType);
-})();
+  })(); // end initHomeGenreFilter IIFE
+}); // end DOMContentLoaded
 </script>
 
 <script src="https://uptime.betterstack.com/widgets/announcement.js" data-id="240420" async="async" type="text/javascript"></script>

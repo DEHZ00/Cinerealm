@@ -572,7 +572,6 @@ function buildProviderUrl(providerKey, media, opts = {}) {
 
   return base + buildQuery(params);
 }
-}
 
   // ── VidUp ─────────────────────────────────────────────────────────────────
   // Docs: https://vidup.to/#documentation
@@ -617,6 +616,8 @@ function buildProviderUrl(providerKey, media, opts = {}) {
     if (!base) return "";
     return base; // 111movies uses clean URL routing only
   }
+
+} // end buildProviderUrl
 
 // Iframe lifecycle
 let currentIframe = null;
