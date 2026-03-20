@@ -15,32 +15,50 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// ── Maintenance Mode Middleware ────────────────────────────────────────────
+// ── Maintenance Mode ────────────────────────────────────────────────────────
 const MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === "true";
 const MAINTENANCE_PASSWORD = process.env.MAINTENANCE_PASSWORD || "cinerealm2026";
 
-// Session store (in-memory; survives until server restart)
-const maintenanceSessions = new Set();
+// Paths that always bypass maintenance
+const BYPASS_PATHS = [
+  "/maintenance-auth",
+  "/style.css",
+  "/script.js",
+  "/sw.js",
+  "/favicon.ico",
+  "/favicon-32x32.png",
+  "/favicon-16x16.png",
+  "/apple-touch-icon.png",
+  "/offline.html",
+  "/notification.json",
+];
 
-function generateSessionToken() {
-  return crypto.randomBytes(32).toString("hex");
+function makeToken(password) {
+  // Simple deterministic token from password — no in-memory state needed
+  return crypto.createHmac("sha256", password + "cr_salt_2026").update("maintenance_access").digest("hex");
 }
 
-// Paths that bypass maintenance even without a session
-const BYPASS_PATHS = ["/maintenance", "/maintenance-auth", "/style.css", "/favicon.ico"];
+function isValidSession(cookieHeader, password) {
+  const match = (cookieHeader || "").match(/cr_maintenance_session=([a-f0-9]{64})/);
+  if (!match) return false;
+  return match[1] === makeToken(password);
+}
 
 app.use((req, res, next) => {
   if (!MAINTENANCE_MODE) return next();
 
-  // Always allow static assets and auth endpoint
+  // Always allow bypass paths
   if (BYPASS_PATHS.some(p => req.path.startsWith(p))) return next();
 
-  // Check session cookie
-  const rawCookie = req.headers.cookie || "";
-  const match = rawCookie.match(/cr_maintenance_session=([a-f0-9]{64})/);
-  if (match && maintenanceSessions.has(match[1])) return next();
+  // Check session cookie (works across serverless restarts)
+  if (isValidSession(req.headers.cookie, MAINTENANCE_PASSWORD)) return next();
 
-  // Not authenticated → serve maintenance page
+  // Not authenticated — for API/fetch requests return JSON error, for pages return maintenance HTML
+  const wantsHtml = req.headers.accept && req.headers.accept.includes("text/html");
+  if (!wantsHtml) {
+    return res.status(503).json({ error: "Site is under maintenance" });
+  }
+
   res.status(503).sendFile(path.join(__dirname, "public", "maintenance.html"));
 });
 
@@ -48,16 +66,13 @@ app.use((req, res, next) => {
 app.post("/maintenance-auth", (req, res) => {
   const { password } = req.body;
   if (password === MAINTENANCE_PASSWORD) {
-    const token = generateSessionToken();
-    maintenanceSessions.add(token);
-    // Cookie lasts 8 hours
+    const token = makeToken(MAINTENANCE_PASSWORD);
     res.setHeader(
       "Set-Cookie",
       `cr_maintenance_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=28800`
     );
     res.json({ success: true });
   } else {
-    // Small delay to discourage brute force
     setTimeout(() => res.status(401).json({ success: false, error: "Incorrect password" }), 800);
   }
 });
