@@ -543,35 +543,35 @@ function buildProviderUrl(providerKey, media, opts = {}) {
   }
 
   // NEW PROVIDER, VIDSRC
- if (providerKey === "VidSrc") {
-  let base = "";
+  if (providerKey === "VidSrc") {
+    let base = "";
 
-  // USE v3
-  if (t === "movie") {
-    base = `https://vidsrc.cc/v3/embed/movie/${id}`;
-  }
+    // USE v3
+    if (t === "movie") {
+      base = `https://vidsrc.cc/v3/embed/movie/${id}`;
+    }
 
-  if (t === "tv") {
-    base = `https://vidsrc.cc/v3/embed/tv/${id}/${media.season || 1}/${media.episode || 1}`;
-  }
+    if (t === "tv") {
+      base = `https://vidsrc.cc/v3/embed/tv/${id}/${media.season || 1}/${media.episode || 1}`;
+    }
 
-  const params = {};
+    const params = {};
 
-  if (opts.autoPlay !== undefined) {
-    params.autoPlay = opts.autoPlay ? "true" : "false";
-  }
+    if (opts.autoPlay !== undefined) {
+      params.autoPlay = opts.autoPlay ? "true" : "false";
+    }
 
-  if (opts.poster !== undefined) {
-    params.poster = opts.poster ? "true" : "false";
-  }
+    if (opts.poster !== undefined) {
+      params.poster = opts.poster ? "true" : "false";
+    }
 
-  // RESUME SUPPORT 4 VIDSRC
-  if (Number.isFinite(opts.startAt) && opts.startAt > 0) {
-    params.startAt = Math.floor(opts.startAt);
-  }
+    // RESUME SUPPORT 4 VIDSRC
+    if (Number.isFinite(opts.startAt) && opts.startAt > 0) {
+      params.startAt = Math.floor(opts.startAt);
+    }
 
-  return base + buildQuery(params);
-}
+    return base + buildQuery(params);
+  } // end VidSrc
 
   // ── VidUp ─────────────────────────────────────────────────────────────────
   // Docs: https://vidup.to/#documentation
