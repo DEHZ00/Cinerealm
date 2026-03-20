@@ -824,6 +824,10 @@ async function renderSeasonsDropdown(tvId, media, extraOpts = {}) {
       epDiv.addEventListener("click", () => {
         const lastProgress = getHistoryProgress(tvId, "tv", seasonNumber, ep.episode_number);
 
+        // Update browser URL without reloading
+        const newUrl = "/watch/tv/" + tvId + "/season/" + seasonNumber + "/episode/" + ep.episode_number;
+        history.pushState({ tvId, seasonNumber, episode: ep.episode_number }, "", newUrl);
+
         loadPlayer(tvId, "tv", media.title || media.name || "", {
           ...extraOpts,
           season: seasonNumber,
@@ -839,6 +843,9 @@ async function renderSeasonsDropdown(tvId, media, extraOpts = {}) {
   // Season dropdown change → load episodes for selected season
   seasonSelect.addEventListener("change", (e) => {
     const chosen = parseInt(e.target.value, 10);
+    // Update URL to reflect season change
+    const newUrl = "/watch/tv/" + tvId + "/season/" + chosen + "/episode/1";
+    history.pushState({ tvId, seasonNumber: chosen, episode: 1 }, "", newUrl);
     loadEpisodes(chosen);
   });
 
@@ -1228,6 +1235,15 @@ if ("serviceWorker" in navigator) {
       .catch(err => console.warn("SW registration failed:", err));
   });
 }
+
+// ── Handle browser back/forward for episode navigation ────────────────────
+window.addEventListener("popstate", (e) => {
+  if (!e.state) return;
+  const { tvId, seasonNumber, episode } = e.state;
+  if (tvId && seasonNumber && episode) {
+    loadPlayer(tvId, "tv", "", { season: seasonNumber, episode });
+  }
+});
 
 // ---- Home Page Genre Filter Row ----
 function initHomeGenreFilter() {
