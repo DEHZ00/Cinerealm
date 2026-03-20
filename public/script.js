@@ -359,265 +359,157 @@ function buildQuery(params) {
 
 
 function buildProviderUrl(providerKey, media, opts = {}) {
-  
   const t = media.type;
-  const id = media.tmdbId || media.id || (media.anilistId && t === "anime" ? media.anilistId : "");
-  if (!id) return "";
-  
+  const id = media.tmdbId || media.id || (media.anilistId && t === 'anime' ? media.anilistId : '');
+  if (!id) return '';
 
-
-  if (providerKey === "spenEmbed") {
-    // spencerdevs.xyz: supports theme
-    let base = "";
-    if (t === "movie") base = `https://spencerdevs.xyz/movie/${id}`;
-    if (t === "tv") base = `https://spencerdevs.xyz/tv/${id}/${media.season || 1}/${media.episode || 1}`;
-    if (t === "anime") base = `https://spencerdevs.xyz/anime/${media.anilistId || id}/${media.episode || 1}`;
+  if (providerKey === 'spenEmbed') {
+    let base = '';
+    if (t === 'movie') base = 'https://spencerdevs.xyz/movie/' + id;
+    if (t === 'tv')    base = 'https://spencerdevs.xyz/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
+    if (t === 'anime') base = 'https://spencerdevs.xyz/anime/' + (media.anilistId||id) + '/' + (media.episode||1);
     const params = {};
-    if (opts.theme || opts.color) params.theme = (opts.theme || opts.color).replace("#", "");
+    if (opts.theme || opts.color) params.theme = (opts.theme || opts.color).replace('#', '');
     return base + buildQuery(params);
   }
 
-  if (providerKey === "vidplus") {
-  // player.vidplus.to 
-    let base = "";
-    if (t === "movie") base = `https://player.vidplus.to/embed/movie/${id}`;
-    if (t === "tv") base = `https://player.vidplus.to/embed/tv/${id}/${media.season || 1}/${media.episode || 1}`;
-    if (t === "anime") base = `https://player.vidplus.to/embed/anime/${media.anilistId || id}/${media.episode || 1}`;
+  if (providerKey === 'vidplus') {
+    let base = '';
+    if (t === 'movie') base = 'https://player.vidplus.to/embed/movie/' + id;
+    if (t === 'tv')    base = 'https://player.vidplus.to/embed/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
+    if (t === 'anime') base = 'https://player.vidplus.to/embed/anime/' + (media.anilistId||id) + '/' + (media.episode||1);
     const params = {};
-    if (opts.color) params.primarycolor = opts.color.replace("#", "");
-    if (opts.secondaryColor) params.secondarycolor = opts.secondaryColor.replace("#", "");
-    if (opts.iconColor) params.iconcolor = opts.iconColor.replace("#", "");
-    if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? "true" : "false";
-    if (opts.autoNext !== undefined) params.autoNext = opts.autoNext ? "true" : "false";
-    if (opts.nextButton !== undefined) params.nextButton = opts.nextButton ? "true" : "false";
+    if (opts.color) params.primarycolor = opts.color.replace('#','');
+    if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? 'true' : 'false';
+    if (opts.autoNext !== undefined) params.autoNext = opts.autoNext ? 'true' : 'false';
+    if (opts.nextButton !== undefined) params.nextButton = opts.nextButton ? 'true' : 'false';
     if (opts.progress !== undefined) params.progress = Math.floor(opts.progress);
-    if (opts.watchparty !== undefined) params.watchparty = opts.watchparty ? "true" : "false";
-    if (opts.chromecast !== undefined) params.chromecast = opts.chromecast ? "true" : "false";
-    if (opts.episodelist !== undefined) params.episodelist = opts.episodelist ? "true" : "false";
-    if (opts.server !== undefined) params.server = opts.server;
-    if (opts.poster !== undefined) params.poster = opts.poster ? "true" : "false";
-    if (opts.title !== undefined) params.title = opts.title ? "true" : "false";
-    if (opts.icons !== undefined) params.icons = opts.icons;
-    if (opts.fontcolor) params.fontcolor = opts.fontcolor.replace("#", "");
-    if (opts.fontsize) params.fontsize = opts.fontsize;
-    if (opts.opacity !== undefined) params.opacity = opts.opacity;
-    if (opts.servericon !== undefined) params.servericon = opts.servericon ? "true" : "false";
-    return base + buildQuery(params);
-  }
-  if (providerKey === "vidfast") {
-    // vidfast.pro 
-    const baseDomain = "https://vidfast.pro";
-    let base = "";
-    if (t === "movie") base = `${baseDomain}/movie/${id}`;
-    if (t === "tv") base = `${baseDomain}/tv/${id}/${media.season || 1}/${media.episode || 1}`;
-    const params = {};
-    if (opts.autoPlay !== undefined) params.autoPlay = opts.autoPlay ? "true" : "false";
-    if (opts.startAt !== undefined) params.startAt = Math.floor(opts.startAt);
-    if (opts.theme) params.theme = opts.theme.replace("#", "");
-    if (opts.nextButton !== undefined) params.nextButton = opts.nextButton ? "true" : "false";
-    if (opts.autoNext !== undefined) params.autoNext = opts.autoNext ? "true" : "false";
-    if (opts.server) params.server = opts.server;
-    if (opts.hideServerControls !== undefined) params.hideServerControls = opts.hideServerControls ? "true" : "false";
-    if (opts.fullscreenButton !== undefined) params.fullscreenButton = opts.fullscreenButton ? "true" : "false";
-    if (opts.chromecast !== undefined) params.chromecast = opts.chromecast ? "true" : "false";
-    if (opts.sub) params.sub = opts.sub;
-    if (opts.title !== undefined) params.title = opts.title ? "true" : "false";
-    if (opts.poster !== undefined) params.poster = opts.poster ? "true" : "false";
+    if (opts.episodelist !== undefined) params.episodelist = opts.episodelist ? 'true' : 'false';
+    if (opts.chromecast !== undefined) params.chromecast = opts.chromecast ? 'true' : 'false';
+    if (opts.poster !== undefined) params.poster = opts.poster ? 'true' : 'false';
+    if (opts.title !== undefined) params.title = opts.title ? 'true' : 'false';
     return base + buildQuery(params);
   }
 
-  if (providerKey === "vidking") {
-    // vidking.net embed path
-    if (t === "movie") {
-      const base = `https://www.vidking.net/embed/movie/${id}`;
-      const params = {};
-      if (opts.color) params.color = opts.color.replace("#", "");
-      if (opts.autoPlay !== undefined) params.autoPlay = opts.autoPlay ? "true" : "false";
-      if (opts.nextEpisode !== undefined) params.nextEpisode = opts.nextEpisode ? "true" : "false";
-      if (opts.episodeSelector !== undefined) params.episodeSelector = opts.episodeSelector ? "true" : "false";
-      if (opts.progress !== undefined) params.progress = Math.floor(opts.progress);
-      return base + buildQuery(params);
-    }
-    if (t === "tv") {
-      const base = `https://www.vidking.net/embed/tv/${id}/${media.season || 1}/${media.episode || 1}`;
-      const params = {};
-      if (opts.color) params.color = opts.color.replace("#", "");
-      if (opts.autoPlay !== undefined) params.autoPlay = opts.autoPlay ? "true" : "false";
-      if (opts.nextEpisode !== undefined) params.nextEpisode = opts.nextEpisode ? "true" : "false";
-      if (opts.episodeSelector !== undefined) params.episodeSelector = opts.episodeSelector ? "true" : "false";
-      if (opts.progress !== undefined) params.progress = Math.floor(opts.progress);
-      return base + buildQuery(params);
-    }
-  }
-
-  if (providerKey === "videasy") {
-    // player.videasy.net endpoints
-    if (t === "movie") {
-      const base = `https://player.videasy.net/movie/${id}`;
-      const params = {};
-      if (opts.color) params.color = opts.color.replace("#", "");
-      if (opts.progress !== undefined) params.progress = Math.floor(opts.progress);
-      if (opts.overlay !== undefined) params.overlay = opts.overlay ? "true" : "false";
-      // TV extras
-      if (opts.nextEpisode !== undefined) params.nextEpisode = opts.nextEpisode ? "true" : "false";
-      if (opts.episodeSelector !== undefined) params.episodeSelector = opts.episodeSelector ? "true" : "false";
-      if (opts.autoplayNextEpisode !== undefined) params.autoplayNextEpisode = opts.autoplayNextEpisode ? "true" : "false";
-      if (opts.dub !== undefined) params.dub = opts.dub ? "true" : "false";
-      return base + buildQuery(params);
-    }
-    
-    if (t === "tv") {
-      const base = `https://player.videasy.net/tv/${id}/${media.season || 1}/${media.episode || 1}`;
-      const params = {};
-      if (opts.color) params.color = opts.color.replace("#", "");
-      if (opts.progress !== undefined) params.progress = Math.floor(opts.progress);
-      if (opts.nextEpisode !== undefined) params.nextEpisode = opts.nextEpisode ? "true" : "false";
-      if (opts.episodeSelector !== undefined) params.episodeSelector = opts.episodeSelector ? "true" : "false";
-      if (opts.autoplayNextEpisode !== undefined) params.autoplayNextEpisode = opts.autoplayNextEpisode ? "true" : "false";
-      if (opts.overlay !== undefined) params.overlay = opts.overlay ? "true" : "false";
-      if (opts.dub !== undefined) params.dub = opts.dub ? "true" : "false";
-      return base + buildQuery(params);
-    }
-    if (t === "anime") {
-      const base = `https://player.videasy.net/anime/${media.anilistId || id}/${media.episode || 1}`;
-      const params = {};
-      if (opts.dub !== undefined) params.dub = opts.dub ? "true" : "false";
-      if (opts.color) params.color = opts.color.replace("#", "");
-      return base + buildQuery(params);
-    }
-  }
-  if (providerKey === "vidora") {
-    // vidora.su routes:
-    // Movie: https://vidora.su/movie/{tmdbId or imdbId}
-    // TV:    https://vidora.su/tv/{tmdbId or imdbId}/{season}/{episode}
-
-    let base = "";
-    if (t === "movie") base = `https://vidora.su/movie/${id}`;
-    if (t === "tv") base = `https://vidora.su/tv/${id}/${media.season || 1}/${media.episode || 1}`;
-
+  if (providerKey === 'vidfast') {
+    let base = '';
+    if (t === 'movie') base = 'https://vidfast.pro/movie/' + id;
+    if (t === 'tv')    base = 'https://vidfast.pro/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
     const params = {};
-    // Vidora params from docs
-    if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? "true" : "false";
-    if (opts.colour || opts.color) params.colour = (opts.colour || opts.color).replace("#", "");
-    if (opts.autonextepisode !== undefined) params.autonextepisode = opts.autonextepisode ? "true" : "false";
-    if (opts.backbutton) params.backbutton = opts.backbutton;
-    if (opts.logo) params.logo = opts.logo;
-    if (opts.pausescreen !== undefined) params.pausescreen = opts.pausescreen ? "true" : "false";
-    if (opts.idlecheck !== undefined) params.idlecheck = opts.idlecheck;
-
-    return base + buildQuery(params);
-  }
-
-
-   if (providerKey === "vidlink") {
-   
-
-    let base = "";
-    if (t === "movie") base = `https://vidlink.pro/movie/${id}`;
-    if (t === "tv") base = `https://vidlink.pro/tv/${id}/${media.season || 1}/${media.episode || 1}`;
-
-    const params = {};
-    
-    if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? "true" : "false";
-    if (opts.colour || opts.color) params.colour = (opts.colour || opts.color).replace("#", "");
-    if (opts.autonextepisode !== undefined) params.autonextepisode = opts.autonextepisode ? "true" : "false";
-    if (opts.backbutton) params.backbutton = opts.backbutton;
-    if (opts.logo) params.logo = opts.logo;
-
-
-    return base + buildQuery(params);
-  }
- if (providerKey === "VidZen") {
-   
-
-    let base = "";
-    if (t === "movie") base = `https://vidzen.fun/movie/${id}`;
-    if (t === "tv") base = `https://vidzen.fun/tv/${id}/${media.season || 1}/${media.episode || 1}`;
-
-    const params = {};
-    
-    if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? "true" : "false";
-    if (opts.server) params.server = opts.server;
-
-    return base + buildQuery(params);
-  }
-
-  // NEW PROVIDER, VIDSRC
-  if (providerKey === "VidSrc") {
-    let base = "";
-
-    // USE v3
-    if (t === "movie") {
-      base = `https://vidsrc.cc/v3/embed/movie/${id}`;
-    }
-
-    if (t === "tv") {
-      base = `https://vidsrc.cc/v3/embed/tv/${id}/${media.season || 1}/${media.episode || 1}`;
-    }
-
-    const params = {};
-
-    if (opts.autoPlay !== undefined) {
-      params.autoPlay = opts.autoPlay ? "true" : "false";
-    }
-
-    if (opts.poster !== undefined) {
-      params.poster = opts.poster ? "true" : "false";
-    }
-
-    // RESUME SUPPORT 4 VIDSRC
-    if (Number.isFinite(opts.startAt) && opts.startAt > 0) {
-      params.startAt = Math.floor(opts.startAt);
-    }
-
-    return base + buildQuery(params);
-  } // end VidSrc
-
-  // ── VidUp ─────────────────────────────────────────────────────────────────
-  // Docs: https://vidup.to/#documentation
-  if (providerKey === "vidup") {
-    let base = "";
-    if (t === "movie") base = `https://vidup.to/movie/${id}`;
-    if (t === "tv")    base = `https://vidup.to/tv/${id}/${media.season || 1}/${media.episode || 1}`;
-    if (!base) return "";
-    const params = {};
-    if (opts.autoplay  !== undefined) params.autoPlay       = opts.autoplay ? "true" : "false";
-    if (opts.title     !== undefined) params.title          = opts.title ? "true" : "false";
-    if (opts.poster    !== undefined) params.poster         = opts.poster ? "true" : "false";
-    if (opts.theme)                   params.theme          = opts.theme.replace("#", "");
-    if (opts.server)                  params.server         = opts.server;
-    if (opts.hideServerControls !== undefined) params.hideServer = opts.hideServerControls ? "true" : "false";
-    if (opts.fullscreenButton   !== undefined) params.fullscreenButton = opts.fullscreenButton ? "true" : "false";
-    if (opts.chromecast         !== undefined) params.chromecast       = opts.chromecast ? "true" : "false";
-    if (opts.sub)                     params.sub            = opts.sub;
+    if (opts.autoPlay !== undefined) params.autoPlay = opts.autoPlay ? 'true' : 'false';
+    if (opts.theme) params.theme = opts.theme.replace('#','');
+    if (opts.nextButton !== undefined) params.nextButton = opts.nextButton ? 'true' : 'false';
+    if (opts.autoNext !== undefined) params.autoNext = opts.autoNext ? 'true' : 'false';
+    if (opts.chromecast !== undefined) params.chromecast = opts.chromecast ? 'true' : 'false';
     if (Number.isFinite(opts.startAt) && opts.startAt > 0) params.startAt = Math.floor(opts.startAt);
-    // TV-only extras
-    if (t === "tv" && opts.autoNext !== undefined) params.autoNext   = opts.autoNext ? "true" : "false";
-    if (t === "tv" && opts.nextButton !== undefined) params.nextButton = opts.nextButton ? "true" : "false";
     return base + buildQuery(params);
   }
 
-  // ── MoviesAPI ────────────────────────────────────────────────────────────
-  // Docs: https://moviesapi.to/#api
-  if (providerKey === "moviesapi") {
-    let base = "";
-    if (t === "movie") base = `https://moviesapi.club/movie/${id}`;
-    if (t === "tv")    base = `https://moviesapi.club/tv/${id}-${media.season || 1}-${media.episode || 1}`;
-    if (!base) return "";
-    return base; // moviesapi doesn't use query params in the public embed spec
+  if (providerKey === 'vidking') {
+    let base = '';
+    if (t === 'movie') base = 'https://www.vidking.net/embed/movie/' + id;
+    if (t === 'tv')    base = 'https://www.vidking.net/embed/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
+    if (!base) return '';
+    const params = {};
+    if (opts.color) params.color = opts.color.replace('#','');
+    if (opts.autoPlay !== undefined) params.autoPlay = opts.autoPlay ? 'true' : 'false';
+    if (opts.nextEpisode !== undefined) params.nextEpisode = opts.nextEpisode ? 'true' : 'false';
+    if (opts.progress !== undefined) params.progress = Math.floor(opts.progress);
+    return base + buildQuery(params);
   }
 
-  // ── 111Movies ────────────────────────────────────────────────────────────
-  // Docs: https://111movies.net/#api
-  if (providerKey === "111movies") {
-    let base = "";
-    if (t === "movie") base = `https://111movies.net/movie/${id}`;
-    if (t === "tv")    base = `https://111movies.net/tv/${id}/${media.season || 1}/${media.episode || 1}`;
-    if (!base) return "";
-    return base; // 111movies uses clean URL routing only
+  if (providerKey === 'videasy') {
+    let base = '';
+    if (t === 'movie') base = 'https://player.videasy.net/movie/' + id;
+    if (t === 'tv')    base = 'https://player.videasy.net/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
+    if (t === 'anime') base = 'https://player.videasy.net/anime/' + (media.anilistId||id) + '/' + (media.episode||1);
+    if (!base) return '';
+    const params = {};
+    if (opts.color) params.color = opts.color.replace('#','');
+    if (opts.progress !== undefined) params.progress = Math.floor(opts.progress);
+    if (opts.nextEpisode !== undefined) params.nextEpisode = opts.nextEpisode ? 'true' : 'false';
+    if (opts.autoplayNextEpisode !== undefined) params.autoplayNextEpisode = opts.autoplayNextEpisode ? 'true' : 'false';
+    if (opts.dub !== undefined) params.dub = opts.dub ? 'true' : 'false';
+    return base + buildQuery(params);
   }
 
-} // end buildProviderUrl
+  if (providerKey === 'vidora') {
+    let base = '';
+    if (t === 'movie') base = 'https://vidora.su/movie/' + id;
+    if (t === 'tv')    base = 'https://vidora.su/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
+    if (!base) return '';
+    const params = {};
+    if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? 'true' : 'false';
+    if (opts.colour || opts.color) params.colour = (opts.colour || opts.color).replace('#','');
+    if (opts.autonextepisode !== undefined) params.autonextepisode = opts.autonextepisode ? 'true' : 'false';
+    return base + buildQuery(params);
+  }
+
+  if (providerKey === 'vidlink') {
+    let base = '';
+    if (t === 'movie') base = 'https://vidlink.pro/movie/' + id;
+    if (t === 'tv')    base = 'https://vidlink.pro/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
+    if (!base) return '';
+    const params = {};
+    if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? 'true' : 'false';
+    if (opts.autonextepisode !== undefined) params.autonextepisode = opts.autonextepisode ? 'true' : 'false';
+    return base + buildQuery(params);
+  }
+
+  if (providerKey === 'VidZen') {
+    let base = '';
+    if (t === 'movie') base = 'https://vidzen.fun/movie/' + id;
+    if (t === 'tv')    base = 'https://vidzen.fun/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
+    if (!base) return '';
+    const params = {};
+    if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? 'true' : 'false';
+    return base + buildQuery(params);
+  }
+
+  if (providerKey === 'VidSrc') {
+    let base = '';
+    if (t === 'movie') base = 'https://vidsrc.cc/v3/embed/movie/' + id;
+    if (t === 'tv')    base = 'https://vidsrc.cc/v3/embed/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
+    if (!base) return '';
+    const params = {};
+    if (opts.autoPlay !== undefined) params.autoPlay = opts.autoPlay ? 'true' : 'false';
+    if (opts.poster !== undefined) params.poster = opts.poster ? 'true' : 'false';
+    if (Number.isFinite(opts.startAt) && opts.startAt > 0) params.startAt = Math.floor(opts.startAt);
+    return base + buildQuery(params);
+  }
+
+  if (providerKey === 'vidup') {
+    let base = '';
+    if (t === 'movie') base = 'https://vidup.to/movie/' + id;
+    if (t === 'tv')    base = 'https://vidup.to/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
+    if (!base) return '';
+    const params = {};
+    if (opts.autoplay !== undefined) params.autoPlay = opts.autoplay ? 'true' : 'false';
+    if (opts.title !== undefined) params.title = opts.title ? 'true' : 'false';
+    if (opts.poster !== undefined) params.poster = opts.poster ? 'true' : 'false';
+    if (opts.theme) params.theme = opts.theme.replace('#','');
+    if (opts.chromecast !== undefined) params.chromecast = opts.chromecast ? 'true' : 'false';
+    if (opts.autoNext !== undefined) params.autoNext = opts.autoNext ? 'true' : 'false';
+    if (Number.isFinite(opts.startAt) && opts.startAt > 0) params.startAt = Math.floor(opts.startAt);
+    return base + buildQuery(params);
+  }
+
+  if (providerKey === 'moviesapi') {
+    let base = '';
+    if (t === 'movie') base = 'https://moviesapi.club/movie/' + id;
+    if (t === 'tv')    base = 'https://moviesapi.club/tv/' + id + '-' + (media.season||1) + '-' + (media.episode||1);
+    return base;
+  }
+
+  if (providerKey === '111movies') {
+    let base = '';
+    if (t === 'movie') base = 'https://111movies.net/movie/' + id;
+    if (t === 'tv')    base = 'https://111movies.net/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
+    return base;
+  }
+
+  return '';
+}
 
 // Iframe lifecycle
 let currentIframe = null;
