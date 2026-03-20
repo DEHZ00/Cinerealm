@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CineRealm — Under Maintenance</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red: #ff2c2c;
+      --red-dark: #4E0000;
+      --red-glow: rgba(255, 44, 44, 0.35);
+      --bg: #0a0000;
+      --surface: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --text: #e8e8e8;
+      --muted: rgba(255,255,255,0.5);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(78,0,0,0.6) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(78,0,0,0.3) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 460px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+    }
+
+    /* Logo */
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--red);
+      letter-spacing: 0.5px;
+      text-shadow: 0 0 40px var(--red-glow);
+      animation: logoFade 0.8s ease both;
+    }
+
+    @keyframes logoFade {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Icon animation */
+    .maintenance-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      animation: pulse 2.5s ease-in-out infinite, iconFade 0.8s 0.15s ease both;
+      box-shadow: 0 0 0 0 var(--red-glow);
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 var(--red-glow); }
+      50%       { box-shadow: 0 0 0 14px transparent; }
+    }
+
+    @keyframes iconFade {
+      from { opacity: 0; transform: scale(0.85); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    /* Card */
+    .card {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px 32px;
+      backdrop-filter: blur(12px);
+      animation: cardFade 0.8s 0.25s ease both;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    }
+
+    @keyframes cardFade {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-header {
+      margin-bottom: 6px;
+    }
+
+    .card h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .card p.subtitle {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.55;
+      margin-bottom: 28px;
+    }
+
+    /* Form */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.3px;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    input[type="password"] {
+      width: 100%;
+      padding: 13px 44px 13px 16px;
+      background: rgba(255,255,255,0.06);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 15px;
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      outline: none;
+    }
+
+    input[type="password"]:focus {
+      border-color: var(--red);
+      background: rgba(255,255,255,0.09);
+      box-shadow: 0 0 0 3px rgba(255,44,44,0.15);
+    }
+
+    input[type="password"].error {
+      border-color: #ff6b6b;
+      animation: shake 0.4s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+
+    .toggle-visibility {
+      position: absolute;
+      right: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 16px;
+      padding: 4px;
+      transition: color 0.2s;
+    }
+    .toggle-visibility:hover { color: var(--text); }
+
+    .error-msg {
+      font-size: 13px;
+      color: #ff6b6b;
+      min-height: 18px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Submit button */
+    .btn-submit {
+      width: 100%;
+      padding: 14px;
+      background: var(--red);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      letter-spacing: 0.4px;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 8px 24px rgba(255,44,44,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      background: #e01f1f;
+      transform: translateY(-1px);
+      box-shadow: 0 12px 32px rgba(255,44,44,0.4);
+    }
+
+    .btn-submit:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Spinner inside button */
+    .btn-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .btn-spinner.visible { display: block; }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Status bar */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #fbbf24;
+      flex-shrink: 0;
+      animation: blink 1.8s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* Footer */
+    .footer-text {
+      font-size: 12px;
+      color: rgba(255,255,255,0.25);
+      text-align: center;
+      animation: cardFade 0.8s 0.4s ease both;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">🎬 CineRealm</div>
+
+    <div class="maintenance-icon">🔧</div>
+
+    <div class="card">
+      <div class="card-header">
+        <h1>Down for Maintenance</h1>
+        <p class="subtitle">
+          We're making improvements to give you a better experience.<br>
+          If you're the site owner, enter your password to continue.
+        </p>
+      </div>
+
+      <div class="form-group">
+        <label for="mPassword">Access Password</label>
+        <div class="input-wrapper">
+          <input
+            type="password"
+            id="mPassword"
+            placeholder="Enter maintenance password"
+            autocomplete="current-password"
+            autofocus
+          />
+          <button class="toggle-visibility" type="button" id="togglePwd" aria-label="Show password">👁️</button>
+        </div>
+        <div class="error-msg" id="errorMsg"></div>
+      </div>
+
+      <button class="btn-submit" id="submitBtn" type="button">
+        <div class="btn-spinner" id="btnSpinner"></div>
+        <span id="btnLabel">Unlock Site</span>
+      </button>
+
+      <div class="status-bar">
+        <div class="status-dot"></div>
+        <span>Maintenance in progress — we'll be back shortly</span>
+      </div>
+    </div>
+
+    <p class="footer-text">CineRealm © 2026 · All streams sourced from public providers</p>
+  </div>
+
+  <script>
+    const passwordInput = document.getElementById("mPassword");
+    const submitBtn     = document.getElementById("submitBtn");
+    const btnSpinner    = document.getElementById("btnSpinner");
+    const btnLabel      = document.getElementById("btnLabel");
+    const errorMsg      = document.getElementById("errorMsg");
+    const togglePwd     = document.getElementById("togglePwd");
+
+    // Toggle password visibility
+    togglePwd.addEventListener("click", () => {
+      const isText = passwordInput.type === "text";
+      passwordInput.type = isText ? "password" : "text";
+      togglePwd.textContent = isText ? "👁️" : "🙈";
+    });
+
+    // Submit on Enter
+    passwordInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") submitBtn.click();
+    });
+
+    // Clear error on typing
+    passwordInput.addEventListener("input", () => {
+      errorMsg.textContent = "";
+      passwordInput.classList.remove("error");
+    });
+
+    submitBtn.addEventListener("click", async () => {
+      const password = passwordInput.value.trim();
+      if (!password) {
+        errorMsg.textContent = "⚠ Please enter a password.";
+        passwordInput.classList.add("error");
+        passwordInput.focus();
+        return;
+      }
+
+      // Loading state
+      submitBtn.disabled = true;
+      btnSpinner.classList.add("visible");
+      btnLabel.textContent = "Verifying…";
+      errorMsg.textContent = "";
+
+      try {
+        const res = await fetch("/maintenance-auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password }),
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          btnLabel.textContent = "✓ Access granted — loading…";
+          setTimeout(() => { window.location.href = "/"; }, 600);
+        } else {
+          errorMsg.textContent = "❌ " + (data.error || "Incorrect password.");
+          passwordInput.classList.add("error");
+          passwordInput.value = "";
+          passwordInput.focus();
+          submitBtn.disabled = false;
+          btnSpinner.classList.remove("visible");
+          btnLabel.textContent = "Unlock Site";
+        }
+      } catch (err) {
+        errorMsg.textContent = "⚠ Network error — please try again.";
+        submitBtn.disabled = false;
+        btnSpinner.classList.remove("visible");
+        btnLabel.textContent = "Unlock Site";
+      }
+    });
+  </script>
+</body>
+</html>

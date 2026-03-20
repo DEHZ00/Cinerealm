@@ -604,7 +604,30 @@ iframe {
 
 
 
-/* Tabs reset + pill style (cross-browser) */
+/* ── Toast Notifications ────────────────────────────────────────────────── */
+.cr-toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  z-index: 9998;
+  max-width: 320px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  opacity: 0;
+  transform: translateX(20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+.cr-toast--visible { opacity: 1; transform: translateX(0); }
+.cr-toast--success { background: #1a6632; border-left: 4px solid #2dca6e; }
+.cr-toast--error   { background: #6b1111; border-left: 4px solid #ff4444; }
+.cr-toast--info    { background: #1a2f4a; border-left: 4px solid #4da8d8; }
+
+/* ── Source Tabs Bar ────────────────────────────────────────────────────── */
 .source-tabs-bar, .source-tabs-scroll, .source-tab {
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -613,50 +636,128 @@ iframe {
 
 .source-tabs-bar {
   display: block;
-  padding: 8px 12px;
-  background: rgba(0,0,0,0.35);
-  border-bottom: 1px solid rgba(255,44,44,0.06);
+  padding: 10px 14px 6px;
+  background: rgba(0,0,0,0.40);
+  border-bottom: 1px solid rgba(255,44,44,0.08);
+}
+
+/* Section labels: "Sources" and "✨ Premium" */
+.source-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  margin: 8px 4px 4px;
+}
+.source-section-label:first-child { margin-top: 2px; }
+.source-section-premium {
+  color: #d4af37;
+  opacity: 0.9;
 }
 
 .source-tabs-scroll {
-  display:flex;
-  gap:8px;
-  overflow-x:auto;
-  padding:6px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
   -webkit-overflow-scrolling: touch;
+  flex-wrap: wrap;
 }
 
-.source-tabs-scroll::-webkit-scrollbar { height:8px; }
-.source-tabs-scroll::-webkit-scrollbar-thumb { background: rgba(255,44,44,0.2); border-radius:8px; }
+.source-tabs-scroll::-webkit-scrollbar { height: 6px; }
+.source-tabs-scroll::-webkit-scrollbar-thumb { background: rgba(255,44,44,0.2); border-radius: 8px; }
 
+/* Pill button */
 .source-tab {
   flex: 0 0 auto;
-  padding: 7px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 13px;
   border-radius: 999px;
-  border: 1px solid transparent;
-  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
   color: #fff;
   font-weight: 600;
   font-size: 13px;
   cursor: pointer;
   white-space: nowrap;
-  transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
 }
 
 .source-tab:hover, .source-tab:focus {
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(0,0,0,0.45);
-  background: rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.09);
   outline: none;
 }
 
 .source-tab.active {
-  background: linear-gradient(90deg,#ff2c2c,#ff6b6b);
-  color: #081117;
+  background: linear-gradient(90deg, #ff2c2c, #ff6b6b);
+  color: #080f12;
   border-color: #ff2c2c;
-  box-shadow: 0 8px 28px rgba(255,44,44,0.2);
-  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 28px rgba(255,44,44,0.25);
+  transform: translateY(-2px) scale(1.03);
 }
+
+/* Premium pill variant */
+.source-tab--premium {
+  border-color: rgba(212, 175, 55, 0.3);
+  background: rgba(212, 175, 55, 0.08);
+}
+.source-tab--premium:hover {
+  background: rgba(212, 175, 55, 0.15);
+  border-color: rgba(212, 175, 55, 0.55);
+}
+.source-tab--premium.active {
+  background: linear-gradient(90deg, #b8860b, #d4af37);
+  border-color: #d4af37;
+  box-shadow: 0 8px 28px rgba(212,175,55,0.25);
+  color: #0a0600;
+}
+
+/* Chromebook badge */
+.source-badge {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+  line-height: 1.5;
+}
+.source-badge--cb {
+  background: rgba(74, 200, 120, 0.2);
+  color: #4ac878;
+  border: 1px solid rgba(74,200,120,0.3);
+}
+.source-tab.active .source-badge--cb {
+  background: rgba(0,0,0,0.25);
+  color: rgba(0,0,0,0.7);
+  border-color: transparent;
+}
+
+/* Legend hint bar */
+.source-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px 2px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+}
+.source-legend-dismiss {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.35);
+  cursor: pointer;
+  font-size: 11px;
+  text-decoration: underline;
+  padding: 0;
+}
+.source-legend-dismiss:hover { color: rgba(255,255,255,0.7); }
 #player-season-dropdown {
   margin-bottom: 20px;
 }
@@ -968,32 +1069,7 @@ iframe {
   text-transform: uppercase;
 }
 
-/* --- Source Tabs Refinement --- */
-.source-tabs-bar {
-  margin-bottom: 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.source-tab {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
-  padding: 10px 20px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  border-bottom: 2px solid transparent;
-}
-
-.source-tab.active {
-  color: #ff2c2c;
-  border-bottom: 2px solid #ff2c2c;
-  background: rgba(255, 44, 44, 0.05);
-}
-
-.source-tab:hover {
-  color: white;
-}
+/* (Source Tabs Refinement moved to unified block above) */
 
 /* CSS for the new SIMPLE notification system. */
 .notification-banner {

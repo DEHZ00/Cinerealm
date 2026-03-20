@@ -56,12 +56,27 @@ function showLoading(show = true) {
   }
 }
 
+// ── Toast Notifications ─────────────────────────────────────────────────────
+// showToast(message, type)  type: "success" | "error" | "info"
+function showToast(message, type = "info") {
+  const toast = document.createElement("div");
+  toast.className = `cr-toast cr-toast--${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  // Trigger reflow so the CSS transition fires
+  void toast.offsetWidth;
+  toast.classList.add("cr-toast--visible");
+  setTimeout(() => {
+    toast.classList.remove("cr-toast--visible");
+    setTimeout(() => toast.remove(), 350);
+  }, 3200);
+}
+
+// Keep showError as alias for backward compat (some places still call it)
 function showError(message) {
-  const errorDiv = document.createElement("div");
-  errorDiv.className = "error-message";
-  errorDiv.textContent = message;
-  document.body.appendChild(errorDiv);
-  setTimeout(() => errorDiv.remove(), 4000);
+  // Detect success-like messages and route correctly
+  const isSuccess = /added|✓|saved|removed/i.test(message);
+  showToast(message, isSuccess ? "success" : "error");
 }
 
 
@@ -307,20 +322,30 @@ window.onclick = (e) => {
 
 // ----------------- MULTI-SOURCE PLAYER -----------------
 
-
 let DEFAULT_SOURCE = "FluxLine";
 
-// Provider
+/**
+ * PROVIDERS
+ * tier:        "standard" | "premium"  — shown as section headers in the pill bar
+ * chromebook:  true if known to work on ChromeOS (no extension required)
+ * supports:    which media types this source handles
+ */
 const PROVIDERS = [
-  { name: "NovaReel",  key: "spenEmbed", supports: { movie: true, tv: true, anime: true }  },
-  { name: "FluxLine",  key: "vidplus",   supports: { movie: true, tv: true, anime: true }  }, // default
-  { name: "PulseView", key: "vidfast",   supports: { movie: true, tv: true, anime: false } },
-  { name: "King",      key: "vidking",   supports: { movie: true, tv: true, anime: false } },
-  { name: "Ez",        key: "videasy",   supports: { movie: true, tv: true, anime: true }  },
-  { name: "Seenima",   key: "vidora",   supports: { movie: true, tv: true, anime: false }  },
-  { name: "Saturn",    key: "VidSrc",   supports: { movie: true, tv: true, anime: false}   },
-  { name: "Mars" ,     key: "vidlink",  supports: { movie: true, tv: true, anime: false}   },
-  { name: "Jupiter" ,     key: "VidZen",  supports: { movie: true, tv: true, anime: true} }
+  // ── Standard Sources ─────────────────────────────────────────────────────
+  { name: "FluxLine",  key: "vidplus",    tier: "standard", chromebook: true,  supports: { movie: true, tv: true, anime: true  } }, // default
+  { name: "NovaReel",  key: "spenEmbed",  tier: "standard", chromebook: true,  supports: { movie: true, tv: true, anime: true  } },
+  { name: "PulseView", key: "vidfast",    tier: "standard", chromebook: true,  supports: { movie: true, tv: true, anime: false } },
+  { name: "Ez",        key: "videasy",    tier: "standard", chromebook: true,  supports: { movie: true, tv: true, anime: true  } },
+  { name: "Saturn",    key: "VidSrc",     tier: "standard", chromebook: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "Mars",      key: "vidlink",    tier: "standard", chromebook: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "Jupiter",   key: "VidZen",     tier: "standard", chromebook: false, supports: { movie: true, tv: true, anime: true  } },
+  { name: "Seenima",   key: "vidora",     tier: "standard", chromebook: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "King",      key: "vidking",    tier: "standard", chromebook: false, supports: { movie: true, tv: true, anime: false } },
+
+  // ── Premium Sources ───────────────────────────────────────────────────────
+  { name: "VidUp",     key: "vidup",      tier: "premium",  chromebook: true,  supports: { movie: true, tv: true, anime: false } },
+  { name: "MoviesAPI", key: "moviesapi",  tier: "premium",  chromebook: true,  supports: { movie: true, tv: true, anime: false } },
+  { name: "111Movies", key: "111movies",  tier: "premium",  chromebook: true,  supports: { movie: true, tv: true, anime: false } },
 ];
 
 
@@ -548,6 +573,51 @@ function buildProviderUrl(providerKey, media, opts = {}) {
   return base + buildQuery(params);
 }
 }
+
+  // ── VidUp ─────────────────────────────────────────────────────────────────
+  // Docs: https://vidup.to/#documentation
+  if (providerKey === "vidup") {
+    let base = "";
+    if (t === "movie") base = `https://vidup.to/movie/${id}`;
+    if (t === "tv")    base = `https://vidup.to/tv/${id}/${media.season || 1}/${media.episode || 1}`;
+    if (!base) return "";
+    const params = {};
+    if (opts.autoplay  !== undefined) params.autoPlay       = opts.autoplay ? "true" : "false";
+    if (opts.title     !== undefined) params.title          = opts.title ? "true" : "false";
+    if (opts.poster    !== undefined) params.poster         = opts.poster ? "true" : "false";
+    if (opts.theme)                   params.theme          = opts.theme.replace("#", "");
+    if (opts.server)                  params.server         = opts.server;
+    if (opts.hideServerControls !== undefined) params.hideServer = opts.hideServerControls ? "true" : "false";
+    if (opts.fullscreenButton   !== undefined) params.fullscreenButton = opts.fullscreenButton ? "true" : "false";
+    if (opts.chromecast         !== undefined) params.chromecast       = opts.chromecast ? "true" : "false";
+    if (opts.sub)                     params.sub            = opts.sub;
+    if (Number.isFinite(opts.startAt) && opts.startAt > 0) params.startAt = Math.floor(opts.startAt);
+    // TV-only extras
+    if (t === "tv" && opts.autoNext !== undefined) params.autoNext   = opts.autoNext ? "true" : "false";
+    if (t === "tv" && opts.nextButton !== undefined) params.nextButton = opts.nextButton ? "true" : "false";
+    return base + buildQuery(params);
+  }
+
+  // ── MoviesAPI ────────────────────────────────────────────────────────────
+  // Docs: https://moviesapi.to/#api
+  if (providerKey === "moviesapi") {
+    let base = "";
+    if (t === "movie") base = `https://moviesapi.club/movie/${id}`;
+    if (t === "tv")    base = `https://moviesapi.club/tv/${id}-${media.season || 1}-${media.episode || 1}`;
+    if (!base) return "";
+    return base; // moviesapi doesn't use query params in the public embed spec
+  }
+
+  // ── 111Movies ────────────────────────────────────────────────────────────
+  // Docs: https://111movies.net/#api
+  if (providerKey === "111movies") {
+    let base = "";
+    if (t === "movie") base = `https://111movies.net/movie/${id}`;
+    if (t === "tv")    base = `https://111movies.net/tv/${id}/${media.season || 1}/${media.episode || 1}`;
+    if (!base) return "";
+    return base; // 111movies uses clean URL routing only
+  }
+
 // Iframe lifecycle
 let currentIframe = null;
 function unloadIframe() {
@@ -582,50 +652,93 @@ function insertIframe(url) {
   return iframe;
 }
 
-// Render source tabs (pills)
+// ── Render Source Pills (grouped: Standard / Premium, with badges) ──────────
 function renderSourcePills(media, defaultName, opts) {
   const bar = document.createElement("div");
   bar.className = "source-tabs-bar";
-  const scroll = document.createElement("div");
-  scroll.className = "source-tabs-scroll";
-  bar.appendChild(scroll);
 
-  //  last provider from localStorage (if valid for this media type)
+  // Persist last chosen provider
   const savedProvider = localStorage.getItem("cine_last_provider");
   const initialName =
     savedProvider && PROVIDERS.some(p => p.name === savedProvider && p.supports[media.type])
       ? savedProvider
       : defaultName;
 
-  PROVIDERS.forEach(p => {
-    if (!p.supports[media.type]) return; // skip incompatible providers
-    const btn = document.createElement("button");
-    btn.className = "source-tab";
-    btn.type = "button";
-    btn.dataset.key = p.key;
-    btn.textContent = p.name;
+  function activateProvider(providerKey, allBtns) {
+    allBtns.forEach(b => b.classList.remove("active"));
+    const target = allBtns.find(b => b.dataset.key === providerKey);
+    if (target) {
+      target.classList.add("active");
+      localStorage.setItem("cine_last_provider", target.dataset.name);
+    }
+    const err = document.getElementById("player-error");
+    if (err) err.style.display = "none";
+    const url = buildProviderUrl(providerKey, media, opts);
+    insertIframe(url);
+  }
 
-    if (p.name === initialName) btn.classList.add("active");
+  const tiers = [
+    { id: "standard", label: "Sources" },
+    { id: "premium",  label: "✨ Premium" },
+  ];
 
-    btn.addEventListener("click", () => {
-      // highlight
-      scroll.querySelectorAll(".source-tab").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
+  const allBtns = [];
 
-      // remember choice
-      localStorage.setItem("cine_last_provider", p.name);
+  tiers.forEach(tier => {
+    const group = PROVIDERS.filter(p => p.tier === tier.id && p.supports[media.type]);
+    if (!group.length) return;
 
-      // hide previous error
-      const err = document.getElementById("player-error");
-      if (err) err.style.display = "none";
+    // Section label
+    const sectionLabel = document.createElement("div");
+    sectionLabel.className = `source-section-label source-section-${tier.id}`;
+    sectionLabel.textContent = tier.label;
+    bar.appendChild(sectionLabel);
 
-      // Build provider-specific URL and load
-      const url = buildProviderUrl(p.key, media, opts);
-      insertIframe(url);
+    // Pill row for this tier
+    const row = document.createElement("div");
+    row.className = "source-tabs-scroll";
+    bar.appendChild(row);
+
+    group.forEach(p => {
+      const btn = document.createElement("button");
+      btn.className = "source-tab";
+      btn.type = "button";
+      btn.dataset.key  = p.key;
+      btn.dataset.name = p.name;
+
+      if (p.tier === "premium") btn.classList.add("source-tab--premium");
+      if (p.name === initialName) btn.classList.add("active");
+
+      // Inner layout: name + badges
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = p.name;
+      btn.appendChild(nameSpan);
+
+      if (p.chromebook) {
+        const badge = document.createElement("span");
+        badge.className = "source-badge source-badge--cb";
+        badge.title = "Works on Chromebook";
+        badge.textContent = "CB";
+        btn.appendChild(badge);
+      }
+
+      btn.addEventListener("click", () => activateProvider(p.key, allBtns));
+      row.appendChild(btn);
+      allBtns.push(btn);
     });
-
-    scroll.appendChild(btn);
   });
+
+  // Chromebook legend hint (one-time, dismissable)
+  if (!localStorage.getItem("cr_cb_legend_seen")) {
+    const legend = document.createElement("div");
+    legend.className = "source-legend";
+    legend.innerHTML = `<span class="source-badge source-badge--cb">CB</span> = Confirmed working on Chromebook &nbsp;·&nbsp; <button class="source-legend-dismiss">Got it</button>`;
+    legend.querySelector(".source-legend-dismiss").onclick = () => {
+      legend.remove();
+      localStorage.setItem("cr_cb_legend_seen", "1");
+    };
+    bar.appendChild(legend);
+  }
 
   return bar;
 }
@@ -781,9 +894,19 @@ async function renderSeasonsDropdown(tvId, media, extraOpts = {}) {
     episodeList.scrollBy({ left: 300, behavior: "smooth" });
   });
 
+  // Season data cache — avoids re-fetching when user switches back
+  const seasonCache = {};
+
   // --- Load Episodes for a Season ---
   async function loadEpisodes(seasonNumber) {
-    const seasonData = await apiCall(`/tv/${tvId}/season/${seasonNumber}`);
+    const cacheKey = `${tvId}_s${seasonNumber}`;
+    let seasonData = seasonCache[cacheKey];
+
+    if (!seasonData) {
+      seasonData = await apiCall(`/tv/${tvId}/season/${seasonNumber}`);
+      if (seasonData) seasonCache[cacheKey] = seasonData;
+    }
+
     episodeList.innerHTML = "";
     if (!seasonData || !seasonData.episodes) return;
 
