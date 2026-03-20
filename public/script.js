@@ -1229,6 +1229,91 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+// ---- Home Page Genre Filter Row ----
+function initHomeGenreFilter() {
+  if (!document.getElementById("homeGenreChips")) return;
+
+  let activeType = "movie";
+  const chipsRow   = document.getElementById("homeGenreChips");
+  const resultsRow = document.getElementById("homeGenreResults");
+
+  async function loadChips(type) {
+    chipsRow.innerHTML = "";
+    const data = await apiCall("/genre/" + type + "/list");
+    const genres = (data && data.genres) ? data.genres : [];
+
+    genres.slice(0, 18).forEach(function(g, i) {
+      const chip = document.createElement("button");
+      chip.textContent = g.name;
+      chip.dataset.id = g.id;
+      chip.style.flexShrink = "0";
+      chip.style.padding = "6px 14px";
+      chip.style.borderRadius = "999px";
+      chip.style.border = "1.5px solid rgba(255,255,255,0.13)";
+      chip.style.background = "rgba(255,255,255,0.05)";
+      chip.style.color = "rgba(255,255,255,0.75)";
+      chip.style.fontSize = "12px";
+      chip.style.fontWeight = "600";
+      chip.style.cursor = "pointer";
+      chip.style.whiteSpace = "nowrap";
+      chip.style.transition = "all 0.15s";
+
+      if (i === 0) activateChip(chip, g.id);
+
+      chip.addEventListener("click", function() {
+        chipsRow.querySelectorAll("button").forEach(function(c) {
+          c.style.background = "rgba(255,255,255,0.05)";
+          c.style.borderColor = "rgba(255,255,255,0.13)";
+          c.style.color = "rgba(255,255,255,0.75)";
+        });
+        activateChip(chip, g.id);
+      });
+      chipsRow.appendChild(chip);
+    });
+  }
+
+  function activateChip(chip, genreId) {
+    chip.style.background  = "#ff2c2c";
+    chip.style.borderColor = "#ff2c2c";
+    chip.style.color       = "#fff";
+    loadGenreResults(activeType, genreId);
+  }
+
+  async function loadGenreResults(type, genreId) {
+    resultsRow.innerHTML = "<p class=\"placeholder\">Loading\u2026</p>";
+    const data = await apiCall("/discover/" + type, { with_genres: genreId, sort_by: "popularity.desc", page: 1 });
+    const items = ((data && data.results) ? data.results : []).filter(function(i) { return i.poster_path; }).slice(0, 14);
+    resultsRow.innerHTML = "";
+    if (!items.length) {
+      resultsRow.innerHTML = "<p class=\"placeholder\">No results found.</p>";
+      return;
+    }
+    items.forEach(function(item) {
+      const card = createMovieCard(item, type);
+      if (card) resultsRow.appendChild(card);
+    });
+  }
+
+  document.querySelectorAll(".genre-home-type").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      document.querySelectorAll(".genre-home-type").forEach(function(b) {
+        b.style.background  = "rgba(255,255,255,0.05)";
+        b.style.color       = "rgba(255,255,255,0.7)";
+        b.style.borderColor = "rgba(255,255,255,0.12)";
+        b.classList.remove("active");
+      });
+      btn.style.background  = "rgba(255,44,44,0.15)";
+      btn.style.color       = "#ff2c2c";
+      btn.style.borderColor = "rgba(255,44,44,0.4)";
+      btn.classList.add("active");
+      activeType = btn.dataset.type;
+      loadChips(activeType);
+    });
+  });
+
+  loadChips(activeType);
+}
+
 // ---- Initial Load ----
 loadHistory();
 loadWatchlist();
@@ -1238,3 +1323,4 @@ fetchMovies("/movie/top_rated", "topRatedMovies", "movie");
 fetchMovies("/tv/popular", "popularTV", "tv");
 fetchMovies("/tv/top_rated", "topRatedTV", "tv");
 renderContinueWatching();
+initHomeGenreFilter();
