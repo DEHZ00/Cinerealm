@@ -1,3 +1,4 @@
+// CineRealm script.js — v2.2
 //CONFIGURATION
 const BACKEND_URL = "https://ez-streaming-api.vercel.app";
 const IMG_BASE = "https://image.tmdb.org/t/p/w500";
