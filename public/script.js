@@ -1007,14 +1007,25 @@ function addRowScrollArrows(row) {
 }
 
 // ── Re-run personal rows when returning to the page ───────────────────────
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") {
-    // Re-read history and refresh personal rows
-    loadHistory();
-    renderContinueWatching();
-    loadBecauseYouWatched();
-  }
+function refreshPersonalRows() {
+  if (!document.getElementById("continueWatching")) return; // only on home
+  loadHistory();
+  renderContinueWatching();
+  loadBecauseYouWatched();
+}
+
+// pageshow fires on back/forward navigation (bfcache restore)
+window.addEventListener("pageshow", (e) => {
+  if (e.persisted) refreshPersonalRows(); // came from bfcache (back button)
 });
+
+// visibilitychange fires when switching tabs
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") refreshPersonalRows();
+});
+
+// Also refresh when window regains focus
+window.addEventListener("focus", refreshPersonalRows);
 function showSkeletons(container, count = 8) {
   container.innerHTML = Array(count).fill(
     '<div class="skeleton-card"><div class="skeleton-card-img"></div><div class="skeleton-card-title"></div></div>'
@@ -1034,18 +1045,14 @@ async function fetchMovies(endpoint, containerId, type = "movie") {
   }
 
   container.innerHTML = "";
-  let index = 0;
   data.results
     .filter(item => item.poster_path)
+    .slice(0, 40)
     .forEach(item => {
       const card = createMovieCard(item, type);
-      if (card) {
-        container.appendChild(card);
-        index++;
-      }
+      if (card) container.appendChild(card);
     });
 
-  // Add scroll arrows to the parent section if not already there
   addRowScrollArrows(container);
 }
 
