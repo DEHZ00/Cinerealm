@@ -1257,15 +1257,22 @@ async function renderContinueWatching() {
   const compact = [];
 
   for (const item of sorted) {
-    if (!item || !item.type || !item.tmdbId) continue;
+    if (!item || !item.type) continue;
+    const id = item.tmdbId || item.id;
+    if (!id) continue;
 
-    if (!item.progress || !item.duration || item.duration < 60) continue;
-    if (item.progress >= item.duration - 60) continue; // basically finished
+    // Include item if: has real progress, OR was recently visited (within 30 days)
+    const hasProgress = item.progress > 30; // more than 30 seconds watched
+    const isFinished = item.progress && item.duration && item.progress >= item.duration - 60;
+    const isRecent = (Date.now() - (item.addedAt || 0)) < 30 * 24 * 60 * 60 * 1000;
 
-    const key = `${item.type}-${item.tmdbId}`;
+    if (isFinished) continue; // skip fully watched
+    if (!hasProgress && !isRecent) continue; // skip entries with no progress and not recent
+
+    const key = item.type + "-" + id;
     if (seen.has(key)) continue;
     seen.add(key);
-    compact.push(item);
+    compact.push({ ...item, tmdbId: id });
 
     if (compact.length >= 20) break;
   }
@@ -2001,10 +2008,21 @@ async function loadBecauseYouWatched() {
   console.log("[BYW] history entries:", history.length, history);
   if (!history.length) { console.log("[BYW] no history"); return; }
 
-  const recent = [...history]
-    .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0))
-    .find(h => (h.tmdbId || h.id) && h.type);
+  // Deduplicate and sort by most recent
+  const seen = new Set();
+  const deduped = [];
+  for (const h of [...history].sort((a,b) => (b.addedAt||0) - (a.addedAt||0))) {
+    const id = h.tmdbId || h.id;
+    if (!id || !h.type) continue;
+    const key = h.type + "_" + id;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(h);
+    if (deduped.length >= 10) break;
+  }
 
+  // Pick most recent entry that has a valid id
+  const recent = deduped.find(h => (h.tmdbId || h.id) && h.type);
   console.log("[BYW] most recent:", recent);
   if (!recent) return;
 
@@ -2041,7 +2059,7 @@ async function loadBecauseYouWatched() {
   console.log("[BYW] rendering", filtered.length, "cards, section display:", section.style.display);
 
   let cardCount = 0;
-  filtered.forEach((item, idx) => {
+  filtered.forEach((item) => {
     const card = createMovieCard(item, recent.type);
     if (card) {
       container.appendChild(card);
@@ -2049,6 +2067,11 @@ async function loadBecauseYouWatched() {
     }
   });
   console.log("[BYW] appended", cardCount, "cards");
+
+  // Add scroll arrows after cards are in DOM
+  if (!container.dataset.arrowsAdded) {
+    addRowScrollArrows(container);
+  }
 }
 
 
