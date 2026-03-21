@@ -1904,40 +1904,46 @@ async function loadNewEpisodes() {
     });
 }
 
-// Because You Watched — personalized row based on most-watched genre
+// Because You Watched — personalized row based on most recent watch
 async function loadBecauseYouWatched() {
-  const section = document.getElementById("becauseYouWatchedSection");
+  const section   = document.getElementById("becauseYouWatchedSection");
   const container = document.getElementById("becauseYouWatched");
-  const titleEl = document.getElementById("becauseYouWatchedTitle");
+  const titleEl   = document.getElementById("becauseYouWatchedTitle");
   if (!section || !container) return;
 
-  loadHistory();
-  if (!historyData || historyData.length < 2) return;
+  // Always re-read from localStorage so we get the latest
+  const history = JSON.parse(localStorage.getItem("history") || "[]");
+  if (!history.length) return;
 
-  // Find most watched title from history
-  const recent = [...historyData]
+  // Find most recently watched entry — handle both tmdbId and id field names
+  const recent = [...history]
     .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0))
-    .find(h => h.tmdbId && h.type);
+    .find(h => (h.tmdbId || h.id) && h.type);
 
   if (!recent) return;
 
-  // Fetch its details to get genres
-  const details = await apiCall("/" + recent.type + "/" + recent.tmdbId);
+  const tmdbId = recent.tmdbId || recent.id;
+  if (!tmdbId) return;
+
+  // Fetch details to get genres
+  const details = await apiCall("/" + recent.type + "/" + tmdbId);
   if (!details?.genres?.length) return;
 
-  const genre = details.genres[0];
+  const genre      = details.genres[0];
   const recentTitle = details.title || details.name || "Your Recent Watch";
 
   // Fetch similar content by genre
-  const endpoint = recent.type === "movie"
-    ? "/discover/movie"
-    : "/discover/tv";
+  const endpoint = recent.type === "movie" ? "/discover/movie" : "/discover/tv";
+  const data = await apiCall(endpoint, {
+    with_genres: genre.id,
+    sort_by: "popularity.desc",
+    page: 1
+  });
 
-  const data = await apiCall(endpoint, { with_genres: genre.id, sort_by: "popularity.desc" });
   if (!data?.results?.length) return;
 
   const filtered = data.results
-    .filter(i => i.poster_path && i.id !== recent.tmdbId)
+    .filter(i => i.poster_path && String(i.id) !== String(tmdbId))
     .slice(0, 20);
 
   if (!filtered.length) return;
