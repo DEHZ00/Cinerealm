@@ -1909,15 +1909,14 @@ async function loadBecauseYouWatched() {
   const section   = document.getElementById("becauseYouWatchedSection");
   const container = document.getElementById("becauseYouWatched");
   const titleEl   = document.getElementById("becauseYouWatchedTitle");
-  if (!section || !container) return;
 
-  // Always re-read from localStorage so we get the latest
+  console.log("[BYW] section found:", !!section, "container found:", !!container);
+  if (!section || !container) { console.log("[BYW] elements missing from DOM"); return; }
+
   const history = JSON.parse(localStorage.getItem("history") || "[]");
   console.log("[BYW] history entries:", history.length, history);
+  if (!history.length) { console.log("[BYW] no history"); return; }
 
-  if (!history.length) { console.log("[BYW] no history, hiding"); return; }
-
-  // Find most recently watched entry — handle both tmdbId and id field names
   const recent = [...history]
     .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0))
     .find(h => (h.tmdbId || h.id) && h.type);
@@ -1952,16 +1951,20 @@ async function loadBecauseYouWatched() {
   if (!filtered.length) return;
 
   titleEl.textContent = "Because You Watched " + recentTitle;
+  section.style.removeProperty("display");
   section.style.display = "block";
   container.innerHTML = "";
+  console.log("[BYW] rendering", filtered.length, "cards, section display:", section.style.display);
 
+  let cardCount = 0;
   filtered.forEach((item, idx) => {
     const card = createMovieCard(item, recent.type);
     if (card) {
-      card.style.animationDelay = (idx * 35) + "ms";
       container.appendChild(card);
+      cardCount++;
     }
   });
+  console.log("[BYW] appended", cardCount, "cards");
 }
 
 
