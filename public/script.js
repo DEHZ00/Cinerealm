@@ -68,16 +68,24 @@ function saveWatchlist() {
   const intro = document.getElementById("appIntro");
   if (!intro) return;
 
-  // Remove hidden class to show it
+  const isHome = window.location.pathname === "/";
+
+  // Add home class so CSS can show the progress bar on home only
+  if (isHome) intro.classList.add("intro-home");
+
+  // Remove hidden so it shows
   intro.classList.remove("hidden");
 
-  // Dismiss after 1.8s
+  // Home page = longer (2.6s) since there's more loading happening
+  // Other pages = shorter (1.6s) just the wordmark
+  const duration = isHome ? 2600 : 1600;
+
   setTimeout(() => {
     intro.classList.add("fade-out");
     setTimeout(() => {
       intro.style.display = "none";
-    }, 600);
-  }, 1800);
+    }, 800);
+  }, duration);
 })();
 
 // ── Greeting on home page ─────────────────────────────────────────────────
@@ -94,7 +102,7 @@ function showGreeting() {
   if (!document.getElementById("heroSection")) return;
 
   const name = localStorage.getItem("cr_user_name") || "";
-  const greeting = getGreeting() + (name ? ", " + name : "") + " 👋";
+  const greeting = getGreeting() + (name ? ", " + name : "");
 
   // Insert greeting below hero section
   const heroSection = document.getElementById("heroSection");

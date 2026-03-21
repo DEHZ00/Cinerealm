@@ -5982,86 +5982,145 @@ header.header-hidden {
    ════════════════════════════════════════════════════════════════════════════ */
 
 /* ── Splash screen V2 ────────────────────────────────────────────────────── */
+/* ── Splash Screen V3 ────────────────────────────────────────────────────── */
 #appIntro {
   position: fixed;
   inset: 0;
-  background: #060404;
+  background: #050303;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   z-index: 99999;
-  gap: 16px;
+  gap: 0;
   opacity: 1;
-  transition: opacity 0.6s ease, transform 0.6s ease;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+  overflow: hidden;
+}
+
+/* Animated radial glow background */
+#appIntro::before {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(255,44,44,0.18) 0%,
+    rgba(180,0,0,0.08) 45%,
+    transparent 70%);
+  animation: splashGlowPulse 2.5s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+/* Second glow layer for depth */
+#appIntro::after {
+  content: '';
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(255,80,80,0.12) 0%,
+    transparent 70%);
+  animation: splashGlowPulse 1.8s ease-in-out 0.4s infinite alternate-reverse;
+  pointer-events: none;
+}
+
+@keyframes splashGlowPulse {
+  from { transform: scale(0.9); opacity: 0.6; }
+  to   { transform: scale(1.15); opacity: 1; }
 }
 
 #appIntro.hidden { display: none !important; }
 
 #appIntro.fade-out {
   opacity: 0;
-  transform: scale(1.04);
+  transform: scale(1.06);
   pointer-events: none;
 }
 
+/* Logo wrapper — sits above the glow layers */
 .intro-logo {
-  font-size: 0; /* hide text, show styled version */
   position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
 }
 
-.intro-logo::before {
-  content: '🎬';
-  font-size: 48px;
-  display: block;
-  animation: introIcon 0.6s cubic-bezier(0.22,0.68,0,1.2) both;
-}
-
+/* CineRealm wordmark */
 .intro-logo::after {
   content: 'CineRealm';
-  font-size: 36px;
+  font-size: 48px;
   font-weight: 900;
-  color: #ff2c2c;
-  letter-spacing: -0.5px;
+  letter-spacing: -1px;
   display: block;
   text-align: center;
-  margin-top: 8px;
-  animation: introText 0.5s ease 0.2s both;
   font-family: 'Inter', system-ui, sans-serif;
+  /* Multi-stop gradient for the glow feel */
+  background: linear-gradient(
+    135deg,
+    #ff6b6b 0%,
+    #ff2c2c 35%,
+    #cc0000 65%,
+    #ff4444 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 24px rgba(255,44,44,0.5))
+          drop-shadow(0 0 48px rgba(255,44,44,0.2));
+  animation: splashWordmark 0.7s cubic-bezier(0.22,0.68,0,1.1) 0.1s both;
 }
 
+@keyframes splashWordmark {
+  from { opacity: 0; transform: scale(0.85) translateY(12px); filter: drop-shadow(0 0 0px rgba(255,44,44,0)); }
+  to   { opacity: 1; transform: scale(1) translateY(0); filter: drop-shadow(0 0 24px rgba(255,44,44,0.5)) drop-shadow(0 0 48px rgba(255,44,44,0.2)); }
+}
+
+/* Tagline — shown on all pages */
 .intro-tagline {
+  position: relative;
+  z-index: 1;
   font-size: 13px;
-  color: rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.35);
   font-weight: 500;
-  letter-spacing: 0.5px;
-  animation: introText 0.5s ease 0.35s both;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 12px;
+  animation: splashFadeUp 0.5s ease 0.5s both;
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* Loading bar under logo */
+/* Loading bar — home page only (hidden by default, shown via .intro-show-bar) */
 .intro-bar-wrap {
-  width: 120px;
+  display: none;
+  position: relative;
+  z-index: 1;
+  width: 100px;
   height: 2px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.06);
   border-radius: 99px;
   overflow: hidden;
-  animation: introText 0.5s ease 0.4s both;
+  margin-top: 28px;
+  animation: splashFadeUp 0.4s ease 0.6s both;
+}
+
+#appIntro.intro-home .intro-bar-wrap {
+  display: block;
 }
 
 .intro-bar {
   height: 100%;
-  background: #ff2c2c;
+  background: linear-gradient(90deg, #cc0000, #ff2c2c, #ff6b6b);
   border-radius: 99px;
-  animation: introBarFill 1.2s ease 0.4s both;
+  animation: introBarFill 2s ease 0.6s both;
 }
 
-@keyframes introIcon {
-  from { opacity: 0; transform: scale(0.6) rotate(-10deg); }
-  to   { opacity: 1; transform: scale(1) rotate(0deg); }
-}
-
-@keyframes introText {
-  from { opacity: 0; transform: translateY(8px); }
+@keyframes splashFadeUp {
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -6149,4 +6208,24 @@ header.header-hidden {
 
 @media (max-width: 768px) {
   .home-greeting { font-size: 18px; padding: 8px 16px 0; }
+}
+
+/* ── Nav logo gradient to match splash wordmark ──────────────────────────── */
+.header-left h1 a,
+.header-left h1 {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff2c2c 40%, #cc0000 70%, #ff4444 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent !important;
+  text-decoration: none;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+}
+
+.header-left h1 a:hover,
+.header-left h1:hover {
+  filter: brightness(1.15);
+  transform: none;
+  text-shadow: none;
 }
