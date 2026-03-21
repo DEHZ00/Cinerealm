@@ -565,16 +565,23 @@ function insertIframe(url) {
     "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
   );
   iframe.setAttribute("allow", "autoplay; encrypted-media; fullscreen; picture-in-picture");
-  iframe.setAttribute("allowfullscreen", "");
   iframe.style.width = "100%";
   iframe.style.height = "600px";
   iframe.style.border = "none";
   iframe.loading = "lazy";
   iframe.addEventListener("error", () => {
-    const err = document.getElementById("player-error");
+    const err = document.getElementById("player-error") || document.getElementById("watch-player-error");
     if (err) err.style.display = "block";
   });
-  const placeholder = document.getElementById("player-iframe-placeholder") || playerDiv;
+  const placeholder = 
+    document.getElementById("player-iframe-placeholder") ||
+    document.getElementById("watch-iframe-placeholder") ||
+    playerDiv;
+  if (!placeholder) {
+    showError("Player container not found.");
+    return null;
+  }
+  placeholder.innerHTML = ""; // clear previous iframe
   placeholder.appendChild(iframe);
   currentIframe = iframe;
   return iframe;
@@ -599,7 +606,7 @@ function renderSourcePills(media, defaultName, opts) {
       target.classList.add("active");
       localStorage.setItem("cine_last_provider", target.dataset.name);
     }
-    const err = document.getElementById("player-error");
+    const err = document.getElementById("player-error") || document.getElementById("watch-player-error");
     if (err) err.style.display = "none";
     const url = buildProviderUrl(providerKey, media, opts);
     insertIframe(url);
