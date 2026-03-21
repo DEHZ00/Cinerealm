@@ -5888,3 +5888,251 @@ header.header-hidden {
 }
 .wp-leave-btn:hover { background: rgba(255,44,44,0.15); color: #ff6b6b; }
 .wp-name-row { width: 100%; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SECTION 12 — PUSH NOTIFICATIONS
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.notif-prompt-banner {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  width: min(420px, calc(100vw - 32px));
+  background: linear-gradient(135deg, #140202 0%, #0c0808 100%);
+  border: 1px solid rgba(255,44,44,0.25);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 8500;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.notif-prompt-banner.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.notif-prompt-icon { font-size: 24px; flex-shrink: 0; }
+
+.notif-prompt-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notif-prompt-text strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.notif-prompt-text span {
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.4;
+}
+
+.notif-prompt-btns {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.notif-allow-btn {
+  padding: 7px 16px;
+  background: #ff2c2c;
+  border: none;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.notif-allow-btn:hover { background: #e01f1f; }
+
+.notif-dismiss-btn {
+  padding: 7px 12px;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 999px;
+  color: rgba(255,255,255,0.5);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.notif-dismiss-btn:hover { border-color: rgba(255,255,255,0.25); color: #fff; }
+
+@media (max-width: 768px) {
+  .notif-prompt-banner { bottom: 72px; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SECTION 13 — EXTRA PREMIUM POLISH
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Splash screen V2 ────────────────────────────────────────────────────── */
+#appIntro {
+  position: fixed;
+  inset: 0;
+  background: #060404;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  gap: 16px;
+  opacity: 1;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+#appIntro.hidden { display: none !important; }
+
+#appIntro.fade-out {
+  opacity: 0;
+  transform: scale(1.04);
+  pointer-events: none;
+}
+
+.intro-logo {
+  font-size: 0; /* hide text, show styled version */
+  position: relative;
+}
+
+.intro-logo::before {
+  content: '🎬';
+  font-size: 48px;
+  display: block;
+  animation: introIcon 0.6s cubic-bezier(0.22,0.68,0,1.2) both;
+}
+
+.intro-logo::after {
+  content: 'CineRealm';
+  font-size: 36px;
+  font-weight: 900;
+  color: #ff2c2c;
+  letter-spacing: -0.5px;
+  display: block;
+  text-align: center;
+  margin-top: 8px;
+  animation: introText 0.5s ease 0.2s both;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.intro-tagline {
+  font-size: 13px;
+  color: rgba(255,255,255,0.3);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  animation: introText 0.5s ease 0.35s both;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Loading bar under logo */
+.intro-bar-wrap {
+  width: 120px;
+  height: 2px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 99px;
+  overflow: hidden;
+  animation: introText 0.5s ease 0.4s both;
+}
+
+.intro-bar {
+  height: 100%;
+  background: #ff2c2c;
+  border-radius: 99px;
+  animation: introBarFill 1.2s ease 0.4s both;
+}
+
+@keyframes introIcon {
+  from { opacity: 0; transform: scale(0.6) rotate(-10deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+@keyframes introText {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes introBarFill {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+
+/* ── Ambient mode glow ───────────────────────────────────────────────────── */
+.ambient-glow {
+  position: absolute;
+  bottom: -20px;
+  left: -20px;
+  right: -20px;
+  height: 120px;
+  opacity: 0;
+  transition: opacity 1.5s ease, background 2s ease;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(20px);
+}
+
+#watch-player-container {
+  position: relative;
+}
+
+/* ── Custom context menu ─────────────────────────────────────────────────── */
+.cr-context-menu {
+  position: absolute;
+  min-width: 200px;
+  background: linear-gradient(160deg, #180303 0%, #0e0808 100%);
+  border: 1px solid rgba(255,44,44,0.2);
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  z-index: 99998;
+  overflow: hidden;
+  animation: ctxIn 0.12s ease;
+}
+
+@keyframes ctxIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.cr-ctx-header {
+  padding: 10px 14px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.4);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.cr-ctx-item {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.75);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.cr-ctx-item:hover {
+  background: rgba(255,44,44,0.1);
+  color: #fff;
+}

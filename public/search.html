@@ -6,7 +6,13 @@
   <meta name="description" content="Search movies and TV shows on CineRealm">
   <title>Search — CineRealm</title>
   <link rel="stylesheet" href="/style.css">
-  <link rel="icon" href="/favicon.ico">
+    <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#ff2c2c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CineRealm">
+<link rel="icon" href="/favicon.ico">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -123,7 +129,9 @@
 <body>
 
 <div id="appIntro" class="intro hidden">
-  <div class="intro-logo">CineRealm</div>
+  <div class="intro-logo"></div>
+  <p class="intro-tagline">Stream Movies, TV &amp; Anime</p>
+  <div class="intro-bar-wrap"><div class="intro-bar"></div></div>
 </div>
 
 <header>

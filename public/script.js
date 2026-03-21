@@ -1909,6 +1909,128 @@ if (document.getElementById("heroSection")) {
   btn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 })();
 
+// ── Section 13 — Extra Premium Polish ────────────────────────────────────
+
+// ── 1. Ambient Mode ───────────────────────────────────────────────────────
+function initAmbientMode(posterUrl) {
+  const container = document.getElementById("watch-player-container");
+  if (!container) return;
+  let glow = document.getElementById("ambientGlow");
+  if (!glow) {
+    glow = document.createElement("div");
+    glow.id = "ambientGlow";
+    glow.className = "ambient-glow";
+    container.insertBefore(glow, container.firstChild);
+  }
+  if (!posterUrl) return;
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = () => {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 8; canvas.height = 8;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, 8, 8);
+      const pixels = ctx.getImageData(0, 0, 8, 8).data;
+      let r = 0, g = 0, b = 0, count = 0;
+      for (let i = 0; i < pixels.length; i += 4) { r += pixels[i]; g += pixels[i+1]; b += pixels[i+2]; count++; }
+      r = Math.min(255, Math.round((r/count) * 1.6));
+      g = Math.min(255, Math.round((g/count) * 1.6));
+      b = Math.min(255, Math.round((b/count) * 1.6));
+      glow.style.background = `radial-gradient(ellipse 80% 60% at 50% 100%, rgba(${r},${g},${b},0.35) 0%, transparent 70%)`;
+      glow.style.opacity = "1";
+    } catch(e) {}
+  };
+  img.src = posterUrl;
+}
+
+// ── 2. Favicon animation ──────────────────────────────────────────────────
+let _faviconInterval = null;
+
+function startFaviconAnimation() {
+  const link = document.querySelector("link[rel*='icon']") || (() => {
+    const l = document.createElement("link"); l.rel = "icon"; document.head.appendChild(l); return l;
+  })();
+  const canvas = document.createElement("canvas");
+  canvas.width = 32; canvas.height = 32;
+  const ctx = canvas.getContext("2d");
+  let frame = 0;
+  if (_faviconInterval) clearInterval(_faviconInterval);
+  _faviconInterval = setInterval(() => {
+    ctx.clearRect(0, 0, 32, 32);
+    const alpha = 0.7 + Math.sin(frame * 0.15) * 0.3;
+    ctx.fillStyle = `rgba(255,44,44,${alpha})`;
+    ctx.beginPath(); ctx.arc(16, 16, 15, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.moveTo(12,9); ctx.lineTo(12,23); ctx.lineTo(24,16); ctx.closePath(); ctx.fill();
+    link.href = canvas.toDataURL("image/png");
+    frame++;
+  }, 1000);
+}
+
+function stopFaviconAnimation() {
+  if (_faviconInterval) { clearInterval(_faviconInterval); _faviconInterval = null; }
+  const link = document.querySelector("link[rel*='icon']");
+  if (link) link.href = "/favicon.ico";
+}
+
+if (window.location.pathname.startsWith("/watch")) {
+  window.addEventListener("load", () => setTimeout(startFaviconAnimation, 2000));
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) startFaviconAnimation();
+    else stopFaviconAnimation();
+  });
+}
+
+// ── 3. Custom context menu ────────────────────────────────────────────────
+(function() {
+  const menu = document.createElement("div");
+  menu.id = "crContextMenu";
+  menu.className = "cr-context-menu";
+  menu.style.display = "none";
+  document.body.appendChild(menu);
+
+  let ctxCard = null;
+
+  document.addEventListener("contextmenu", (e) => {
+    const card = e.target.closest(".movie-card");
+    if (!card) { menu.style.display = "none"; return; }
+    e.preventDefault();
+    ctxCard = card;
+
+    const titleEl = card.querySelector("p");
+    const title = titleEl ? titleEl.textContent.trim().split("\n")[0].trim() : "Unknown";
+    const type = card.dataset.type || "movie";
+
+    menu.innerHTML = `
+      <div class="cr-ctx-header">${title}</div>
+      <button class="cr-ctx-item" data-action="details">ⓘ More Info</button>
+      <button class="cr-ctx-item" data-action="share">⬆ Copy Link</button>
+    `;
+
+    const x = Math.min(e.clientX, window.innerWidth - 220);
+    const y = Math.min(e.clientY, window.innerHeight - 200);
+    menu.style.left = x + window.scrollX + "px";
+    menu.style.top  = y + window.scrollY + "px";
+    menu.style.display = "block";
+  });
+
+  menu.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    menu.style.display = "none";
+    const action = btn.dataset.action;
+    if (action === "details" && ctxCard) ctxCard.click();
+    if (action === "share") {
+      navigator.clipboard.writeText(window.location.href)
+        .then(() => showToast("Link copied!", "success")).catch(() => {});
+    }
+  });
+
+  document.addEventListener("click", (e) => { if (!menu.contains(e.target)) menu.style.display = "none"; });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") menu.style.display = "none"; });
+})();
+
 // Dynamic page titles
 (function() {
   const path = window.location.pathname;
@@ -1994,6 +2116,97 @@ window.showMovieDetails = async function(movie, type) {
 };
 // Also patch the global reference
 // (handled by the window assignment above)
+
+// ── Section 12 — Push Notifications ──────────────────────────────────────
+const FCM_VAPID_KEY = "BOsL8MnlTNg3rBdAVKccsOKUYyZrNg_V6ZKDqOQYZTGWGWzr5D7NeymF4BHWy44RUVD3nt79hnGim_Wgrp-HANs";
+
+async function initPushNotifications() {
+  if (!("Notification" in window)) return;
+  if (!("serviceWorker" in navigator)) return;
+  if (Notification.permission === "denied") return;
+  if (Notification.permission === "granted") { await registerFCMToken(); return; }
+  if (sessionStorage.getItem("cr_notif_prompted")) return;
+  sessionStorage.setItem("cr_notif_prompted", "1");
+  setTimeout(showNotifPrompt, 8000);
+}
+
+function showNotifPrompt() {
+  if (window.location.pathname.startsWith("/watch")) return;
+  if (sessionStorage.getItem("cr_notif_dismissed")) return;
+  const banner = document.createElement("div");
+  banner.id = "notifPromptBanner";
+  banner.className = "notif-prompt-banner";
+  banner.innerHTML = `
+    <div class="notif-prompt-icon">🔔</div>
+    <div class="notif-prompt-text">
+      <strong>Stay updated</strong>
+      <span>Get notified about new episodes and watch party invites</span>
+    </div>
+    <div class="notif-prompt-btns">
+      <button class="notif-allow-btn" id="notifAllowBtn">Allow</button>
+      <button class="notif-dismiss-btn" id="notifDismissBtn">Not now</button>
+    </div>
+  `;
+  document.body.appendChild(banner);
+  requestAnimationFrame(() => banner.classList.add("visible"));
+  document.getElementById("notifAllowBtn").onclick = async () => {
+    banner.remove();
+    const permission = await Notification.requestPermission();
+    if (permission === "granted") {
+      await registerFCMToken();
+      showToast("Notifications enabled ✓", "success");
+    }
+  };
+  document.getElementById("notifDismissBtn").onclick = () => {
+    banner.remove();
+    sessionStorage.setItem("cr_notif_dismissed", "1");
+  };
+}
+
+async function registerFCMToken() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const { getMessaging, getToken, onMessage } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js");
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
+      authDomain: "cinerealm-8b7b9.firebaseapp.com",
+      databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
+      projectId: "cinerealm-8b7b9",
+      storageBucket: "cinerealm-8b7b9.firebasestorage.app",
+      messagingSenderId: "1076768481536",
+      appId: "1:1076768481536:web:4fd3bdc3f222e4850ad3e5"
+    };
+    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+    const fcmMessaging = getMessaging(app);
+    const token = await getToken(fcmMessaging, { vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: reg });
+    if (token) {
+      localStorage.setItem("cr_fcm_token", token);
+      console.log("FCM token registered");
+    }
+    onMessage(fcmMessaging, payload => {
+      const { title, body } = payload.notification || {};
+      if (title) showToast("🔔 " + title + (body ? " — " + body : ""), "info");
+    });
+  } catch(err) {
+    console.warn("FCM registration failed:", err);
+  }
+}
+
+function sendLocalNotification(title, body, url = "/") {
+  if (Notification.permission !== "granted") return;
+  navigator.serviceWorker.ready.then(reg => {
+    reg.showNotification(title, {
+      body, icon: "/android-chrome-512x512.png",
+      badge: "/favicon-32x32.png",
+      data: { url }, tag: "cinerealm-local"
+    });
+  });
+}
+
+if (!window.location.pathname.startsWith("/watch")) {
+  window.addEventListener("load", () => setTimeout(initPushNotifications, 3000));
+}
 
 // ── Service Worker Registration ────────────────────────────────────────────
 if ("serviceWorker" in navigator) {

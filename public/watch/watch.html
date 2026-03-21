@@ -68,7 +68,9 @@
 <body>
 
 <div id="appIntro" class="intro hidden">
-  <div class="intro-logo">CineRealm</div>
+  <div class="intro-logo"></div>
+  <p class="intro-tagline">Stream Movies, TV &amp; Anime</p>
+  <div class="intro-bar-wrap"><div class="intro-bar"></div></div>
 </div>
 <div id="site-notification"></div>
 
@@ -546,6 +548,12 @@ async function leaveRoom() {
   document.getElementById("watchRating").textContent     = rating;
   document.getElementById("watchGenres").textContent     = genres;
   document.getElementById("watchOverview").textContent   = overview;
+
+  // Ambient mode — sample colors from backdrop
+  if (data.backdrop_path || data.poster_path) {
+    const ambientSrc = "https://image.tmdb.org/t/p/w300" + (data.backdrop_path || data.poster_path);
+    setTimeout(() => initAmbientMode(ambientSrc), 500);
+  }
 
   // ── Wire up player (reuse script.js infrastructure) ───────────────────
   // Override the player div references to point to watch page elements
