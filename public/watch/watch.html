@@ -3,210 +3,209 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Watch movies and TV shows online free">
-  <meta property="og:type" content="video.movie">
-  <title>Watch - Cine Realm</title>
+  <title>Watch — CineRealm</title>
   <link rel="stylesheet" href="/style.css">
   <link rel="icon" href="/favicon.ico">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://cinerealm.online">
-<meta property="og:title" content="CineRealm - Stream Movies, TV & Anime">
-<meta property="og:description" content="Watch the latest movies, TV shows, and anime online.">
-<meta property="og:image" content="https://cinerealm.online/android-chrome-512x512.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="CineRealm - Watch">
+  <meta property="og:description" content="Watch movies, TV shows, and anime online.">
+  <meta property="og:image" content="https://cinerealm.online/android-chrome-512x512.png">
+  <style>
+    /* Watch page specific */
+    .watch-page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px;
+    }
 
-<meta property="twitter:card" content="summary_large_image">
-<meta property="twitter:image" content="https://cinerealm.online/android-chrome-512x512.png">
+    .watch-back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      margin-bottom: 18px;
+      transition: background 0.2s;
+    }
+    .watch-back-btn:hover { background: rgba(255,255,255,0.13); }
+
+    .watch-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .watch-title {
+      font-size: clamp(20px, 3vw, 28px);
+      font-weight: 800;
+      margin: 0;
+      color: #fff;
+    }
+    .watch-type-badge {
+      font-size: 11px;
+      font-weight: 700;
+      background: #ff2c2c;
+      color: #fff;
+      padding: 3px 10px;
+      border-radius: 999px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .watch-rating {
+      font-size: 13px;
+      color: #ffd700;
+      font-weight: 600;
+    }
+    .watch-genres {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .watch-overview {
+      font-size: 14px;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.6;
+      max-width: 720px;
+      margin-bottom: 20px;
+    }
+
+    /* Player container */
+    #watch-player-container {
+      background: #000;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+      margin-bottom: 24px;
+    }
+
+    .watch-player-header {
+      padding: 14px 18px;
+      background: rgba(0,0,0,0.9);
+      border-bottom: 2px solid rgba(255,44,44,0.4);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .watch-player-header h3 {
+      margin: 0;
+      font-size: 16px;
+      color: #ff2c2c;
+    }
+
+    #watch-season-dropdown { padding: 10px 14px 0; }
+    #watch-tabs-placeholder {}
+    #watch-iframe-placeholder { min-height: 480px; }
+    #watch-iframe-placeholder iframe {
+      width: 100%;
+      height: clamp(320px, 56vw, 640px);
+      border: none;
+      display: block;
+    }
+
+    #watch-player-error {
+      display: none;
+      padding: 18px;
+      text-align: center;
+      color: #ff6b6b;
+      font-size: 14px;
+    }
+
+    /* Skeleton loader */
+    .watch-skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 8px;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .skeleton-title  { height: 32px; width: 55%; margin-bottom: 12px; }
+    .skeleton-meta   { height: 18px; width: 35%; margin-bottom: 18px; }
+    .skeleton-player { height: clamp(320px, 56vw, 640px); border-radius: 14px; }
+  </style>
 </head>
 <body>
 
-
-<div id="loadingSpinner" class="loading-spinner" style="display:none;">
-  <div class="spinner"></div>
-  <p>Loading...</p>
+<div id="appIntro" class="intro hidden">
+  <div class="intro-logo">CineRealm</div>
 </div>
-<div id ="site-notification"></div>
+
+<div id="site-notification"></div>
+
 <header>
   <div class="header-left">
     <h1><a href="/" style="color:#ff2c2c;text-decoration:none;">🎬 Cine Realm</a></h1>
   </div>
   <input type="text" id="searchBar" placeholder="Search movies or shows..." autocomplete="off">
-<nav class="nav-links">
-  <a href="/" class="nav-btn">Home</a>
-  <a href="/movies" class="nav-btn">Movies</a>
-  <a href="/trending" class="nav-btn">Trending</a>
-  <a href="/watchlist" class="nav-btn">Watchlist</a>
-   <a href="/games" class="nav-btn">Games</a>
-  <a href="/legal" class="nav-btn">Legal</a>
-</nav>
-
-
-
+  <nav class="nav-links">
+    <a href="/" class="nav-btn">Home</a>
+    <a href="/movies" class="nav-btn">Movies</a>
+    <a href="/trending" class="nav-btn">Trending</a>
+    <a href="/watchlist" class="nav-btn">Watchlist</a>
+    <a href="/legal" class="nav-btn">Legal</a>
+    <a href="/games" class="nav-btn">Games</a>
+  </nav>
 </header>
 
-<main id="watchContainer" class="watch-container">
-<div id="player">
-  <div id="player-season-dropdown"></div>
-  <div id="player-tabs-placeholder"></div>
-  <div id="player-iframe-placeholder" class="iframe-placeholder"></div>
-</div>
+<main class="watch-page">
 
-  
+  <!-- Back button -->
+  <a href="javascript:history.back()" class="watch-back-btn">← Back</a>
 
-  
-  <div id="watchInfo" class="watch-info"></div>
-  
-  <div id="seasonSelector" class="season-selector" style="display:none;"></div>
-  
-  <section>
-    <h2>You May Also Like</h2>
-    <div id="recommendations" class="movie-row"></div>
-  </section>
+  <!-- Skeleton shown while loading -->
+  <div id="watch-skeleton">
+    <div class="watch-skeleton skeleton-title"></div>
+    <div class="watch-skeleton skeleton-meta"></div>
+    <div class="watch-skeleton skeleton-player"></div>
+  </div>
+
+  <!-- Real content (hidden until loaded) -->
+  <div id="watch-content" style="display:none;">
+    <div class="watch-meta">
+      <h1 class="watch-title" id="watchTitle">Loading…</h1>
+      <span class="watch-type-badge" id="watchTypeBadge">Movie</span>
+      <span class="watch-rating" id="watchRating"></span>
+    </div>
+    <p class="watch-genres" id="watchGenres"></p>
+    <p class="watch-overview" id="watchOverview"></p>
+
+    <div id="watch-player-container">
+      <div class="watch-player-header">
+        <h3 id="watchPlayerTitle">Now Playing</h3>
+        <span style="font-size:12px;color:rgba(255,255,255,0.4);">If one source fails, try another below</span>
+      </div>
+      <div id="watch-season-dropdown"></div>
+      <div id="watch-tabs-placeholder"></div>
+      <div id="watch-iframe-placeholder" class="iframe-placeholder"></div>
+      <div id="watch-player-error">
+        ⚠️ This source failed to load. Try a different source above.
+      </div>
+    </div>
+  </div>
+
 </main>
 
+<!-- Details Modal (reused from script.js) -->
 <div id="detailsModal" class="modal" style="display:none;">
   <div class="modal-content">
     <span class="close-btn">&times;</span>
     <div id="detailsBody"></div>
   </div>
 </div>
-
-<script src="/script.js"></script>
-<script>
-  function setSeo({ title, overview, image, type }) {
-    document.title = title ? `${title} - Cine Realm` : "Watch - Cine Realm";
-
-    const desc = (overview || "Watch movies and TV shows online.").slice(0, 155);
-
-    // description
-    let metaDesc = document.querySelector('meta[name="description"]');
-    if (!metaDesc) {
-      metaDesc = document.createElement("meta");
-      metaDesc.setAttribute("name", "description");
-      document.head.appendChild(metaDesc);
-    }
-    metaDesc.setAttribute("content", desc);
-
-    // canonical
-    let canonical = document.querySelector('link[rel="canonical"]');
-    if (!canonical) {
-      canonical = document.createElement("link");
-      canonical.setAttribute("rel", "canonical");
-      document.head.appendChild(canonical);
-    }
-    canonical.setAttribute("href", window.location.href);
-
-    // OG basics
-    const og = (prop, val) => {
-      let tag = document.querySelector(`meta[property="${prop}"]`);
-      if (!tag) {
-        tag = document.createElement("meta");
-        tag.setAttribute("property", prop);
-        document.head.appendChild(tag);
-      }
-      tag.setAttribute("content", val);
-    };
-
-    og("og:title", title ? `${title} - Cine Realm` : "Watch - Cine Realm");
-    og("og:description", desc);
-    og("og:type", type === "tv" ? "video.tv_show" : "video.movie");
-    if (image) og("og:image", image);
-  }
-
-  function parseWatchPath(pathname) {
-    // Supports:
-    // /watch/movie/123
-    // /watch/tv/123
-    // /watch/tv/123/season/1/episode/1
-    const parts = pathname.replace(/\/+$/, "").split("/"); // trim trailing slash
-    // ["", "watch", "tv", "123", "season", "1", "episode", "1"]
-    if (parts[1] !== "watch") return null;
-
-    const type = parts[2];
-    const id = parseInt(parts[3], 10);
-
-    let season = null, episode = null;
-    const seasonIndex = parts.indexOf("season");
-    const episodeIndex = parts.indexOf("episode");
-    if (seasonIndex !== -1) season = parseInt(parts[seasonIndex + 1], 10);
-    if (episodeIndex !== -1) episode = parseInt(parts[episodeIndex + 1], 10);
-
-    if (!type || !id || Number.isNaN(id)) return null;
-    return { type, id, season, episode };
-  }
-
-  function go(url, { replace = false } = {}) {
-    if (replace) history.replaceState({}, "", url);
-    else history.pushState({}, "", url);
-  }
-function switchPage(page) {
-  currentPage = page;
-
-  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-
-  const pageEl = document.getElementById(page + "Page");
-  if (pageEl) pageEl.classList.add("active");
-
-  document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.remove("active"));
-
-  const btnEl = document.getElementById(page + "Btn");
-  if (btnEl) btnEl.classList.add("active");
-
-  if (playerDiv) playerDiv.innerHTML = "";
-  window.scrollTo(0, 0);
-}
-
-  async function loadFromUrl({ replace = false } = {}) {
-    const parsed = parseWatchPath(window.location.pathname);
-    if (!parsed) {
-      console.error("Invalid watch URL:", window.location.pathname);
-      return;
-    }
-
-    const { type, id, season, episode } = parsed;
-
-    // Auto-redirect TV short route -> S1E1
-    if (type === "tv" && (!season || !episode)) {
-      const target = `/watch/tv/${id}/season/1/episode/1`;
-      go(target, { replace: true });
-      return loadFromUrl({ replace: true });
-    }
-
-    // init saved data
-    loadHistory();
-    loadWatchlist();
-
-    // fetch details (your apiCall already exists in script.js)
-    const data = await apiCall(`/${type}/${id}`);
-    const title = data?.title || data?.name || "";
-    const overview = data?.overview || "";
-    const img = data?.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : "";
-
-    setSeo({ title, overview, image: img, type });
-
-    // Load your existing player
-    // If your loadPlayer supports tv season/episode, pass them (safe even if ignored)
-    // Show disclaimer before starting playback
-    showDisclaimerThen(() => {
-      loadPlayer(id, type, title, {
-        season: season || 1,
-        episode: episode || 1
-      });
-    });
-
-
-  }
-
-  // Back/forward button support
-  window.addEventListener("popstate", () => {
-    loadFromUrl({ replace: true });
-  });
-
-  // Initial load
-  loadFromUrl();
-</script>
 
 <!-- Disclaimer Modal -->
 <div id="disclaimerModal" class="modal" style="display:none;">
@@ -228,50 +227,289 @@ function switchPage(page) {
   </div>
 </div>
 
+<script src="/script.js"></script>
+<script>
+(async function initWatchPage() {
+  // ── Parse URL ──────────────────────────────────────────────────────────
+  // Patterns:
+  //   /watch/movie/12345
+  //   /watch/tv/12345/season/2/episode/4
+  const path = window.location.pathname;
+
+  let type, tmdbId, season, episode;
+
+  const tvMatch    = path.match(/\/watch\/tv\/(\d+)\/season\/(\d+)\/episode\/(\d+)/);
+  const movieMatch = path.match(/\/watch\/movie\/(\d+)/);
+
+  if (tvMatch) {
+    type    = "tv";
+    tmdbId  = parseInt(tvMatch[1], 10);
+    season  = parseInt(tvMatch[2], 10);
+    episode = parseInt(tvMatch[3], 10);
+  } else if (movieMatch) {
+    type   = "movie";
+    tmdbId = parseInt(movieMatch[1], 10);
+  } else {
+    document.getElementById("watch-skeleton").innerHTML =
+      `<p style="color:#ff6b6b;padding:20px;">⚠️ Invalid watch URL.</p>`;
+    return;
+  }
+
+  // ── Fetch metadata ────────────────────────────────────────────────────
+  const data = await apiCall(`/${type}/${tmdbId}`);
+
+  // Hide skeleton, show content
+  document.getElementById("watch-skeleton").style.display = "none";
+  document.getElementById("watch-content").style.display  = "block";
+
+  if (!data) {
+    document.getElementById("watchTitle").textContent = "Failed to load";
+    return;
+  }
+
+  const title   = data.title || data.name || "Unknown";
+  const rating  = data.vote_average ? `⭐ ${data.vote_average.toFixed(1)}` : "";
+  const genres  = data.genres?.map(g => g.name).join(" · ") || "";
+  const overview = data.overview || "";
+
+  document.title = `${title} — CineRealm`;
+  document.getElementById("watchTitle").textContent      = title;
+  document.getElementById("watchPlayerTitle").textContent = title;
+  document.getElementById("watchTypeBadge").textContent  = type === "tv" ? "TV Show" : "Movie";
+  document.getElementById("watchRating").textContent     = rating;
+  document.getElementById("watchGenres").textContent     = genres;
+  document.getElementById("watchOverview").textContent   = overview;
+
+  // ── Wire up player (reuse script.js infrastructure) ───────────────────
+  // Override the player div references to point to watch page elements
+  // We do this by temporarily pointing the player IDs script.js expects
+
+  // Patch: script.js loadPlayer writes into #player div by default,
+  // but on this page we use dedicated IDs. We re-implement a slim version:
+
+  const media = { type, tmdbId, season, episode };
+  const lastProgress = getHistoryProgress(tmdbId, type, season, episode);
+
+  const opts = {
+    color: "#ffffff", colour: "#ffffff",
+    theme: "#ffffff",
+    autoplay: true, autoNext: true,
+    autonextepisode: true, autoplayNextEpisode: true,
+    nextButton: true, episodeSelector: true,
+    overlay: true, dub: true,
+    poster: true, title: true,
+    icons: "true", servericon: true,
+    chromecast: true, fullscreenButton: true,
+    hideServerControls: false,
+    progress: lastProgress, startAt: lastProgress,
+  };
+
+  if (type === "tv") {
+    opts.season  = season;
+    opts.episode = episode;
+    // Render season/episode selector
+    await renderSeasonsDropdownInto(
+      document.getElementById("watch-season-dropdown"),
+      tmdbId, media, { ...opts }
+    );
+  }
+
+  // Render source pills
+  const tabs = renderSourcePills(media, DEFAULT_SOURCE, opts);
+  document.getElementById("watch-tabs-placeholder").appendChild(tabs);
+
+  // Iframe target
+  const iframePlaceholder = document.getElementById("watch-iframe-placeholder");
+  // Monkey-patch insertIframe to use this page's placeholder
+  const _origInsert = window.insertIframe;
+  window.insertIframe = function(url) {
+    // unload previous
+    iframePlaceholder.innerHTML = "";
+    if (!url) {
+      document.getElementById("watch-player-error").style.display = "block";
+      return null;
+    }
+    document.getElementById("watch-player-error").style.display = "none";
+    const iframe = document.createElement("iframe");
+    iframe.src = url;
+    iframe.setAttribute("allow", "autoplay; encrypted-media; fullscreen; picture-in-picture");
+    iframe.setAttribute("allowfullscreen", "");
+    iframe.loading = "lazy";
+    iframePlaceholder.appendChild(iframe);
+    return iframe;
+  };
+
+  // Click the default/saved active tab to load
+  const activeBtn = tabs.querySelector(".source-tab.active") || tabs.querySelector(".source-tab");
+  if (activeBtn) activeBtn.click();
+
+  // Restore after click
+  window.insertIframe = _origInsert;
+
+  // Scroll player into view smoothly
+  setTimeout(() => {
+    document.getElementById("watch-player-container")
+      .scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 120);
+
+})();
+
+// Slim season dropdown that targets a specific container (watch page version)
+async function renderSeasonsDropdownInto(container, tvId, media, extraOpts) {
+  if (!container) return;
+  container.innerHTML = "";
+
+  const tvData = await apiCall(`/tv/${tvId}`);
+  if (!tvData || !tvData.seasons) return;
+
+  const seasons = tvData.seasons.filter(s => s.season_number > 0);
+  if (!seasons.length) return;
+
+  const seasonSelect = document.createElement("select");
+  seasonSelect.className = "season-select";
+  seasonSelect.style.cssText = "padding:8px 12px;font-size:14px;border-radius:8px;border:2px solid #ff2c2c;background:rgba(0,0,0,0.8);color:#fff;cursor:pointer;margin:10px 14px 4px;";
+  seasonSelect.innerHTML = seasons
+    .map(s => `<option value="${s.season_number}">Season ${s.season_number}${s.name ? " — " + s.name : ""}</option>`)
+    .join("");
+  container.appendChild(seasonSelect);
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "episode-row-wrapper";
+  wrapper.style.padding = "0 14px 10px";
+
+  const leftBtn = document.createElement("button");
+  leftBtn.className = "scroll-btn left"; leftBtn.textContent = "◀";
+
+  const rightBtn = document.createElement("button");
+  rightBtn.className = "scroll-btn right"; rightBtn.textContent = "▶";
+
+  const episodeList = document.createElement("div");
+  episodeList.className = "episode-list";
+
+  wrapper.appendChild(leftBtn);
+  wrapper.appendChild(episodeList);
+  wrapper.appendChild(rightBtn);
+  container.appendChild(wrapper);
+
+  leftBtn.addEventListener("click",  () => episodeList.scrollBy({ left: -300, behavior: "smooth" }));
+  rightBtn.addEventListener("click", () => episodeList.scrollBy({ left:  300, behavior: "smooth" }));
+
+  const seasonCache = {};
+
+  async function loadEpisodes(seasonNumber) {
+    const key = `${tvId}_s${seasonNumber}`;
+    let seasonData = seasonCache[key];
+    if (!seasonData) {
+      seasonData = await apiCall(`/tv/${tvId}/season/${seasonNumber}`);
+      if (seasonData) seasonCache[key] = seasonData;
+    }
+    episodeList.innerHTML = "";
+    if (!seasonData || !seasonData.episodes) return;
+
+    seasonData.episodes.forEach(ep => {
+      const epDiv = document.createElement("div");
+      epDiv.className = "episode-card";
+      const epProgress = getHistoryProgress(tvId, "tv", seasonNumber, ep.episode_number);
+
+      // Check if currently playing
+      const isPlaying = extraOpts.season === seasonNumber && extraOpts.episode === ep.episode_number;
+      if (isPlaying) epDiv.classList.add("playing-episode");
+
+      // Progress bar
+      const epData = (JSON.parse(localStorage.getItem("history") || "[]"))
+        .find(h => h.type === "tv" && h.tmdbId === tvId && h.season === seasonNumber && h.episode === ep.episode_number);
+      const pct = epData && epData.duration ? Math.min(100, (epData.progress / epData.duration) * 100) : 0;
+
+      epDiv.innerHTML = `
+        <div style="position:relative;">
+          <img src="${ep.still_path ? "https://image.tmdb.org/t/p/w500" + ep.still_path : ""}" alt="${ep.name}" class="episode-poster">
+          ${isPlaying ? '<div class="episode-now-playing-badge">▶ Playing</div>' : ""}
+          ${pct > 0 ? '<div class="episode-progress-bar"><div class="episode-progress-fill" style="width:' + pct + '%"></div></div>' : ""}
+        </div>
+        <div class="episode-info">
+          <strong>${ep.episode_number}. ${ep.name}</strong>
+          ${epProgress > 0 ? '<span class="resume-badge">Resume ' + formatTime(epProgress) + '</span>' : ""}
+          <p>${ep.overview || ""}</p>
+        </div>
+      `;
+
+      epDiv.addEventListener("click", () => {
+        // Update URL without page reload
+        const newUrl = "/watch/tv/" + tvId + "/season/" + seasonNumber + "/episode/" + ep.episode_number;
+        history.pushState({ tvId, seasonNumber, episode: ep.episode_number }, "", newUrl);
+
+        // Update playing highlight
+        episodeList.querySelectorAll(".episode-card").forEach(c => {
+          c.classList.remove("playing-episode");
+          const b = c.querySelector(".episode-now-playing-badge");
+          if (b) b.remove();
+        });
+        epDiv.classList.add("playing-episode");
+        extraOpts.season  = seasonNumber;
+        extraOpts.episode = ep.episode_number;
+
+        // Update page title
+        document.title = ep.name + " — CineRealm";
+
+        // Swap the iframe source instead of reloading
+        const iframePlaceholder = document.getElementById("watch-iframe-placeholder");
+        iframePlaceholder.innerHTML = "";
+        document.getElementById("watch-player-error").style.display = "none";
+
+        const lastProgress = getHistoryProgress(tvId, "tv", seasonNumber, ep.episode_number);
+        const updatedMedia = { type: "tv", tmdbId: tvId, season: seasonNumber, episode: ep.episode_number };
+        const updatedOpts  = Object.assign({}, extraOpts, { season: seasonNumber, episode: ep.episode_number, startAt: lastProgress, progress: lastProgress });
+        const activeTab    = document.querySelector(".source-tab.active");
+        const activeKey    = activeTab ? activeTab.dataset.key : null;
+
+        if (activeKey) {
+          const url = buildProviderUrl(activeKey, updatedMedia, updatedOpts);
+          if (url) {
+            const iframe = document.createElement("iframe");
+            iframe.src = url;
+            iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock");
+            iframe.setAttribute("allow", "autoplay; encrypted-media; fullscreen; picture-in-picture");
+            iframe.setAttribute("allowfullscreen", "");
+            iframe.style.cssText = "width:100%;height:clamp(320px,56vw,640px);border:none;display:block;";
+            iframePlaceholder.appendChild(iframe);
+          }
+        }
+      });
+
+      episodeList.appendChild(epDiv);
+
+      // Auto-scroll to playing episode
+      if (isPlaying) {
+        setTimeout(() => epDiv.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" }), 200);
+      }
+    });
+  }
+
+  seasonSelect.addEventListener("change", e => {
+    const chosen = parseInt(e.target.value, 10);
+    const newUrl = "/watch/tv/" + tvId + "/season/" + chosen + "/episode/1";
+    history.pushState({ tvId, seasonNumber: chosen, episode: 1 }, "", newUrl);
+    extraOpts.season  = chosen;
+    extraOpts.episode = 1;
+    loadEpisodes(chosen);
+  });
+
+  const initialSeason = extraOpts.season || seasons[0].season_number;
+  seasonSelect.value = initialSeason;
+  loadEpisodes(initialSeason);
+}
+</script>
+
 <!-- Vercel Web Analytics -->
 <script>
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
-
-<!-- Vercel Speed Insights -->
 <script>
   window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
 </script>
 <script defer src="/_vercel/speed-insights/script.js"></script>
-  
-<!-- Notifications for any issues that may arise.-->  
-<script>
-async function loadNotification() {
-  try {
-    const res = await fetch("/notification.json?cache=" + Date.now());
-    const data = await res.json();
-
-    if (!data.active) return;
-
-    const container = document.getElementById("site-notification");
-
-    container.innerHTML = `
-      <div class="notification-banner ${data.type}">
-        <div class="notification-content">
-          <strong>${data.title}</strong>
-          <span>${data.message}</span>
-${data.updated ? `<small class="notification-time">Updated: ${data.updated}</small>` : ""}
-          <button onclick="this.parentElement.parentElement.remove()">✕</button>
-        </div>
-      </div>
-    `;
-  } catch (err) {
-    console.error("Notification load failed", err);
-  }
-}
-
-loadNotification();
-setInterval(loadNotification, 30000);
-</script>
 <script src="https://uptime.betterstack.com/widgets/announcement.js" data-id="240420" async="async" type="text/javascript"></script>
-<iframe src="https://status.cinerealm.online/badge?theme=dark"
-width="250" height="30" frameborder="0" scrolling="no" 
-style="color-scheme: normal"></iframe>
+
 </body>
 </html>
