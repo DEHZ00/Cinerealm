@@ -88,6 +88,26 @@ app.get("/notification.json", (req, res) => {
   }
 });
 
+// ── Manifest (must be before static middleware) ────────────────────────────
+app.get("/manifest.json", (req, res) => {
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.setHeader("Content-Type", "application/manifest+json");
+  res.sendFile(path.join(__dirname, "public", "manifest.json"), err => {
+    if (err) {
+      // Fallback — send inline manifest
+      res.json({
+        name: "CineRealm",
+        short_name: "CineRealm",
+        start_url: "/",
+        display: "standalone",
+        background_color: "#080808",
+        theme_color: "#ff2c2c",
+        icons: [{ src: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }]
+      });
+    }
+  });
+});
+
 // ── Static Files ───────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, "public"), {
   etag: false,
@@ -127,15 +147,6 @@ const routes = {
   "/stats":     "stats.html",
   "/games-proxy": "games-proxy.html",
 };
-
-// Serve manifest with correct content-type and no-cache
-app.get("/manifest.json", (req, res) => {
-  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-  res.setHeader("Content-Type", "application/manifest+json");
-  res.sendFile(path.join(__dirname, "public", "manifest.json"), err => {
-    if (err) res.status(404).send("Not Found");
-  });
-});
 
 // Dynamic watch routes
 app.get("/watch/:type/:id", (req, res) => {
