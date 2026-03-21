@@ -219,23 +219,25 @@ if (type === "tv" && historyData && historyData.length) {
 }
 
   const title = movie.title || movie.name || "Unknown";
-  
+  const typeBadge = type === "tv" ? "TV" : (type === "anime" ? "Anime" : "Movie");
+
  card.innerHTML = `
   <div class="card-image-wrapper">
     <img src="${IMG_BASE + movie.poster_path}" alt="${title}" loading="lazy">
+    <span class="card-type-badge">${typeBadge}</span>
     ${percent > 0 ? `<div class="progress-bar" style="width:${percent}%"></div>` : ""}
     <div class="card-overlay">
-      <button class="play-btn">▶ Play</button>
+      <button class="play-btn">▶</button>
       <div class="card-buttons">
         <button class="watchlist-btn" title="Add to watchlist">${inWatchlist ? "★" : "☆"}</button>
         <button class="info-btn" title="More info">ⓘ</button>
       </div>
     </div>
+    <p>
+      ${title}
+      ${lastEpisodeLabel && type === "tv" ? `<br><span class="last-episode-tag">${lastEpisodeLabel}</span>` : ""}
+    </p>
   </div>
-  <p>
-    ${title}
-    ${lastEpisodeLabel && type === "tv" ? `<br><span class="last-episode-tag">${lastEpisodeLabel}</span>` : ""}
-  </p>
 `;
 
 
@@ -757,24 +759,36 @@ function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
 }
 
 
-// ---- Fetch Movies or TV ----
+// ── Fetch Movies or TV ────────────────────────────────────────────────────
+function showSkeletons(container, count = 8) {
+  container.innerHTML = Array(count).fill(
+    '<div class="skeleton-card"><div class="skeleton-card-img"></div><div class="skeleton-card-title"></div></div>'
+  ).join("");
+}
+
 async function fetchMovies(endpoint, containerId, type = "movie") {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  container.innerHTML = "";
+  showSkeletons(container);
   const data = await apiCall(endpoint);
-  
+
   if (!data || !data.results) {
     container.innerHTML = `<p class="placeholder">No content found</p>`;
     return;
   }
 
+  container.innerHTML = "";
+  let index = 0;
   data.results
     .filter(item => item.poster_path)
     .forEach(item => {
       const card = createMovieCard(item, type);
-      if (card) container.appendChild(card);
+      if (card) {
+        card.style.animationDelay = (index * 40) + "ms";
+        container.appendChild(card);
+        index++;
+      }
     });
 }
 
@@ -1325,6 +1339,18 @@ if (document.getElementById("heroSection")) {
 }
 
 
+
+// ── Transparent-to-solid header on scroll ─────────────────────────────────
+(function() {
+  const hdr = document.querySelector("header");
+  if (!hdr) return;
+  function onScroll() {
+    if (window.scrollY > 40) hdr.classList.add("scrolled");
+    else hdr.classList.remove("scrolled");
+  }
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+})();
 
 // ── Service Worker Registration ────────────────────────────────────────────
 if ("serviceWorker" in navigator) {
