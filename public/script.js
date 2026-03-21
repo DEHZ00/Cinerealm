@@ -362,20 +362,20 @@ let DEFAULT_SOURCE = "FluxLine";
  */
 const PROVIDERS = [
   // ── Standard Sources ─────────────────────────────────────────────────────
-  { name: "FluxLine",  key: "vidplus",    tier: "standard", chromebook: true,  supports: { movie: true, tv: true, anime: true  } }, // default
-  { name: "NovaReel",  key: "spenEmbed",  tier: "standard", chromebook: true,  supports: { movie: true, tv: true, anime: true  } },
-  { name: "PulseView", key: "vidfast",    tier: "standard", chromebook: true,  supports: { movie: true, tv: true, anime: false } },
-  { name: "Ez",        key: "videasy",    tier: "standard", chromebook: true,  supports: { movie: true, tv: true, anime: true  } },
-  { name: "Saturn",    key: "VidSrc",     tier: "standard", chromebook: false, supports: { movie: true, tv: true, anime: false } },
-  { name: "Mars",      key: "vidlink",    tier: "standard", chromebook: false, supports: { movie: true, tv: true, anime: false } },
-  { name: "Jupiter",   key: "VidZen",     tier: "standard", chromebook: false, supports: { movie: true, tv: true, anime: true  } },
-  { name: "Seenima",   key: "vidora",     tier: "standard", chromebook: false, supports: { movie: true, tv: true, anime: false } },
-  { name: "King",      key: "vidking",    tier: "standard", chromebook: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "FluxLine",  key: "vidplus",    tier: "standard", chromebook: true,  sandbox: true,  supports: { movie: true, tv: true, anime: true  } }, // default
+  { name: "NovaReel",  key: "spenEmbed",  tier: "standard", chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: true  } },
+  { name: "PulseView", key: "vidfast",    tier: "standard", chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "Ez",        key: "videasy",    tier: "standard", chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: true  } },
+  { name: "Saturn",    key: "VidSrc",     tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "Mars",      key: "vidlink",    tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "Jupiter",   key: "VidZen",     tier: "standard", chromebook: false, sandbox: true,  supports: { movie: true, tv: true, anime: true  } },
+  { name: "Seenima",   key: "vidora",     tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "King",      key: "vidking",    tier: "standard", chromebook: false, sandbox: true,  supports: { movie: true, tv: true, anime: false } },
 
   // ── Premium Sources ───────────────────────────────────────────────────────
-  { name: "VidUp",     key: "vidup",      tier: "premium",  chromebook: true,  supports: { movie: true, tv: true, anime: false } },
-  { name: "MoviesAPI", key: "moviesapi",  tier: "premium",  chromebook: true,  supports: { movie: true, tv: true, anime: false } },
-  { name: "111Movies", key: "111movies",  tier: "premium",  chromebook: true,  supports: { movie: true, tv: true, anime: false } },
+  { name: "VidUp",     key: "vidup",      tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "MoviesAPI", key: "moviesapi",  tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "111Movies", key: "111movies",  tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
 ];
 
 
@@ -549,7 +549,7 @@ function unloadIframe() {
   if (currentIframe.parentNode) currentIframe.parentNode.removeChild(currentIframe);
   currentIframe = null;
 }
-function insertIframe(url) {
+function insertIframe(url, useSandbox = false) {
   unloadIframe();
   if (!url) {
     showError("No playable URL for this source.");
@@ -559,12 +559,12 @@ function insertIframe(url) {
   iframe.id = "active-player-iframe";
   iframe.src = url;
 
-  // Popup blocker — omitting allow-popups and allow-popups-to-escape-sandbox
-  // blocks window.open() and target="_blank" links from inside the iframe.
-  // This kills ~85-90% of popup ads without breaking video playback.
-  iframe.setAttribute("sandbox",
-    "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
-  );
+  // Only apply sandbox on sources that support it
+  if (useSandbox) {
+    iframe.setAttribute("sandbox",
+      "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
+    );
+  }
   iframe.setAttribute("allow", "autoplay; encrypted-media; fullscreen; picture-in-picture");
   iframe.style.width = "100%";
   iframe.style.height = "600px";
@@ -610,7 +610,8 @@ function renderSourcePills(media, defaultName, opts) {
     const err = document.getElementById("player-error") || document.getElementById("watch-player-error");
     if (err) err.style.display = "none";
     const url = buildProviderUrl(providerKey, media, opts);
-    insertIframe(url);
+    const provider = PROVIDERS.find(p => p.key === providerKey);
+    insertIframe(url, provider?.sandbox === true);
   }
 
   const tiers = [
