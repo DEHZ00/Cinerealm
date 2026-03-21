@@ -3,35 +3,135 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Search movies and TV shows">
-  <title>Search Results - Cine Realm</title>
+  <meta name="description" content="Search movies and TV shows on CineRealm">
+  <title>Search — CineRealm</title>
   <link rel="stylesheet" href="/style.css">
-<link rel="icon" href="/favicon.ico">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://cinerealm.online">
-<meta property="og:title" content="CineRealm - Stream Movies, TV & Anime">
-<meta property="og:description" content="Watch the latest movies, TV shows, and anime online.">
-<meta property="og:image" content="https://cinerealm.online/android-chrome-512x512.png">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta property="og:title" content="Search — CineRealm">
+  <meta property="og:image" content="https://cinerealm.online/android-chrome-512x512.png">
+  <style>
+    /* Search page vertical grid */
+    #searchResults {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+      gap: 16px;
+      overflow-x: unset;
+      padding-bottom: 40px;
+    }
+    #searchResults .movie-card {
+      min-width: unset; max-width: unset; width: 100%;
+    }
 
-<meta property="twitter:card" content="summary_large_image">
-<meta property="twitter:image" content="https://cinerealm.online/android-chrome-512x512.png">
+    /* Filter bar */
+    .search-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+
+    .search-filter-chip {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1.5px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      color: rgba(255,255,255,0.6);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .search-filter-chip.active {
+      background: #ff2c2c;
+      border-color: #ff2c2c;
+      color: #fff;
+    }
+    .search-filter-chip:hover:not(.active) {
+      border-color: rgba(255,44,44,0.4);
+      color: #fff;
+    }
+
+    .search-filter-sep {
+      width: 1px;
+      height: 20px;
+      background: rgba(255,255,255,0.1);
+      margin: 0 4px;
+    }
+
+    /* Search history chips */
+    .search-history-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .search-history-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      width: 100%;
+      margin-bottom: 4px;
+    }
+    .search-history-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.65);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .search-history-chip:hover { border-color: rgba(255,44,44,0.3); color: #fff; }
+    .search-history-chip-remove {
+      font-size: 10px;
+      color: rgba(255,255,255,0.3);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+    .search-history-chip-remove:hover { color: #ff6b6b; }
+
+    /* Zero results state */
+    .search-empty {
+      text-align: center;
+      padding: 60px 24px;
+    }
+    .search-empty-icon { font-size: 48px; margin-bottom: 16px; }
+    .search-empty h3 { font-size: 20px; font-weight: 700; margin: 0 0 8px; }
+    .search-empty p { color: rgba(255,255,255,0.5); font-size: 14px; margin: 0 0 24px; }
+    .search-empty-suggest { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 12px; }
+    .search-empty-genres {
+      display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    }
+  </style>
 </head>
 <body>
+
 <div id="appIntro" class="intro hidden">
   <div class="intro-logo">CineRealm</div>
 </div>
-
-
 
 <header>
   <div class="header-left">
     <h1><a href="/" style="color:#ff2c2c;text-decoration:none;">🎬 Cine Realm</a></h1>
   </div>
   <input type="text" id="searchBar" placeholder="Search movies or shows..." autocomplete="off">
-   <nav class="nav-links">
+  <nav class="nav-links">
     <a href="/" class="nav-btn">Home</a>
     <a href="/movies" class="nav-btn">Movies</a>
     <a href="/trending" class="nav-btn">Trending</a>
@@ -40,15 +140,34 @@
     <a href="/games" class="nav-btn">Games</a>
     <a href="/legal" class="nav-btn">Legal</a>
   </nav>
-
-
-
 </header>
 
 <main>
   <section>
-    <h2 id="searchTitle">Search Results</h2>
-    <div id="searchResults" class="movie-row">
+    <h2 id="searchTitle"><span class="section-title-text">Search Results</span></h2>
+
+    <!-- Recent searches (shown when no query) -->
+    <div class="search-history-bar" id="searchHistoryBar" style="display:none;"></div>
+
+    <!-- Filter bar -->
+    <div class="search-filter-bar" id="searchFilterBar" style="display:none;">
+      <button class="search-filter-chip active" data-filter="type" data-val="all">All</button>
+      <button class="search-filter-chip" data-filter="type" data-val="movie">🎬 Movies</button>
+      <button class="search-filter-chip" data-filter="type" data-val="tv">📺 TV Shows</button>
+      <div class="search-filter-sep"></div>
+      <button class="search-filter-chip" data-filter="rating" data-val="0">Any Rating</button>
+      <button class="search-filter-chip" data-filter="rating" data-val="6">6+</button>
+      <button class="search-filter-chip" data-filter="rating" data-val="7">7+</button>
+      <button class="search-filter-chip" data-filter="rating" data-val="8">8+</button>
+      <div class="search-filter-sep"></div>
+      <select id="searchSort" style="background:rgba(0,0,0,0.5);border:1.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
+        <option value="popularity">Most Popular</option>
+        <option value="rating">Highest Rated</option>
+        <option value="date">Newest</option>
+      </select>
+    </div>
+
+    <div id="searchResults">
       <p class="placeholder">Enter a search term to find movies and shows</p>
     </div>
   </section>
@@ -60,79 +179,15 @@
   <button class="details-panel-close" onclick="closeDetailsPanel()">✕</button>
   <div id="detailsPanelBody" class="details-panel-body"></div>
 </div>
-<!-- Details Modal (legacy fallback) -->
 <div id="detailsModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <span class="close-btn">&times;</span>
-    <div id="detailsBody"></div>
-  </div>
+  <div class="modal-content"><span class="close-btn">&times;</span><div id="detailsBody"></div></div>
 </div>
-
-<script src="/script.js"></script>
-<script>
-function getSearchQuery() {
-  const urlParams = new URLSearchParams(window.location.search);
-  return (urlParams.get("q") || "").trim();
-}
-
-async function performSearch(query) {
-  const title = document.getElementById("searchTitle");
-  const container = document.getElementById("searchResults");
-  if (!title || !container) return;
-
-  if (!query) {
-    title.textContent = "Search Results";
-    container.innerHTML = `<p class="placeholder">Enter a search term to find movies and shows</p>`;
-    return;
-  }
-
-  title.textContent = `Search Results for "${query}"`;
-  container.innerHTML = `<p class="placeholder">Searching...</p>`;
-
-  const data = await apiCall("/search/multi", { query });
-  const results = (data?.results || [])
-    .filter(x => x.media_type === "movie" || x.media_type === "tv");
-
-  container.innerHTML = "";
-
-  if (!results.length) {
-    container.innerHTML = `<p class="placeholder">No results found. Try a different search term.</p>`;
-    return;
-  }
-
-  // Don’t kill results just because poster_path is missing
-  results.forEach(item => {
-    if (!item.poster_path && item.backdrop_path) item.poster_path = item.backdrop_path;
-    const card = createMovieCard(item, item.media_type);
-    if (card) container.appendChild(card);
-  });
-
-  if (!container.children.length) {
-    container.innerHTML = `<p class="placeholder">No results with posters found.</p>`;
-  }
-}
-
-
-
-document.addEventListener("DOMContentLoaded", () => {
-  const q = getSearchQuery();
-  const sb = document.getElementById("searchBar");
-  if (sb && q) sb.value = q;
-  performSearch(q);
-});
-</script>
-
-
 
 <!-- Disclaimer Modal -->
 <div id="disclaimerModal" class="modal" style="display:none;">
   <div class="modal-content">
     <h2>Before You Watch</h2>
-    <p>
-      Some third-party sources may show pop-ups or ads outside of our control.
-      CineRealm does not host or manage any of the media streams and is not responsible
-      for external content or behavior of those sites.
-    </p>
+    <p>Some third-party sources may show pop-ups or ads outside of our control.</p>
     <label style="display:flex;align-items:center;gap:8px;margin:12px 0;">
       <input type="checkbox" id="dontShowAgain">
       <span>Don't show this again on this device</span>
@@ -144,16 +199,143 @@ document.addEventListener("DOMContentLoaded", () => {
   </div>
 </div>
 
-<!-- Vercel Web Analytics -->
+<script src="/script.js" defer></script>
 <script>
-  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-</script>
-<script defer src="/_vercel/insights/script.js"></script>
+let allSearchResults = [];
+let activeType   = "all";
+let activeRating = 0;
+let activeSort   = "popularity";
 
-<!-- Vercel Speed Insights -->
-<script>
-  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+function getSearchQuery() {
+  return (new URLSearchParams(window.location.search).get("q") || "").trim();
+}
+
+function renderHistory() {
+  const bar = document.getElementById("searchHistoryBar");
+  const history = getSearchHistory();
+  if (!history.length) { bar.style.display = "none"; return; }
+
+  bar.style.display = "flex";
+  bar.innerHTML = `
+    <div class="search-history-label">Recent Searches</div>
+    ${history.map(q => `
+      <span class="search-history-chip">
+        <span onclick="location.href='/search?q=${encodeURIComponent(q)}'">${q}</span>
+        <button class="search-history-chip-remove" onclick="removeSearchHistory('${q.replace(/'/g, "\\'")}');renderHistory();">✕</button>
+      </span>
+    `).join("")}
+  `;
+}
+
+function applyFilters() {
+  const container = document.getElementById("searchResults");
+  let results = [...allSearchResults];
+
+  if (activeType !== "all") results = results.filter(r => r.media_type === activeType);
+  if (activeRating > 0) results = results.filter(r => (r.vote_average || 0) >= activeRating);
+
+  if (activeSort === "rating") results.sort((a,b) => (b.vote_average||0) - (a.vote_average||0));
+  else if (activeSort === "date") results.sort((a,b) => (b.release_date||b.first_air_date||"").localeCompare(a.release_date||a.first_air_date||""));
+
+  container.innerHTML = "";
+
+  if (!results.length) {
+    showZeroResults(document.getElementById("searchBar")?.value || "");
+    return;
+  }
+
+  results.forEach((item, idx) => {
+    if (!item.poster_path && item.backdrop_path) item.poster_path = item.backdrop_path;
+    const card = createMovieCard(item, item.media_type);
+    if (card) {
+      card.style.animationDelay = (idx * 25) + "ms";
+      container.appendChild(card);
+    }
+  });
+}
+
+function showZeroResults(query) {
+  const container = document.getElementById("searchResults");
+  const genres = ["Action","Comedy","Horror","Romance","Sci-Fi","Thriller","Animation","Drama"];
+  container.innerHTML = `
+    <div class="search-empty">
+      <div class="search-empty-icon">🔍</div>
+      <h3>No results for "${query}"</h3>
+      <p>Try a different spelling or search for something else.</p>
+      <p class="search-empty-suggest">Or browse by genre:</p>
+      <div class="search-empty-genres">
+        ${genres.map(g => `<a href="/genres" class="search-filter-chip">${g}</a>`).join("")}
+      </div>
+    </div>
+  `;
+}
+
+async function performSearch(query) {
+  const titleEl  = document.getElementById("searchTitle");
+  const container = document.getElementById("searchResults");
+  const filterBar = document.getElementById("searchFilterBar");
+  const historyBar = document.getElementById("searchHistoryBar");
+
+  if (!query) {
+    titleEl.innerHTML = '<span class="section-title-text">Search</span>';
+    container.innerHTML = '<p class="placeholder">Enter a search term to find movies and shows</p>';
+    filterBar.style.display = "none";
+    renderHistory();
+    return;
+  }
+
+  historyBar.style.display = "none";
+  titleEl.innerHTML = '<span class="section-title-text">Results for "' + query + '"</span>';
+
+  // Skeleton
+  container.innerHTML = Array(12).fill(
+    '<div class="skeleton-card"><div class="skeleton-card-img"></div><div class="skeleton-card-title"></div></div>'
+  ).join("");
+
+  const data = await apiCall("/search/multi", { query });
+  allSearchResults = (data?.results || [])
+    .filter(x => x.media_type === "movie" || x.media_type === "tv");
+
+  filterBar.style.display = allSearchResults.length ? "flex" : "none";
+  applyFilters();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const q = getSearchQuery();
+  const bar = document.getElementById("searchBar");
+  if (bar && q) bar.value = q;
+
+  if (!q) renderHistory();
+  else performSearch(q);
+
+  // Filter chip clicks
+  document.querySelectorAll(".search-filter-chip[data-filter]").forEach(chip => {
+    chip.addEventListener("click", () => {
+      const filter = chip.dataset.filter;
+      const val    = chip.dataset.val;
+
+      // Deactivate siblings of same filter
+      document.querySelectorAll(`.search-filter-chip[data-filter="${filter}"]`)
+        .forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+
+      if (filter === "type")   activeType   = val;
+      if (filter === "rating") activeRating = parseInt(val);
+
+      applyFilters();
+    });
+  });
+
+  document.getElementById("searchSort").addEventListener("change", (e) => {
+    activeSort = e.target.value;
+    applyFilters();
+  });
+});
 </script>
+
+<script>window.va = window.va || function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<script>window.si = window.si || function(){(window.siq=window.siq||[]).push(arguments);};</script>
 <script defer src="/_vercel/speed-insights/script.js"></script>
 
 </body>

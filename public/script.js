@@ -1270,15 +1270,184 @@ async function renderTrending() {
 
 // ---- Search Movies & TV ----
 
+// ── Section 5 — Search V2 ─────────────────────────────────────────────────
+
 const sb = document.getElementById("searchBar");
-if (sb) {
-  sb.addEventListener("keyup", (e) => {
-    if (e.key !== "Enter") return;
-    const q = sb.value.trim();
-    if (!q) return showError("Please enter a search term");
-    window.location.href = `/search?q=${encodeURIComponent(q)}`;
+
+// Search history helpers
+const SEARCH_HISTORY_KEY = "cr_search_history";
+function getSearchHistory() {
+  try { return JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY) || "[]"); } catch { return []; }
+}
+function addSearchHistory(q) {
+  if (!q || q.length < 2) return;
+  let h = getSearchHistory().filter(s => s !== q);
+  h.unshift(q);
+  h = h.slice(0, 8);
+  localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(h));
+}
+function removeSearchHistory(q) {
+  const h = getSearchHistory().filter(s => s !== q);
+  localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(h));
+}
+
+// Create live dropdown container (attached to header)
+function createSearchDropdown() {
+  let d = document.getElementById("searchDropdown");
+  if (d) return d;
+  d = document.createElement("div");
+  d.id = "searchDropdown";
+  d.className = "search-dropdown";
+  // Insert right after the header element
+  const header = document.querySelector("header");
+  if (header) header.parentNode.insertBefore(d, header.nextSibling);
+  else document.body.appendChild(d);
+  return d;
+}
+
+function closeSearchDropdown() {
+  const d = document.getElementById("searchDropdown");
+  if (d) d.style.display = "none";
+}
+
+function showSearchHistory() {
+  const d = createSearchDropdown();
+  const history = getSearchHistory();
+  if (!history.length) { d.style.display = "none"; return; }
+
+  d.innerHTML = `
+    <div class="sdrop-section-label">Recent Searches</div>
+    ${history.map(q => `
+      <div class="sdrop-history-item">
+        <span class="sdrop-history-icon">🕐</span>
+        <span class="sdrop-history-text" data-q="${q}">${q}</span>
+        <button class="sdrop-history-remove" data-q="${q}">✕</button>
+      </div>
+    `).join("")}
+  `;
+
+  d.querySelectorAll(".sdrop-history-text").forEach(el => {
+    el.onclick = () => {
+      sb.value = el.dataset.q;
+      closeSearchDropdown();
+      window.location.href = "/search?q=" + encodeURIComponent(el.dataset.q);
+    };
+  });
+
+  d.querySelectorAll(".sdrop-history-remove").forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      removeSearchHistory(btn.dataset.q);
+      showSearchHistory();
+    };
+  });
+
+  // Position dropdown under search bar
+  positionDropdown(d);
+  d.style.display = "block";
+}
+
+function positionDropdown(d) {
+  if (!sb) return;
+  const rect = sb.getBoundingClientRect();
+  d.style.position = "fixed";
+  d.style.top = (rect.bottom + 6) + "px";
+  d.style.left = rect.left + "px";
+  d.style.width = Math.max(rect.width, 320) + "px";
+}
+
+// Debounced live search
+let _searchDebounce = null;
+
+function startLiveSearch(query) {
+  clearTimeout(_searchDebounce);
+  if (!query || query.length < 2) {
+    showSearchHistory();
+    return;
+  }
+  _searchDebounce = setTimeout(() => runLiveSearch(query), 400);
+}
+
+async function runLiveSearch(query) {
+  const d = createSearchDropdown();
+  positionDropdown(d);
+  d.style.display = "block";
+  d.innerHTML = '<div class="sdrop-loading">Searching…</div>';
+
+  const data = await apiCall("/search/multi", { query, page: 1 });
+  const results = (data?.results || [])
+    .filter(x => (x.media_type === "movie" || x.media_type === "tv") && (x.poster_path || x.backdrop_path))
+    .slice(0, 6);
+
+  if (!results.length) {
+    d.innerHTML = `<div class="sdrop-empty">No results for "<strong>${query}</strong>"</div>`;
+    return;
+  }
+
+  d.innerHTML = `
+    <div class="sdrop-section-label">Results</div>
+    ${results.map(r => {
+      const title = r.title || r.name || "";
+      const year  = (r.release_date || r.first_air_date || "").split("-")[0];
+      const type  = r.media_type === "tv" ? "TV" : "Movie";
+      const img   = r.poster_path ? IMG_BASE + r.poster_path : "";
+      return `
+        <div class="sdrop-result" data-id="${r.id}" data-type="${r.media_type}" data-poster="${r.poster_path || ""}" data-title="${title.replace(/"/g, "&quot;")}">
+          ${img ? `<img src="${img}" alt="${title}" class="sdrop-poster">` : '<div class="sdrop-poster sdrop-poster-empty">🎬</div>'}
+          <div class="sdrop-info">
+            <div class="sdrop-title">${title}</div>
+            <div class="sdrop-meta">${year ? year + " · " : ""}${type}</div>
+          </div>
+        </div>
+      `;
+    }).join("")}
+    <a class="sdrop-see-all" href="/search?q=${encodeURIComponent(query)}">See all results for "${query}" →</a>
+  `;
+
+  d.querySelectorAll(".sdrop-result").forEach(el => {
+    el.onclick = () => {
+      addSearchHistory(query);
+      closeSearchDropdown();
+      const movie = { id: parseInt(el.dataset.id), poster_path: el.dataset.poster, title: el.dataset.title, name: el.dataset.title };
+      showMovieDetails(movie, el.dataset.type);
+    };
   });
 }
+
+if (sb) {
+  // Live search on input
+  sb.addEventListener("input", (e) => {
+    const q = sb.value.trim();
+    startLiveSearch(q);
+  });
+
+  // Show history on focus
+  sb.addEventListener("focus", () => {
+    const q = sb.value.trim();
+    if (!q) showSearchHistory();
+    else startLiveSearch(q);
+  });
+
+  // Navigate to search page on Enter
+  sb.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const q = sb.value.trim();
+      if (!q) return;
+      addSearchHistory(q);
+      closeSearchDropdown();
+      window.location.href = "/search?q=" + encodeURIComponent(q);
+    }
+    if (e.key === "Escape") closeSearchDropdown();
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener("click", (e) => {
+    if (!sb.contains(e.target) && !document.getElementById("searchDropdown")?.contains(e.target)) {
+      closeSearchDropdown();
+    }
+  });
+}
+
 
 function buildHeroDots() {
   const dotsContainer = document.getElementById("heroDots");
