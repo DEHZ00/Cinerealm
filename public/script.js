@@ -206,83 +206,40 @@ function createMovieCard(movie, type = "movie") {
 
   let entry = historyData.find(m => m.id === movie.id && m.type === type);
   let percent = entry && entry.duration ? (entry.progress / entry.duration) * 100 : 0;
-  let inWatchlist = isInWatchlist(movie.id, type);
-let lastEpisodeLabel = "";
-if (type === "tv" && historyData && historyData.length) {
-  const lastEntry = historyData
-    .filter(e => e.type === "tv" && e.tmdbId === movie.id)
-    .sort((a, b) => b.addedAt - a.addedAt)[0];
-
-  if (lastEntry && lastEntry.season && lastEntry.episode) {
-    lastEpisodeLabel = `S${lastEntry.season} · E${lastEntry.episode}`;
+  let lastEpisodeLabel = "";
+  if (type === "tv" && historyData && historyData.length) {
+    const lastEntry = historyData
+      .filter(e => e.type === "tv" && e.tmdbId === movie.id)
+      .sort((a, b) => b.addedAt - a.addedAt)[0];
+    if (lastEntry && lastEntry.season && lastEntry.episode) {
+      lastEpisodeLabel = "S" + lastEntry.season + " · E" + lastEntry.episode;
+    }
   }
-}
 
   const title = movie.title || movie.name || "Unknown";
   const typeBadge = type === "tv" ? "TV" : (type === "anime" ? "Anime" : "Movie");
+  const inWL = isInWatchlist(movie.id, type);
 
- card.innerHTML = `
-  <div class="card-image-wrapper">
-    <img src="${IMG_BASE + movie.poster_path}" alt="${title}" loading="lazy">
-    <span class="card-type-badge">${typeBadge}</span>
-    ${percent > 0 ? `<div class="progress-bar" style="width:${percent}%"></div>` : ""}
-    <div class="card-overlay">
-      <button class="play-btn">▶</button>
-      <div class="card-buttons">
-        <button class="watchlist-btn" title="Add to watchlist">${inWatchlist ? "★" : "☆"}</button>
-        <button class="info-btn" title="More info">ⓘ</button>
-      </div>
+  card.innerHTML = `
+    <div class="card-image-wrapper">
+      <img src="${IMG_BASE + movie.poster_path}" alt="${title}" loading="lazy">
+      <span class="card-type-badge">${typeBadge}</span>
+      ${percent > 0 ? '<div class="progress-bar" style="width:' + percent + '%"></div>' : ""}
+      <div class="card-hover-shine"></div>
+      <p>
+        ${title}
+        ${lastEpisodeLabel && type === "tv" ? '<br><span class="last-episode-tag">' + lastEpisodeLabel + '</span>' : ""}
+      </p>
     </div>
-    <p>
-      ${title}
-      ${lastEpisodeLabel && type === "tv" ? `<br><span class="last-episode-tag">${lastEpisodeLabel}</span>` : ""}
-    </p>
-  </div>
-`;
+  `;
 
-
-card.querySelector(".play-btn").onclick = (e) => {
-  e.stopPropagation();
-
-  if (type === "tv") {
-    // Find last watched episode for this show
-    const tvEntries = (historyData || [])
-      .filter(h => h.type === "tv" && h.tmdbId === movie.id && h.season && h.episode)
-      .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
-
-    let season = 1;
-    let episode = 1;
-
-    if (tvEntries.length) {
-      season = tvEntries[0].season;
-      episode = tvEntries[0].episode;
-    }
-
-    window.location.href = `/watch/tv/${movie.id}/season/${season}/episode/${episode}`;
-  } else {
-    // Movies: simple
-    window.location.href = `/watch/movie/${movie.id}`;
-  }
-};
-
-
-
-  card.querySelector(".watchlist-btn").onclick = (e) => {
-    e.stopPropagation();
-    toggleWatchlist(movie.id, type, movie);
-    const btn = e.target;
-    btn.textContent = isInWatchlist(movie.id, type) ? "★" : "☆";
-  };
-
-  card.querySelector(".info-btn").onclick = (e) => {
-    e.stopPropagation();
-    showMovieDetails(movie, type);
-  };
+  // Click card → open fullscreen details
+  card.addEventListener("click", () => showMovieDetails(movie, type));
 
   return card;
 }
 
-// ── Details Side Panel ────────────────────────────────────────────────────
+// ── Details Fullscreen Overlay ────────────────────────────────────────────
 let detailsPanelOpen = false;
 
 function closeDetailsPanel() {
@@ -292,10 +249,14 @@ function closeDetailsPanel() {
   panel.classList.remove("panel-open");
   overlay.classList.remove("overlay-visible");
   detailsPanelOpen = false;
+  // Stop trailer if playing
+  const trailerIframe = document.getElementById("panelTrailerIframe");
+  if (trailerIframe) trailerIframe.src = "";
   setTimeout(() => {
     panel.style.display = "none";
     overlay.style.display = "none";
   }, 320);
+  document.body.style.overflow = "";
 }
 
 function openDetailsPanel() {
@@ -304,6 +265,7 @@ function openDetailsPanel() {
   if (!panel) return;
   panel.style.display = "flex";
   overlay.style.display = "block";
+  document.body.style.overflow = "hidden";
   requestAnimationFrame(() => {
     panel.classList.add("panel-open");
     overlay.classList.add("overlay-visible");
@@ -312,6 +274,11 @@ function openDetailsPanel() {
 }
 
 // Keep old modal working as fallback — vars already declared at top of file
+
+// Escape key closes panel
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && detailsPanelOpen) closeDetailsPanel();
+});
 
 async function showMovieDetails(movie, type) {
   const panel = document.getElementById("detailsPanel");
