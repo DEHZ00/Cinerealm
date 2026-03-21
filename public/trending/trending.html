@@ -4,50 +4,118 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Discover trending movies and TV shows this week">
-  <title>Trending Now - Cine Realm</title>
+  <title>Trending Now — CineRealm</title>
   <link rel="stylesheet" href="/style.css">
- <link rel="icon" href="/favicon.ico">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://cinerealm.online">
-<meta property="og:title" content="CineRealm - Stream Movies, TV & Anime">
-<meta property="og:description" content="Watch the latest movies, TV shows, and anime online.">
-<meta property="og:image" content="https://cinerealm.online/android-chrome-512x512.png">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://cinerealm.online/trending">
+  <meta property="og:title" content="Trending — CineRealm">
+  <meta property="og:description" content="Discover trending movies and TV shows this week.">
+  <meta property="og:image" content="https://cinerealm.online/android-chrome-512x512.png">
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:image" content="https://cinerealm.online/android-chrome-512x512.png">
+  <style>
+    /* Vertical card grid for browse pages */
+    .browse-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+      gap: 16px;
+      padding-bottom: 40px;
+    }
 
-<meta property="twitter:card" content="summary_large_image">
-<meta property="twitter:image" content="https://cinerealm.online/android-chrome-512x512.png">
+    .browse-grid .movie-card {
+      min-width: unset;
+      max-width: unset;
+      width: 100%;
+    }
+
+    /* Type filter tabs */
+    .trending-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .trending-tab {
+      padding: 8px 20px;
+      border-radius: 999px;
+      border: 1.5px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      color: rgba(255,255,255,0.6);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .trending-tab.active {
+      background: #ff2c2c;
+      border-color: #ff2c2c;
+      color: #fff;
+    }
+
+    .trending-tab:hover:not(.active) {
+      border-color: rgba(255,44,44,0.4);
+      color: #fff;
+    }
+
+    .trending-meta {
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 16px;
+    }
+  </style>
 </head>
 <body>
 
-
+<div id="appIntro" class="intro hidden">
+  <div class="intro-logo">CineRealm</div>
+</div>
+<div id="site-notification"></div>
 
 <header>
   <div class="header-left">
     <h1><a href="/" style="color:#ff2c2c;text-decoration:none;">🎬 Cine Realm</a></h1>
   </div>
   <input type="text" id="searchBar" placeholder="Search movies or shows..." autocomplete="off">
-<nav class="nav-links">
-  <a href="/" class="nav-btn">Home</a>
-  <a href="/movies" class="nav-btn">Movies</a>
-  <a href="/trending" class="nav-btn">Trending</a>
-  <a href="/watchlist" class="nav-btn">Watchlist</a>
-  <a href="/legal" class="nav-btn">Legal</a>
-   <a href="/games" class="nav-btn">Games</a>
-</nav>
-
-
-
+  <nav class="nav-links">
+    <a href="/" class="nav-btn">Home</a>
+    <a href="/movies" class="nav-btn">Movies</a>
+    <a href="/trending" class="nav-btn active">Trending</a>
+    <a href="/genres" class="nav-btn">Genres</a>
+    <a href="/watchlist" class="nav-btn">Watchlist</a>
+    <a href="/legal" class="nav-btn">Legal</a>
+    <a href="/games" class="nav-btn">Games</a>
+  </nav>
 </header>
 
 <main>
   <section>
-    <h2>Trending This Week</h2>
-    <div id="trendingContent" class="movie-row"></div>
+    <h2><span class="section-title-text">Trending This Week</span></h2>
+
+    <div class="trending-tabs">
+      <button class="trending-tab active" data-type="all">All</button>
+      <button class="trending-tab" data-type="movie">Movies</button>
+      <button class="trending-tab" data-type="tv">TV Shows</button>
+    </div>
+
+    <p class="trending-meta" id="trendingMeta"></p>
+
+    <div id="trendingContent" class="browse-grid"></div>
   </section>
 </main>
 
+<!-- Details Side Panel -->
+<div id="detailsOverlay" class="details-overlay" onclick="closeDetailsPanel()"></div>
+<div id="detailsPanel" class="details-panel" style="display:none;">
+  <button class="details-panel-close" onclick="closeDetailsPanel()">✕</button>
+  <div id="detailsPanelBody" class="details-panel-body"></div>
+</div>
+
+<!-- Details Modal (legacy fallback) -->
 <div id="detailsModal" class="modal" style="display:none;">
   <div class="modal-content">
     <span class="close-btn">&times;</span>
@@ -55,50 +123,11 @@
   </div>
 </div>
 
-<script src="/script.js"></script>
-<script>
-// Load trending content
-async function renderTrendingPage() {
-  const container = document.getElementById("trendingContent");
-  
-  const movieData = await apiCall("/trending/movie/week");
-  const tvData = await apiCall("/trending/tv/week");
-
-  container.innerHTML = "";
-
-  if (movieData && movieData.results) {
-    movieData.results
-      .filter(item => item.poster_path)
-      .slice(0, 10)
-      .forEach(item => {
-        const card = createMovieCard(item, "movie");
-        if (card) container.appendChild(card);
-      });
-  }
-
-  if (tvData && tvData.results) {
-    tvData.results
-      .filter(item => item.poster_path)
-      .slice(0, 10)
-      .forEach(item => {
-        const card = createMovieCard(item, "tv");
-        if (card) container.appendChild(card);
-      });
-  }
-}
-
-document.addEventListener('DOMContentLoaded', renderTrendingPage);
-</script>
-
 <!-- Disclaimer Modal -->
 <div id="disclaimerModal" class="modal" style="display:none;">
   <div class="modal-content">
     <h2>Before You Watch</h2>
-    <p>
-      Some third-party sources may show pop-ups or ads outside of our control.
-      CineRealm does not host or manage any of the media streams and is not responsible
-      for external content or behavior of those sites.
-    </p>
+    <p>Some third-party sources may show pop-ups or ads outside of our control.</p>
     <label style="display:flex;align-items:center;gap:8px;margin:12px 0;">
       <input type="checkbox" id="dontShowAgain">
       <span>Don't show this again on this device</span>
@@ -110,17 +139,80 @@ document.addEventListener('DOMContentLoaded', renderTrendingPage);
   </div>
 </div>
 
-<!-- Vercel Web Analytics -->
+<script src="/script.js" defer></script>
 <script>
-  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-</script>
-<script defer src="/_vercel/insights/script.js"></script>
+let allMovies = [];
+let allTV = [];
 
-<!-- Vercel Speed Insights -->
-<script>
-  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+async function renderTrendingPage() {
+  const container = document.getElementById("trendingContent");
+  const meta = document.getElementById("trendingMeta");
+
+  // Show skeletons
+  container.innerHTML = Array(20).fill(
+    '<div class="skeleton-card"><div class="skeleton-card-img"></div><div class="skeleton-card-title"></div></div>'
+  ).join("");
+
+  const [movieData, tvData] = await Promise.all([
+    apiCall("/trending/movie/week"),
+    apiCall("/trending/tv/week")
+  ]);
+
+  allMovies = (movieData?.results || []).filter(i => i.poster_path);
+  allTV     = (tvData?.results    || []).filter(i => i.poster_path);
+
+  renderFiltered("all");
+}
+
+function renderFiltered(type) {
+  const container = document.getElementById("trendingContent");
+  const meta = document.getElementById("trendingMeta");
+  container.innerHTML = "";
+
+  let items = [];
+  if (type === "all") {
+    // Interleave movies and TV
+    const max = Math.max(allMovies.length, allTV.length);
+    for (let i = 0; i < max; i++) {
+      if (allMovies[i]) items.push({ item: allMovies[i], type: "movie" });
+      if (allTV[i])     items.push({ item: allTV[i],     type: "tv"    });
+    }
+  } else if (type === "movie") {
+    items = allMovies.map(i => ({ item: i, type: "movie" }));
+  } else {
+    items = allTV.map(i => ({ item: i, type: "tv" }));
+  }
+
+  meta.textContent = items.length + " titles trending this week";
+
+  items.forEach(({ item, type }, idx) => {
+    const card = createMovieCard(item, type);
+    if (card) {
+      card.style.animationDelay = (idx * 30) + "ms";
+      container.appendChild(card);
+    }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  renderTrendingPage();
+
+  document.querySelectorAll(".trending-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".trending-tab").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderFiltered(btn.dataset.type);
+    });
+  });
+});
 </script>
+
+<!-- Vercel Analytics -->
+<script>window.va = window.va || function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<script>window.si = window.si || function(){(window.siq=window.siq||[]).push(arguments);};</script>
 <script defer src="/_vercel/speed-insights/script.js"></script>
+<script src="https://uptime.betterstack.com/widgets/announcement.js" data-id="240420" async type="text/javascript"></script>
 
 </body>
 </html>
