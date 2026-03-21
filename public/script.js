@@ -1908,7 +1908,80 @@ updateWatchlistBadge();
   drawer.querySelector(".nav-drawer-close").onclick = closeDrawer;
 })();
 
-// ── Dynamic page title while watching ────────────────────────────────────
+// ── Mobile bottom nav bar ─────────────────────────────────────────────────
+(function() {
+  const currentPath = window.location.pathname;
+
+  const navItems = [
+    { href: "/",          icon: "🏠", label: "Home"      },
+    { href: "/search",    icon: "🔍", label: "Search"    },
+    { href: "/trending",  icon: "🔥", label: "Trending"  },
+    { href: "/watchlist", icon: "★",  label: "Watchlist" },
+    { href: "/stats",     icon: "📊", label: "Stats"     },
+  ];
+
+  const bar = document.createElement("nav");
+  bar.className = "mobile-bottom-nav";
+  bar.id = "mobileBottomNav";
+
+  bar.innerHTML = navItems.map(item => {
+    const isActive = currentPath === item.href ||
+      (item.href !== "/" && currentPath.startsWith(item.href));
+    return `
+      <a href="${item.href}" class="mobile-nav-item ${isActive ? "active" : ""}">
+        <span class="mobile-nav-icon">${item.icon}</span>
+        <span class="mobile-nav-label">${item.label}</span>
+      </a>
+    `;
+  }).join("");
+
+  document.body.appendChild(bar);
+})();
+
+// ── Swipe gestures on watch page ──────────────────────────────────────────
+(function() {
+  if (!window.location.pathname.startsWith("/watch")) return;
+
+  let touchStartX = 0;
+  let touchStartY = 0;
+  const SWIPE_THRESHOLD = 80;
+  const ANGLE_THRESHOLD = 30; // degrees — must be mostly horizontal
+
+  document.addEventListener("touchstart", (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener("touchend", (e) => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    const angle = Math.abs(Math.atan2(dy, dx) * 180 / Math.PI);
+
+    // Only handle horizontal swipes (not scrolling)
+    if (Math.abs(dx) < SWIPE_THRESHOLD) return;
+    if (angle > ANGLE_THRESHOLD && angle < (180 - ANGLE_THRESHOLD)) return;
+
+    const ctx = window._watchContext;
+    if (!ctx || ctx.type !== "tv") return;
+
+    if (dx < 0) {
+      // Swipe left → next episode
+      showToast("Next Episode →", "info");
+      setTimeout(() => {
+        window.location.href = "/watch/tv/" + ctx.tmdbId +
+          "/season/" + ctx.season + "/episode/" + (ctx.episode + 1);
+      }, 400);
+    } else {
+      // Swipe right → previous episode
+      if (ctx.episode <= 1) return;
+      showToast("← Previous Episode", "info");
+      setTimeout(() => {
+        window.location.href = "/watch/tv/" + ctx.tmdbId +
+          "/season/" + ctx.season + "/episode/" + (ctx.episode - 1);
+      }, 400);
+    }
+  }, { passive: true });
+})();
 function updatePageTitle(title, isPlaying) {
   if (isPlaying) {
     document.title = "▶ " + title + " — CineRealm";

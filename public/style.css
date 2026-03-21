@@ -5407,3 +5407,82 @@ section {
   border: 2px solid #080808;
   line-height: 1;
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SECTION 8 — MOBILE & PWA
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Mobile bottom nav bar */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: rgba(8,4,4,0.96);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 9990;
+  flex-direction: row;
+  align-items: stretch;
+  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+.mobile-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  text-decoration: none;
+  color: rgba(255,255,255,0.4);
+  transition: color 0.15s;
+  padding: 6px 4px;
+  position: relative;
+}
+
+.mobile-nav-item.active {
+  color: #ff2c2c;
+}
+
+.mobile-nav-item.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 2px;
+  background: #ff2c2c;
+  border-radius: 0 0 2px 2px;
+}
+
+.mobile-nav-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.mobile-nav-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: flex;
+  }
+
+  /* Push page content up so it's not hidden behind bottom nav */
+  body {
+    padding-bottom: 60px;
+  }
+
+  /* Hide hamburger when bottom nav is showing */
+  .nav-hamburger {
+    display: none !important;
+  }
+}

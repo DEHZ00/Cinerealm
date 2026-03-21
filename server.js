@@ -128,6 +128,15 @@ const routes = {
   "/games-proxy": "games-proxy.html",
 };
 
+// Serve manifest with correct content-type and no-cache
+app.get("/manifest.json", (req, res) => {
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.setHeader("Content-Type", "application/manifest+json");
+  res.sendFile(path.join(__dirname, "public", "manifest.json"), err => {
+    if (err) res.status(404).send("Not Found");
+  });
+});
+
 // Dynamic watch routes
 app.get("/watch/:type/:id", (req, res) => {
   sendHTML(res, path.join(__dirname, "public", "watch", "watch.html"));
