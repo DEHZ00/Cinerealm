@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Stats — CineRealm</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <style>
+    .stats-page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+    }
+
+    .stats-page h1 {
+      font-size: 28px;
+      font-weight: 900;
+      color: #fff;
+      margin: 0 0 8px;
+    }
+
+    .stats-page .stats-subtitle {
+      font-size: 14px;
+      color: rgba(255,255,255,0.4);
+      margin: 0 0 36px;
+    }
+
+    /* Stat cards grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .stat-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: border-color 0.2s;
+    }
+    .stat-card:hover { border-color: rgba(255,44,44,0.3); }
+
+    .stat-icon { font-size: 24px; }
+    .stat-value {
+      font-size: 32px;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stat-card.accent { border-color: rgba(255,44,44,0.3); background: rgba(255,44,44,0.06); }
+    .stat-card.accent .stat-value { color: #ff6b6b; }
+
+    /* Streak card special */
+    .stat-card.streak { border-color: rgba(255,165,0,0.3); background: rgba(255,165,0,0.06); }
+    .stat-card.streak .stat-value { color: #ffaa00; }
+
+    /* Section titles */
+    .stats-section-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      margin: 0 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .stats-section-title::before {
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 18px;
+      background: #ff2c2c;
+      border-radius: 99px;
+    }
+
+    /* Genre bars */
+    .genre-bars { display: flex; flex-direction: column; gap: 10px; margin-bottom: 40px; }
+    .genre-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .genre-bar-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.7);
+      width: 100px;
+      flex-shrink: 0;
+      text-align: right;
+    }
+    .genre-bar-track {
+      flex: 1;
+      height: 8px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .genre-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff2c2c, #ff6b6b);
+      border-radius: 999px;
+      transition: width 0.8s cubic-bezier(0.22,0.68,0,1.1);
+      width: 0%;
+    }
+    .genre-bar-count {
+      font-size: 12px;
+      color: rgba(255,255,255,0.35);
+      font-weight: 600;
+      width: 30px;
+      flex-shrink: 0;
+    }
+
+    /* Recent watches */
+    .recent-list { display: flex; flex-direction: column; gap: 10px; }
+    .recent-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 10px 14px;
+      text-decoration: none;
+      color: #fff;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .recent-item:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,44,44,0.2); }
+    .recent-item-rank {
+      font-size: 18px;
+      font-weight: 900;
+      color: rgba(255,255,255,0.15);
+      width: 24px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .recent-item img {
+      width: 40px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+      flex-shrink: 0;
+      background: rgba(255,255,255,0.06);
+    }
+    .recent-item-info { flex: 1; min-width: 0; }
+    .recent-item-title {
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .recent-item-meta {
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+      margin-top: 2px;
+    }
+    .recent-item-progress {
+      font-size: 11px;
+      color: #ff6b6b;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    /* Empty state */
+    .stats-empty {
+      text-align: center;
+      padding: 60px 24px;
+      color: rgba(255,255,255,0.4);
+    }
+    .stats-empty h3 { color: #fff; font-size: 20px; margin: 12px 0 8px; }
+
+    /* Reset button */
+    .stats-reset-btn {
+      background: rgba(255,44,44,0.1);
+      border: 1px solid rgba(255,44,44,0.2);
+      color: rgba(255,44,44,0.7);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-top: 40px;
+    }
+    .stats-reset-btn:hover { background: rgba(255,44,44,0.2); color: #ff6b6b; }
+  </style>
+</head>
+<body>
+
+<div id="appIntro" class="intro hidden"><div class="intro-logo">CineRealm</div></div>
+<div id="site-notification"></div>
+
+<header>
+  <div class="header-left">
+    <h1><a href="/" style="color:#ff2c2c;text-decoration:none;">🎬 Cine Realm</a></h1>
+  </div>
+  <input type="text" id="searchBar" placeholder="Search movies or shows..." autocomplete="off">
+  <nav class="nav-links">
+    <a href="/" class="nav-btn">Home</a>
+    <a href="/movies" class="nav-btn">Movies</a>
+    <a href="/trending" class="nav-btn">Trending</a>
+    <a href="/genres" class="nav-btn">Genres</a>
+    <a href="/watchlist" class="nav-btn">Watchlist</a>
+    <a href="/games" class="nav-btn">Games</a>
+    <a href="/legal" class="nav-btn">Legal</a>
+  </nav>
+</header>
+
+<main>
+  <div class="stats-page" id="statsPage">
+    <h1>📊 My Stats</h1>
+    <p class="stats-subtitle">Based on your watch history on this device</p>
+
+    <!-- Stat cards -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card"><div class="stat-icon">⏱️</div><div class="stat-value" id="statWatchTime">—</div><div class="stat-label">Hours Watched</div></div>
+      <div class="stat-card"><div class="stat-icon">🎬</div><div class="stat-value" id="statMovies">—</div><div class="stat-label">Movies Watched</div></div>
+      <div class="stat-card"><div class="stat-icon">📺</div><div class="stat-value" id="statShows">—</div><div class="stat-label">Shows Watched</div></div>
+      <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-value" id="statWatchlist">—</div><div class="stat-label">In Watchlist</div></div>
+      <div class="stat-card streak"><div class="stat-icon">🔥</div><div class="stat-value" id="statStreak">—</div><div class="stat-label">Day Streak</div></div>
+      <div class="stat-card accent"><div class="stat-icon">⭐</div><div class="stat-value" id="statThisMonth">—</div><div class="stat-label">This Month</div></div>
+    </div>
+
+    <!-- Genre taste profile -->
+    <div class="stats-section-title">Genre Taste Profile</div>
+    <div class="genre-bars" id="genreBars">
+      <p style="color:rgba(255,255,255,0.3);font-size:13px;">Loading...</p>
+    </div>
+
+    <!-- Recent watches -->
+    <div class="stats-section-title">Recently Watched</div>
+    <div class="recent-list" id="recentList">
+      <p style="color:rgba(255,255,255,0.3);font-size:13px;">Loading...</p>
+    </div>
+
+    <button class="stats-reset-btn" id="statsResetBtn">Reset Watch History</button>
+  </div>
+</main>
+
+<!-- Details Side Panel -->
+<div id="detailsOverlay" class="details-overlay" onclick="closeDetailsPanel()"></div>
+<div id="detailsPanel" class="details-panel" style="display:none;">
+  <button class="details-panel-close" onclick="closeDetailsPanel()">✕</button>
+  <div id="detailsPanelBody" class="details-panel-body"></div>
+</div>
+<div id="detailsModal" class="modal" style="display:none;">
+  <div class="modal-content"><span class="close-btn">&times;</span><div id="detailsBody"></div></div>
+</div>
+<div id="disclaimerModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h2>Before You Watch</h2>
+    <p>Some third-party sources may show pop-ups or ads outside of our control.</p>
+    <label style="display:flex;align-items:center;gap:8px;margin:12px 0;">
+      <input type="checkbox" id="dontShowAgain">
+      <span>Don't show this again on this device</span>
+    </label>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;">
+      <button id="cancelDisclaimer" class="nav-btn" type="button">Cancel</button>
+      <button id="acceptDisclaimer" class="nav-btn" type="button">I Understand</button>
+    </div>
+  </div>
+</div>
+
+<script src="/script.js" defer></script>
+<script>
+const IMG_BASE_STATS = "https://image.tmdb.org/t/p/w92";
+
+// Genre ID → name map (TMDB standard)
+const GENRE_NAMES = {
+  28:"Action",18:"Drama",35:"Comedy",27:"Horror",10749:"Romance",
+  878:"Sci-Fi",53:"Thriller",16:"Animation",12:"Adventure",80:"Crime",
+  99:"Documentary",14:"Fantasy",36:"History",10402:"Music",9648:"Mystery",
+  10752:"War",37:"Western",10751:"Family",10770:"TV Movie",
+  10759:"Action & Adventure",10762:"Kids",10763:"News",10764:"Reality",
+  10765:"Sci-Fi & Fantasy",10766:"Soap",10767:"Talk",10768:"War & Politics"
+};
+
+function formatHours(seconds) {
+  const h = Math.floor(seconds / 3600);
+  if (h >= 100) return h.toLocaleString();
+  const m = Math.floor((seconds % 3600) / 60);
+  return h > 0 ? h + "h " + m + "m" : m + "m";
+}
+
+function calcStreak(history) {
+  if (!history.length) return 0;
+  const days = new Set(
+    history
+      .filter(h => h.addedAt)
+      .map(h => new Date(h.addedAt).toDateString())
+  );
+  const sorted = Array.from(days)
+    .map(d => new Date(d))
+    .sort((a,b) => b - a);
+
+  if (!sorted.length) return 0;
+
+  let streak = 1;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  // Must have watched today or yesterday to have an active streak
+  if (sorted[0] < yesterday) return 0;
+
+  for (let i = 1; i < sorted.length; i++) {
+    const diff = (sorted[i-1] - sorted[i]) / (1000 * 60 * 60 * 24);
+    if (Math.round(diff) === 1) streak++;
+    else break;
+  }
+  return streak;
+}
+
+async function buildStats() {
+  const history  = JSON.parse(localStorage.getItem("history") || "[]");
+  const watchlist = JSON.parse(localStorage.getItem("watchlist") || "[]");
+
+  if (!history.length) {
+    document.getElementById("statsPage").innerHTML = `
+      <h1>📊 My Stats</h1>
+      <div class="stats-empty">
+        <div style="font-size:48px">🎬</div>
+        <h3>Nothing watched yet</h3>
+        <p>Start watching movies and shows to see your stats here.</p>
+        <a href="/" class="details-play-btn" style="display:inline-flex;margin-top:16px;">Browse Content</a>
+      </div>
+    `;
+    return;
+  }
+
+  // Deduplicate history
+  const seen = new Set();
+  const deduped = [];
+  for (const h of [...history].sort((a,b) => (b.addedAt||0) - (a.addedAt||0))) {
+    const id = h.tmdbId || h.id;
+    if (!id || !h.type) continue;
+    const key = h.type + "_" + id;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(h);
+  }
+
+  const movies = deduped.filter(h => h.type === "movie");
+  const shows  = deduped.filter(h => h.type === "tv");
+
+  // Watch time (from entries that have duration)
+  const totalSeconds = deduped.reduce((sum, h) => sum + (h.progress || 0), 0);
+
+  // This month
+  const now = new Date();
+  const thisMonth = deduped.filter(h => {
+    if (!h.addedAt) return false;
+    const d = new Date(h.addedAt);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).length;
+
+  // Streak
+  const streak = calcStreak(deduped);
+
+  // Update stat cards
+  document.getElementById("statWatchTime").textContent = formatHours(totalSeconds);
+  document.getElementById("statMovies").textContent = movies.length;
+  document.getElementById("statShows").textContent = shows.length;
+  document.getElementById("statWatchlist").textContent = watchlist.length;
+  document.getElementById("statStreak").textContent = streak + (streak === 1 ? " day" : " days");
+  document.getElementById("statThisMonth").textContent = thisMonth;
+
+  // Genre profile — fetch details for top 20 most recent to get genres
+  const genreCount = {};
+  const top20 = deduped.slice(0, 20);
+
+  await Promise.all(top20.map(async h => {
+    try {
+      const id = h.tmdbId || h.id;
+      const data = await apiCall("/" + h.type + "/" + id);
+      if (data?.genres) {
+        data.genres.forEach(g => {
+          genreCount[g.id] = (genreCount[g.id] || 0) + 1;
+          if (!GENRE_NAMES[g.id]) GENRE_NAMES[g.id] = g.name;
+        });
+      }
+    } catch(e) {}
+  }));
+
+  const sortedGenres = Object.entries(genreCount)
+    .sort((a,b) => b[1] - a[1])
+    .slice(0, 8);
+
+  const genreBars = document.getElementById("genreBars");
+  if (sortedGenres.length) {
+    const maxCount = sortedGenres[0][1];
+    genreBars.innerHTML = sortedGenres.map(([id, count]) => `
+      <div class="genre-bar-row">
+        <div class="genre-bar-label">${GENRE_NAMES[id] || "Genre " + id}</div>
+        <div class="genre-bar-track">
+          <div class="genre-bar-fill" style="width:${Math.round((count/maxCount)*100)}%"></div>
+        </div>
+        <div class="genre-bar-count">${count}</div>
+      </div>
+    `).join("");
+  } else {
+    genreBars.innerHTML = '<p style="color:rgba(255,255,255,0.3);font-size:13px;">Not enough data yet</p>';
+  }
+
+  // Recent watches list — top 10
+  const recentList = document.getElementById("recentList");
+  const recent10 = deduped.slice(0, 10);
+
+  const recentHTML = await Promise.all(recent10.map(async (h, idx) => {
+    try {
+      const id = h.tmdbId || h.id;
+      const data = await apiCall("/" + h.type + "/" + id);
+      if (!data) return "";
+      const title = data.title || data.name || "Unknown";
+      const poster = data.poster_path ? IMG_BASE_STATS + data.poster_path : "";
+      const type = h.type === "tv" ? "TV Show" : "Movie";
+      const date = h.addedAt ? new Date(h.addedAt).toLocaleDateString() : "";
+      const ep = h.season && h.episode ? " · S" + h.season + " E" + h.episode : "";
+      const progress = h.progress > 0 && h.duration > 0
+        ? Math.round((h.progress / h.duration) * 100) + "% watched"
+        : "";
+      const watchUrl = h.type === "movie"
+        ? "/watch/movie/" + id
+        : "/watch/tv/" + id + "/season/" + (h.season||1) + "/episode/" + (h.episode||1);
+
+      return `
+        <a class="recent-item" href="${watchUrl}">
+          <div class="recent-item-rank">${idx + 1}</div>
+          ${poster ? `<img src="${poster}" alt="${title}" loading="lazy">` : '<div style="width:40px;height:60px;background:rgba(255,255,255,0.06);border-radius:6px;flex-shrink:0;"></div>'}
+          <div class="recent-item-info">
+            <div class="recent-item-title">${title}</div>
+            <div class="recent-item-meta">${type}${ep} · ${date}</div>
+          </div>
+          ${progress ? `<div class="recent-item-progress">${progress}</div>` : ""}
+        </a>
+      `;
+    } catch(e) { return ""; }
+  }));
+
+  recentList.innerHTML = recentHTML.join("") || '<p style="color:rgba(255,255,255,0.3);font-size:13px;">Nothing yet</p>';
+
+  // Reset button
+  document.getElementById("statsResetBtn").onclick = () => {
+    if (confirm("Reset your entire watch history? This cannot be undone.")) {
+      localStorage.removeItem("history");
+      location.reload();
+    }
+  };
+}
+
+document.addEventListener("DOMContentLoaded", buildStats);
+</script>
+
+<script>window.va = window.va || function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<script>window.si = window.si || function(){(window.siq=window.siq||[]).push(arguments);};</script>
+<script defer src="/_vercel/speed-insights/script.js"></script>
+<script src="https://uptime.betterstack.com/widgets/announcement.js" data-id="240420" async type="text/javascript"></script>
+
+</body>
+</html>

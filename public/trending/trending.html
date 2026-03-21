@@ -88,6 +88,7 @@
     <a href="/genres" class="nav-btn">Genres</a>
     <a href="/watchlist" class="nav-btn">Watchlist</a>
     <a href="/games" class="nav-btn">Games</a>
+    <a href="/stats" class="nav-btn">Stats</a>
     <a href="/legal" class="nav-btn">Legal</a>
   </nav>
 </header>
@@ -195,7 +196,19 @@ function renderFiltered(type) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  renderTrendingPage();
+  // Check for ?type= param so See All links can pre-filter
+  const params = new URLSearchParams(window.location.search);
+  const preType = params.get("type") || "all";
+
+  renderTrendingPage().then(() => {
+    // Auto-select tab based on URL param
+    const tab = document.querySelector(`.trending-tab[data-type="${preType}"]`);
+    if (tab && preType !== "all") {
+      document.querySelectorAll(".trending-tab").forEach(b => b.classList.remove("active"));
+      tab.classList.add("active");
+      renderFiltered(preType);
+    }
+  });
 
   document.querySelectorAll(".trending-tab").forEach(btn => {
     btn.addEventListener("click", () => {

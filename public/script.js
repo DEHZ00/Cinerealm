@@ -200,7 +200,7 @@ function toggleWatchlist(id, type, movie) {
   
   if (index > -1) {
     watchlistData.splice(index, 1);
-    showError("Removed from watchlist");
+    showToast("Removed from watchlist", "info");
   } else {
     watchlistData.push({ 
       id, 
@@ -209,10 +209,11 @@ function toggleWatchlist(id, type, movie) {
       poster_path: movie.poster_path,
       addedAt: new Date().toISOString()
     });
-    showError("Added to watchlist ✓");
+    showToast("Added to watchlist ✓", "success");
   }
   
   saveWatchlist();
+  updateWatchlistBadge();
 }
 
 function isInWatchlist(id, type) {
@@ -1262,13 +1263,17 @@ async function renderContinueWatching() {
     const id = item.tmdbId || item.id;
     if (!id) continue;
 
+    // Skip if marked as watched
+    const watchedKey = "cr_watched_" + item.type + "_" + id;
+    if (localStorage.getItem(watchedKey) === "1") continue;
+
     // Include item if: has real progress, OR was recently visited (within 30 days)
-    const hasProgress = item.progress > 30; // more than 30 seconds watched
+    const hasProgress = item.progress > 30;
     const isFinished = item.progress && item.duration && item.progress >= item.duration - 60;
     const isRecent = (Date.now() - (item.addedAt || 0)) < 30 * 24 * 60 * 60 * 1000;
 
-    if (isFinished) continue; // skip fully watched
-    if (!hasProgress && !isRecent) continue; // skip entries with no progress and not recent
+    if (isFinished) continue;
+    if (!hasProgress && !isRecent) continue;
 
     const key = item.type + "-" + id;
     if (seen.has(key)) continue;
@@ -1828,7 +1833,35 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-// ── Mobile nav hamburger ──────────────────────────────────────────────────
+// ── Watchlist count badge ─────────────────────────────────────────────────
+function updateWatchlistBadge() {
+  const watchlist = JSON.parse(localStorage.getItem("watchlist") || "[]");
+  const count = watchlist.length;
+  let badge = document.getElementById("watchlistBadge");
+
+  // Find the watchlist nav link
+  const watchlistLink = document.querySelector('a[href="/watchlist"].nav-btn');
+  if (!watchlistLink) return;
+
+  if (!badge) {
+    badge = document.createElement("span");
+    badge.id = "watchlistBadge";
+    badge.className = "watchlist-badge";
+    watchlistLink.style.position = "relative";
+    watchlistLink.appendChild(badge);
+  }
+
+  if (count > 0) {
+    badge.textContent = count > 99 ? "99+" : count;
+    badge.style.display = "flex";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+// Call on load and after any watchlist change
+updateWatchlistBadge();
+
 (function() {
   const header = document.querySelector("header");
   if (!header) return;
