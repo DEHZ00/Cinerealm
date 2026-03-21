@@ -1,13 +1,14 @@
 /**
- * CineRealm Service Worker v2
+ * CineRealm Service Worker
+ * v4 — network-first for CSS/JS so deploys propagate instantly
  */
 
-const SW_VERSION   = "cr-v3";
+const SW_VERSION   = "cr-v4";
 const STATIC_CACHE = SW_VERSION + "-static";
 const IMAGE_CACHE  = SW_VERSION + "-images";
 const API_CACHE    = SW_VERSION + "-api";
 
-const PRECACHE_URLS = ["/", "/style.css", "/script.js", "/offline.html"];
+const PRECACHE_URLS = ["/offline.html"];
 
 self.addEventListener("install", event => {
   event.waitUntil(
@@ -21,8 +22,9 @@ self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
-        keys.filter(k => k.startsWith("cr-") && ![STATIC_CACHE, IMAGE_CACHE, API_CACHE].includes(k))
-            .map(k => caches.delete(k))
+        keys
+          .filter(k => k.startsWith("cr-") && ![STATIC_CACHE, IMAGE_CACHE, API_CACHE].includes(k))
+          .map(k => caches.delete(k))
       ))
       .then(() => self.clients.claim())
   );
@@ -36,21 +38,37 @@ self.addEventListener("fetch", event => {
   let url;
   try { url = new URL(request.url); } catch { return; }
 
+  // TMDB images — cache first (never change)
   if (url.hostname === "image.tmdb.org") {
     event.respondWith(cacheFirst(request, IMAGE_CACHE));
     return;
   }
 
+  // Google fonts — cache first
+  if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") {
+    event.respondWith(cacheFirst(request, STATIC_CACHE));
+    return;
+  }
+
+  // API calls — network first
   if (url.hostname.includes("vercel.app") || url.pathname.startsWith("/api/")) {
     event.respondWith(networkFirst(request, API_CACHE));
     return;
   }
 
-  if (/\.(css|js|png|jpg|jpeg|ico|webp|woff2?)$/.test(url.pathname)) {
+  // YOUR OWN CSS/JS — always network first so deploys propagate immediately
+  if (/\.(css|js)$/.test(url.pathname) && url.hostname === self.location.hostname) {
+    event.respondWith(networkFirst(request, STATIC_CACHE));
+    return;
+  }
+
+  // Other static assets (icons, images) — cache first
+  if (/\.(png|jpg|jpeg|ico|webp|svg|woff2?)$/.test(url.pathname)) {
     event.respondWith(cacheFirst(request, STATIC_CACHE));
     return;
   }
 
+  // Page navigations — network first, offline fallback
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request).catch(() =>
