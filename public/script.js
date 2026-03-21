@@ -26,7 +26,29 @@ let heroTimer = null;
 
 // ---- Local Storage Management ----
 function loadHistory() {
-  historyData = JSON.parse(localStorage.getItem("history") || "[]");
+  const raw = JSON.parse(localStorage.getItem("history") || "[]");
+
+  // Deduplicate — keep only the most recent entry per show/movie
+  // Key: type + tmdbId/id + (for TV: season+episode)
+  const map = new Map();
+  for (const entry of raw) {
+    const id = entry.tmdbId || entry.id;
+    if (!id || !entry.type) continue;
+    // For TV, key per show (not per episode) so we track the latest episode watched
+    const key = entry.type + "_" + id;
+    const existing = map.get(key);
+    if (!existing || (entry.addedAt || 0) > (existing.addedAt || 0)) {
+      map.set(key, entry);
+    }
+  }
+
+  historyData = Array.from(map.values());
+
+  // If we cleaned up a lot, save the deduplicated version back
+  if (raw.length > historyData.length) {
+    console.log("[History] Deduplicated", raw.length, "→", historyData.length, "entries");
+    saveHistory();
+  }
 }
 
 function loadWatchlist() {
@@ -1607,31 +1629,29 @@ window.addEventListener("message", function (event) {
     const tmdbId = parseInt(id, 10);
     if (!tmdbId || !mediaType) return;
 
-    // Find correct history entry
+    // Find existing entry for this show/movie — for TV match by show ID only
+    // (we always update the single entry per show to track latest episode)
     let entry = historyData.find((m) => {
       if (m.type !== mediaType) return false;
-      if (m.tmdbId !== tmdbId) return false;
-      if (mediaType === "tv") {
-        return m.season === season && m.episode === episode;
-      }
-      return true; // movie
+      const entryId = m.tmdbId || m.id;
+      return String(entryId) === String(tmdbId);
     });
 
     if (!entry) {
       entry = {
         tmdbId,
-        type: mediaType,      // "movie" or "tv"
+        type: mediaType,
         progress: 0,
         duration: 0,
         addedAt: Date.now(),
       };
-
-      if (mediaType === "tv") {
-        entry.season = season;
-        entry.episode = episode;
-      }
-
       historyData.push(entry);
+    }
+
+    // Always update to latest episode for TV
+    if (mediaType === "tv") {
+      entry.season  = season;
+      entry.episode = episode;
     }
 
     entry.progress = currentTime || 0;
@@ -1665,10 +1685,13 @@ window.addEventListener("message", function (event) {
     const watched = mediaData.progress?.watched ?? mediaData.progress?.watchedTime ?? mediaData.progress?.time ?? 0;
     const duration = mediaData.progress?.duration ?? 0;
 
-    let entry = historyData.find(m => String(m.id) === String(id) && m.type === mediaType);
+    let entry = historyData.find(m => {
+      const entryId = m.tmdbId || m.id;
+      return String(entryId) === String(id) && m.type === mediaType;
+    });
 
     if (!entry) {
-      entry = { id: isNaN(Number(id)) ? id : Number(id), type: mediaType, progress: 0, duration: 0, addedAt: Date.now() };
+      entry = { tmdbId: isNaN(Number(id)) ? id : Number(id), type: mediaType, progress: 0, duration: 0, addedAt: Date.now() };
       historyData.push(entry);
     }
 
