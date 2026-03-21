@@ -116,3 +116,8 @@ function safeCache(cache, request, response) {
   if (!response || !response.ok) return;
   cache.put(request, response).catch(() => {});
 }
+
+// Allow pages to force-activate new SW immediately
+self.addEventListener("message", event => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
+});

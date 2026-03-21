@@ -1703,10 +1703,83 @@ if (document.getElementById("heroSection")) {
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js")
-      .then(reg => console.log("CineRealm SW registered:", reg.scope))
+      .then(reg => {
+        console.log("CineRealm SW registered:", reg.scope);
+
+        // Force new SW to activate immediately without waiting for tabs to close
+        if (reg.waiting) {
+          reg.waiting.postMessage({ type: "SKIP_WAITING" });
+        }
+        reg.addEventListener("updatefound", () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener("statechange", () => {
+            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+              // New SW installed — force activate and reload once
+              newWorker.postMessage({ type: "SKIP_WAITING" });
+            }
+          });
+        });
+      })
       .catch(err => console.warn("SW registration failed:", err));
+
+    // When SW takes control, reload once to get fresh assets
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
   });
 }
+
+// ── Mobile nav hamburger ──────────────────────────────────────────────────
+(function() {
+  const header = document.querySelector("header");
+  if (!header) return;
+
+  // Add hamburger button into header
+  const hamburger = document.createElement("button");
+  hamburger.className = "nav-hamburger";
+  hamburger.innerHTML = "☰";
+  hamburger.title = "Menu";
+  header.appendChild(hamburger);
+
+  // Build drawer from existing nav links
+  const navLinks = document.querySelector(".nav-links");
+  const links = navLinks ? Array.from(navLinks.querySelectorAll("a")) : [];
+
+  const overlay = document.createElement("div");
+  overlay.className = "nav-drawer-overlay";
+  document.body.appendChild(overlay);
+
+  const drawer = document.createElement("nav");
+  drawer.className = "nav-drawer";
+  drawer.innerHTML = `
+    <button class="nav-drawer-close">✕</button>
+    <div style="padding:12px 24px 20px;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:8px;">
+      <span style="font-size:16px;font-weight:900;color:#ff2c2c;">🎬 Cine Realm</span>
+    </div>
+    ${links.map(a => `<a href="${a.href}" class="${a.className}">${a.textContent}</a>`).join("")}
+  `;
+  document.body.appendChild(drawer);
+
+  function openDrawer() {
+    drawer.classList.add("open");
+    overlay.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeDrawer() {
+    drawer.classList.remove("open");
+    overlay.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  hamburger.onclick = openDrawer;
+  overlay.onclick = closeDrawer;
+  drawer.querySelector(".nav-drawer-close").onclick = closeDrawer;
+})();
 
 // ── Dynamic page title while watching ────────────────────────────────────
 function updatePageTitle(title, isPlaying) {
