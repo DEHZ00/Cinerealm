@@ -13,235 +13,81 @@
   <meta property="og:title" content="CineRealm Games">
   <meta property="og:image" content="https://cinerealm.online/android-chrome-512x512.png">
   <style>
-    .games-page { max-width: 1200px; margin: 0 auto; padding: 28px 24px 80px; }
+    .games-page { width: 100%; padding: 0; }
 
-    .games-hero {
-      background: rgba(255,44,44,0.06);
-      border: 1px solid rgba(255,44,44,0.15);
-      border-radius: 14px;
-      padding: 20px 24px;
-      margin-bottom: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .games-hero-text h2 {
-      font-size: 22px;
-      font-weight: 800;
-      color: #fff;
-      margin: 0 0 4px;
-    }
-
-    .games-hero-text p {
-      font-size: 13px;
-      color: rgba(255,255,255,0.45);
-      margin: 0;
-    }
-
-    .games-external-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 20px;
-      background: #ff2c2c;
-      color: #fff;
-      border: none;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      text-decoration: none;
-      transition: background 0.15s;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .games-external-btn:hover { background: #e01f1f; }
-
-    /* Search + filters */
-    .games-controls {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .games-search {
-      flex: 1;
-      min-width: 200px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px;
-      padding: 9px 14px;
-      color: #fff;
-      font-size: 13px;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-    .games-search:focus { border-color: rgba(255,44,44,0.5); }
-    .games-search::placeholder { color: rgba(255,255,255,0.3); }
-
-    .games-cat-btn {
-      padding: 8px 16px;
-      border-radius: 999px;
-      border: 1.5px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.04);
-      color: rgba(255,255,255,0.6);
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.15s;
-      white-space: nowrap;
-    }
-    .games-cat-btn.active {
-      background: #ff2c2c;
-      border-color: #ff2c2c;
-      color: #fff;
-    }
-    .games-cat-btn:hover:not(.active) {
-      border-color: rgba(255,44,44,0.4);
-      color: #fff;
-    }
-
-    /* Games grid */
-    .games-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 14px;
-    }
-
-    .game-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 12px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: transform 0.18s ease, border-color 0.18s, box-shadow 0.18s;
-      text-decoration: none;
-      display: block;
-    }
-    .game-card:hover {
-      transform: translateY(-4px);
-      border-color: rgba(255,44,44,0.35);
-      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
-    }
-
-    .game-thumb {
+    .games-frame-wrap {
       width: 100%;
-      aspect-ratio: 16/9;
-      background: rgba(255,255,255,0.06);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 36px;
+      height: calc(100vh - 62px);
       position: relative;
-      overflow: hidden;
+      background: #080808;
     }
-    .game-thumb img {
+
+    .games-frame-wrap iframe {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      border: none;
       display: block;
     }
 
-    .game-info {
-      padding: 10px 12px;
-    }
-    .game-title {
-      font-size: 12px;
-      font-weight: 700;
-      color: #fff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .game-cat {
-      font-size: 10px;
-      color: rgba(255,255,255,0.35);
-      margin-top: 2px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .games-empty {
-      grid-column: 1 / -1;
-      text-align: center;
-      padding: 60px 24px;
-      color: rgba(255,255,255,0.3);
-      font-size: 14px;
-    }
-
-    /* Game modal */
-    .game-modal {
-      position: fixed;
+    /* Loading overlay */
+    .games-loading {
+      position: absolute;
       inset: 0;
-      background: rgba(0,0,0,0.9);
-      z-index: 9000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: #080808;
+      z-index: 2;
+      transition: opacity 0.4s ease;
+    }
+    .games-loading.hidden { opacity: 0; pointer-events: none; }
+    .games-loading-spinner {
+      width: 36px; height: 36px;
+      border: 3px solid rgba(255,44,44,0.2);
+      border-top-color: #ff2c2c;
+      border-radius: 50%;
+      animation: gspin 0.8s linear infinite;
+    }
+    @keyframes gspin { to { transform: rotate(360deg); } }
+    .games-loading p { color: rgba(255,255,255,0.5); font-size: 14px; font-weight: 500; }
+
+    /* Fallback — shown if iframe fails */
+    .games-fallback {
+      position: absolute;
+      inset: 0;
       display: none;
       flex-direction: column;
-    }
-    .game-modal.open { display: flex; }
-
-    .game-modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 20px;
-      background: rgba(0,0,0,0.8);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      flex-shrink: 0;
-    }
-    .game-modal-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: #fff;
-    }
-    .game-modal-actions {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    .game-modal-close {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
-      color: #fff;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 16px;
-      display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.15s;
+      gap: 14px;
+      background: #080808;
+      text-align: center;
+      padding: 24px;
+      z-index: 3;
     }
-    .game-modal-close:hover { background: #ff2c2c; }
-    .game-modal-newtab {
-      padding: 7px 14px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
-      color: rgba(255,255,255,0.7);
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: background 0.15s;
-    }
-    .game-modal-newtab:hover { background: rgba(255,255,255,0.14); color: #fff; }
-
-    .game-modal-frame {
-      flex: 1;
-      background: #000;
-    }
-    .game-modal-frame iframe {
-      width: 100%;
-      height: 100%;
+    .games-fallback.visible { display: flex; }
+    .games-fallback h3 { font-size: 20px; font-weight: 700; color: #fff; margin: 0; }
+    .games-fallback p { color: rgba(255,255,255,0.5); font-size: 14px; max-width: 420px; line-height: 1.6; margin: 0; }
+    .games-btn {
+      padding: 10px 24px;
+      background: #ff2c2c;
+      color: #fff;
       border: none;
-      display: block;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: background 0.2s;
+    }
+    .games-btn:hover { background: #e01f1f; }
+    .games-btn.secondary { background: rgba(255,255,255,0.1); margin-top: 4px; }
+
+    @media (max-width: 768px) {
+      .games-frame-wrap { height: calc(100vh - 56px); }
     }
   </style>
 </head>
@@ -272,46 +118,31 @@
 </header>
 
 <main class="games-page">
+  <div class="games-frame-wrap">
 
-  <div class="games-hero">
-    <div class="games-hero-text">
-      <h2>Games</h2>
-      <p>Play directly here or open the full library in a new tab</p>
+    <div class="games-loading" id="gamesLoading">
+      <div class="games-loading-spinner"></div>
+      <p>Loading games…</p>
     </div>
-    <a href="https://www.gn-math.dev/" target="_blank" rel="noopener" class="games-external-btn">
-      Full Library ↗
-    </a>
-  </div>
 
-  <div class="games-controls">
-    <input class="games-search" id="gamesSearch" placeholder="Search games..." autocomplete="off">
-    <button class="games-cat-btn active" data-cat="all">All</button>
-    <button class="games-cat-btn" data-cat="action">Action</button>
-    <button class="games-cat-btn" data-cat="puzzle">Puzzle</button>
-    <button class="games-cat-btn" data-cat="racing">Racing</button>
-    <button class="games-cat-btn" data-cat="sports">Sports</button>
-    <button class="games-cat-btn" data-cat="shooter">Shooter</button>
-    <button class="games-cat-btn" data-cat="other">Other</button>
-  </div>
+    <div class="games-fallback" id="gamesFallback">
+      <h3>Games unavailable</h3>
+      <p>Something went wrong loading the games. Try opening directly or refreshing.</p>
+      <a href="https://games.cinerealm.online" target="_blank" rel="noopener" class="games-btn">Open Games ↗</a>
+      <button class="games-btn secondary" onclick="retryLoad()">Try Again</button>
+    </div>
 
-  <div class="games-grid" id="gamesGrid"></div>
+    <iframe
+      id="gamesFrame"
+      src=""
+      allow="fullscreen; autoplay; clipboard-read; clipboard-write; gamepad"
+      allowfullscreen
+      title="CineRealm Games"
+    ></iframe>
+
+  </div>
 </main>
 
-<!-- Game modal -->
-<div class="game-modal" id="gameModal">
-  <div class="game-modal-header">
-    <span class="game-modal-title" id="gameModalTitle"></span>
-    <div class="game-modal-actions">
-      <a class="game-modal-newtab" id="gameModalNewTab" href="#" target="_blank" rel="noopener">Open in new tab ↗</a>
-      <button class="game-modal-close" id="gameModalClose">✕</button>
-    </div>
-  </div>
-  <div class="game-modal-frame">
-    <iframe id="gameModalIframe" src="" allow="fullscreen; autoplay; gamepad" allowfullscreen></iframe>
-  </div>
-</div>
-
-<!-- Details panel (required by script.js) -->
 <div id="detailsOverlay" class="details-overlay" onclick="closeDetailsPanel()"></div>
 <div id="detailsPanel" class="details-panel" style="display:none;">
   <button class="details-panel-close" onclick="closeDetailsPanel()">✕</button>
@@ -323,123 +154,54 @@
 
 <script src="/script.js" defer></script>
 <script>
-// Games catalog — all playable via iframe or direct link
-// url: iframe embed URL | newTab: true = open in new tab only (CB-safe)
-const GAMES = [
-  // Action
-  { title: "Slope", cat: "action", icon: "🎮", url: "https://slope-game.github.io/", newTab: false },
-  { title: "Run 3", cat: "action", icon: "🏃", url: "https://run3game.io/", newTab: true },
-  { title: "Subway Surfers", cat: "action", icon: "🛹", url: "https://subway-surfers.io/", newTab: true },
-  { title: "Temple Run", cat: "action", icon: "🏛️", url: "https://poki.com/embed/temple-run-2", newTab: false },
-  { title: "1v1.LOL", cat: "action", icon: "🔫", url: "https://1v1.lol/", newTab: true },
-  { title: "Krunker.io", cat: "shooter", icon: "🎯", url: "https://krunker.io/", newTab: true },
-  { title: "Shell Shockers", cat: "shooter", icon: "🥚", url: "https://shellshock.io/", newTab: true },
-  { title: "Bullet Force", cat: "shooter", icon: "💥", url: "https://www.crazygames.com/embed/bullet-force-multiplayer", newTab: false },
+const GAMES_URL = "https://games.cinerealm.online/";
 
-  // Puzzle
-  { title: "2048", cat: "puzzle", icon: "🔢", url: "https://2048.io/", newTab: false },
-  { title: "Wordle", cat: "puzzle", icon: "📝", url: "https://www.nytimes.com/games/wordle/index.html", newTab: true },
-  { title: "Cut the Rope", cat: "puzzle", icon: "🍬", url: "https://www.crazygames.com/embed/cut-the-rope-remastered", newTab: false },
-  { title: "Bloxorz", cat: "puzzle", icon: "📦", url: "https://www.coolmathgames.com/0-bloxorz", newTab: true },
-  { title: "Tetris", cat: "puzzle", icon: "🧱", url: "https://tetris.com/play-tetris", newTab: true },
+const frame   = document.getElementById("gamesFrame");
+const loading = document.getElementById("gamesLoading");
+const fallback = document.getElementById("gamesFallback");
 
-  // Racing
-  { title: "Moto X3M", cat: "racing", icon: "🏍️", url: "https://www.crazygames.com/embed/moto-x3m", newTab: false },
-  { title: "Drive Mad", cat: "racing", icon: "🚗", url: "https://www.crazygames.com/embed/drive-mad", newTab: false },
-  { title: "Drift Boss", cat: "racing", icon: "🏎️", url: "https://www.crazygames.com/embed/drift-boss", newTab: false },
-  { title: "Road Fury", cat: "racing", icon: "🛣️", url: "https://www.crazygames.com/embed/road-fury", newTab: false },
+function showFallback() {
+  loading.classList.add("hidden");
+  loading.style.display = "none";
+  fallback.classList.add("visible");
+}
 
-  // Sports
-  { title: "Basketball Stars", cat: "sports", icon: "🏀", url: "https://www.crazygames.com/embed/basketball-stars", newTab: false },
-  { title: "Soccer Skills World Cup", cat: "sports", icon: "⚽", url: "https://www.crazygames.com/embed/soccer-skills-world-cup", newTab: false },
-  { title: "Penalty Shooters 2", cat: "sports", icon: "🥅", url: "https://www.crazygames.com/embed/penalty-shooters-2", newTab: false },
-  { title: "Stickman Hook", cat: "sports", icon: "🕹️", url: "https://www.crazygames.com/embed/stickman-hook", newTab: false },
+function retryLoad() {
+  fallback.classList.remove("visible");
+  loading.classList.remove("hidden");
+  loading.style.display = "flex";
+  frame.src = "";
+  setTimeout(() => { frame.src = GAMES_URL; }, 100);
+  resetTimeout();
+}
 
-  // Other
-  { title: "Among Us", cat: "other", icon: "👾", url: "https://www.crazygames.com/embed/among-us-online-edition", newTab: false },
-  { title: "Minecraft Classic", cat: "other", icon: "⛏️", url: "https://classic.minecraft.net/", newTab: true },
-  { title: "Paper.io 2", cat: "other", icon: "📄", url: "https://www.crazygames.com/embed/paper-io-2", newTab: false },
-  { title: "Agar.io", cat: "other", icon: "🔵", url: "https://agar.io/", newTab: true },
-  { title: "Cookie Clicker", cat: "other", icon: "🍪", url: "https://orteil.dashnet.org/cookieclicker/", newTab: false },
-  { title: "Flappy Bird", cat: "other", icon: "🐦", url: "https://flappybird.io/", newTab: false },
-];
+let loadTimeout;
+function resetTimeout() {
+  clearTimeout(loadTimeout);
+  loadTimeout = setTimeout(showFallback, 10000);
+}
 
-let activecat = "all";
-let searchQ = "";
-
-function renderGames() {
-  const grid = document.getElementById("gamesGrid");
-  const filtered = GAMES.filter(g => {
-    const catMatch = activecat === "all" || g.cat === activecat;
-    const searchMatch = !searchQ || g.title.toLowerCase().includes(searchQ);
-    return catMatch && searchMatch;
-  });
-
-  if (!filtered.length) {
-    grid.innerHTML = '<div class="games-empty">No games found</div>';
-    return;
+frame.addEventListener("load", () => {
+  clearTimeout(loadTimeout);
+  try {
+    // Cross-origin success = real site loaded
+    const doc = frame.contentDocument;
+    if (!doc || doc.body?.innerHTML?.trim() === "") {
+      showFallback();
+    } else {
+      loading.classList.add("hidden");
+    }
+  } catch(e) {
+    // Cross-origin error = iframe loaded successfully
+    loading.classList.add("hidden");
   }
-
-  grid.innerHTML = filtered.map((g, i) => `
-    <div class="game-card" onclick="openGame(${GAMES.indexOf(g)})" style="animation-delay:${i*20}ms">
-      <div class="game-thumb">${g.icon}</div>
-      <div class="game-info">
-        <div class="game-title">${g.title}</div>
-        <div class="game-cat">${g.cat}${g.newTab ? ' · opens in new tab' : ''}</div>
-      </div>
-    </div>
-  `).join("");
-}
-
-function openGame(idx) {
-  const game = GAMES[idx];
-  if (!game) return;
-
-  if (game.newTab) {
-    window.open(game.url, "_blank", "noopener");
-    return;
-  }
-
-  const modal = document.getElementById("gameModal");
-  const iframe = document.getElementById("gameModalIframe");
-  const title  = document.getElementById("gameModalTitle");
-  const newTab = document.getElementById("gameModalNewTab");
-
-  title.textContent = game.title;
-  newTab.href = game.url;
-  iframe.src = game.url;
-  modal.classList.add("open");
-  document.body.style.overflow = "hidden";
-}
-
-function closeGame() {
-  const modal = document.getElementById("gameModal");
-  const iframe = document.getElementById("gameModalIframe");
-  modal.classList.remove("open");
-  iframe.src = "";
-  document.body.style.overflow = "";
-}
-
-document.getElementById("gameModalClose").onclick = closeGame;
-document.addEventListener("keydown", e => { if (e.key === "Escape") closeGame(); });
-
-// Category filter
-document.querySelectorAll(".games-cat-btn").forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll(".games-cat-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    activecat = btn.dataset.cat;
-    renderGames();
-  };
 });
 
-// Search
-document.getElementById("gamesSearch").oninput = e => {
-  searchQ = e.target.value.toLowerCase().trim();
-  renderGames();
-};
+frame.addEventListener("error", showFallback);
 
-renderGames();
+// Start loading
+frame.src = GAMES_URL;
+resetTimeout();
 </script>
 
 <script>window.va = window.va || function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
