@@ -5502,3 +5502,116 @@ section {
   filter: none;
   transform: scale(1);
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SECTION 10 — NAVIGATION UX
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Auto-hide header */
+header {
+  transition: transform 0.3s ease, background 0.35s ease,
+              border-color 0.35s ease, backdrop-filter 0.35s ease,
+              height 0.35s ease;
+}
+
+header.header-hidden {
+  transform: translateY(-100%);
+}
+
+/* Scroll-to-top button */
+.scroll-top-btn {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255,44,44,0.9);
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 8000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(255,44,44,0.35);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s;
+  pointer-events: none;
+}
+
+.scroll-top-btn.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.scroll-top-btn:hover {
+  background: #e01f1f;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .scroll-top-btn { bottom: 72px; }
+}
+
+/* Recently viewed bar */
+.recently-viewed-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 28px 0;
+}
+
+.rv-label {
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.rv-chip {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.65);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rv-chip:hover {
+  border-color: rgba(255,44,44,0.4);
+  color: #fff;
+  background: rgba(255,44,44,0.1);
+}
+
+.rv-clear {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.25);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.rv-clear:hover {
+  border-color: rgba(255,44,44,0.3);
+  color: rgba(255,44,44,0.7);
+}

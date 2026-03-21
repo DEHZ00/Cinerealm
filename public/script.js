@@ -1849,17 +1849,151 @@ if (document.getElementById("heroSection")) {
 
 
 
-// ── Transparent-to-solid header on scroll ─────────────────────────────────
+// ── Section 10 — Navigation UX ───────────────────────────────────────────
+
+// Auto-hide header + transparent-to-solid on scroll
 (function() {
   const hdr = document.querySelector("header");
   if (!hdr) return;
+
+  let lastY    = 0;
+  let ticking  = false;
+
   function onScroll() {
-    if (window.scrollY > 40) hdr.classList.add("scrolled");
+    const y = window.scrollY;
+
+    // Transparent → solid
+    if (y > 40) hdr.classList.add("scrolled");
     else hdr.classList.remove("scrolled");
+
+    // Auto-hide: hide when scrolling down past 120px, show when scrolling up
+    if (y > 120) {
+      if (y > lastY + 4) {
+        hdr.classList.add("header-hidden");
+      } else if (y < lastY - 4) {
+        hdr.classList.remove("header-hidden");
+      }
+    } else {
+      hdr.classList.remove("header-hidden");
+    }
+
+    lastY = y;
+    ticking = false;
   }
-  window.addEventListener("scroll", onScroll, { passive: true });
+
+  window.addEventListener("scroll", () => {
+    if (!ticking) {
+      requestAnimationFrame(onScroll);
+      ticking = true;
+    }
+  }, { passive: true });
+
   onScroll();
 })();
+
+// Scroll-to-top button
+(function() {
+  const btn = document.createElement("button");
+  btn.id = "scrollTopBtn";
+  btn.className = "scroll-top-btn";
+  btn.innerHTML = "↑";
+  btn.title = "Back to top";
+  btn.setAttribute("aria-label", "Scroll to top");
+  document.body.appendChild(btn);
+
+  window.addEventListener("scroll", () => {
+    if (window.scrollY > 400) btn.classList.add("visible");
+    else btn.classList.remove("visible");
+  }, { passive: true });
+
+  btn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
+})();
+
+// Dynamic page titles
+(function() {
+  const path = window.location.pathname;
+  const titles = {
+    "/":          "CineRealm — Stream Movies, TV & Anime",
+    "/movies":    "Movies — CineRealm",
+    "/trending":  "Trending — CineRealm",
+    "/watchlist": "My Watchlist — CineRealm",
+    "/search":    "Search — CineRealm",
+    "/genres":    "Browse Genres — CineRealm",
+    "/stats":     "My Stats — CineRealm",
+    "/games":     "Games — CineRealm",
+    "/legal":     "Legal — CineRealm",
+  };
+
+  const q = new URLSearchParams(window.location.search).get("q");
+  if (path === "/search" && q) {
+    document.title = `"${q}" — CineRealm`;
+  } else if (titles[path]) {
+    document.title = titles[path];
+  }
+})();
+
+// Recently viewed — track what cards are clicked and show as chips
+const RECENTLY_VIEWED_KEY = "cr_recently_viewed";
+
+function addRecentlyViewed(movie, type) {
+  try {
+    const id = movie.id;
+    const title = movie.title || movie.name || "";
+    if (!id || !title) return;
+
+    let recent = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || "[]");
+    // Remove existing entry for same item
+    recent = recent.filter(r => !(r.id === id && r.type === type));
+    // Add to front
+    recent.unshift({ id, type, title, poster_path: movie.poster_path || "" });
+    // Keep max 8
+    recent = recent.slice(0, 8);
+    localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(recent));
+    renderRecentlyViewed();
+  } catch(e) {}
+}
+
+function renderRecentlyViewed() {
+  const container = document.getElementById("recentlyViewedBar");
+  if (!container) return;
+
+  const recent = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || "[]");
+  if (!recent.length) { container.style.display = "none"; return; }
+
+  container.style.display = "flex";
+  container.innerHTML = `
+    <span class="rv-label">Recently viewed:</span>
+    ${recent.map(r => `
+      <button class="rv-chip" data-id="${r.id}" data-type="${r.type}"
+        data-title="${r.title.replace(/"/g,'&quot;')}"
+        data-poster="${r.poster_path}">
+        ${r.title}
+      </button>
+    `).join("")}
+    <button class="rv-clear" onclick="localStorage.removeItem('${RECENTLY_VIEWED_KEY}');renderRecentlyViewed();">✕ Clear</button>
+  `;
+
+  container.querySelectorAll(".rv-chip").forEach(chip => {
+    chip.onclick = () => {
+      const movie = {
+        id: parseInt(chip.dataset.id),
+        title: chip.dataset.title,
+        name: chip.dataset.title,
+        poster_path: chip.dataset.poster
+      };
+      showMovieDetails(movie, chip.dataset.type);
+    };
+  });
+}
+
+// Patch showMovieDetails to track recently viewed
+const _origShowMovieDetails = showMovieDetails;
+window.showMovieDetails = async function(movie, type) {
+  addRecentlyViewed(movie, type);
+  return _origShowMovieDetails(movie, type);
+};
+// Also patch the global reference
+// (handled by the window assignment above)
 
 // ── Service Worker Registration ────────────────────────────────────────────
 if ("serviceWorker" in navigator) {
@@ -2249,6 +2383,7 @@ async function loadBecauseYouWatched() {
 function initHomePage() {
   loadHistory();
   loadWatchlist();
+  renderRecentlyViewed();
   fetchMovies("/movie/now_playing", "newMovies", "movie");
   fetchMovies("/movie/popular", "popularMovies", "movie");
   fetchMovies("/movie/top_rated", "topRatedMovies", "movie");
