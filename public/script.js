@@ -62,14 +62,56 @@ function saveHistory() {
 function saveWatchlist() {
   localStorage.setItem("watchlist", JSON.stringify(watchlistData));
 }
-window.addEventListener("load", () => {
+
+// ── Splash screen — show on every page load ───────────────────────────────
+(function() {
   const intro = document.getElementById("appIntro");
   if (!intro) return;
+
+  // Remove hidden class to show it
+  intro.classList.remove("hidden");
+
+  // Dismiss after 1.8s
   setTimeout(() => {
     intro.classList.add("fade-out");
-    setTimeout(() => intro.remove(), 700);
-  }, 450);
-});
+    setTimeout(() => {
+      intro.style.display = "none";
+    }, 600);
+  }, 1800);
+})();
+
+// ── Greeting on home page ─────────────────────────────────────────────────
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour >= 5  && hour < 12) return "Good morning";
+  if (hour >= 12 && hour < 17) return "Good afternoon";
+  if (hour >= 17 && hour < 21) return "Good evening";
+  return "Good night";
+}
+
+function showGreeting() {
+  // Only on home page
+  if (!document.getElementById("heroSection")) return;
+
+  const name = localStorage.getItem("cr_user_name") || "";
+  const greeting = getGreeting() + (name ? ", " + name : "") + " 👋";
+
+  // Insert greeting below hero section
+  const heroSection = document.getElementById("heroSection");
+  if (!heroSection) return;
+
+  // Don't add twice
+  if (document.getElementById("homeGreeting")) return;
+
+  const el = document.createElement("div");
+  el.id = "homeGreeting";
+  el.className = "home-greeting";
+  el.textContent = greeting;
+  heroSection.insertAdjacentElement("afterend", el);
+}
+
+// Call greeting after page loads
+window.addEventListener("load", showGreeting);
 
 // ---- UI Helpers ----
 function showLoading(show = true) {
@@ -1911,40 +1953,7 @@ if (document.getElementById("heroSection")) {
 
 // ── Section 13 — Extra Premium Polish ────────────────────────────────────
 
-// ── 1. Ambient Mode ───────────────────────────────────────────────────────
-function initAmbientMode(posterUrl) {
-  const container = document.getElementById("watch-player-container");
-  if (!container) return;
-  let glow = document.getElementById("ambientGlow");
-  if (!glow) {
-    glow = document.createElement("div");
-    glow.id = "ambientGlow";
-    glow.className = "ambient-glow";
-    container.insertBefore(glow, container.firstChild);
-  }
-  if (!posterUrl) return;
-  const img = new Image();
-  img.crossOrigin = "anonymous";
-  img.onload = () => {
-    try {
-      const canvas = document.createElement("canvas");
-      canvas.width = 8; canvas.height = 8;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, 8, 8);
-      const pixels = ctx.getImageData(0, 0, 8, 8).data;
-      let r = 0, g = 0, b = 0, count = 0;
-      for (let i = 0; i < pixels.length; i += 4) { r += pixels[i]; g += pixels[i+1]; b += pixels[i+2]; count++; }
-      r = Math.min(255, Math.round((r/count) * 1.6));
-      g = Math.min(255, Math.round((g/count) * 1.6));
-      b = Math.min(255, Math.round((b/count) * 1.6));
-      glow.style.background = `radial-gradient(ellipse 80% 60% at 50% 100%, rgba(${r},${g},${b},0.35) 0%, transparent 70%)`;
-      glow.style.opacity = "1";
-    } catch(e) {}
-  };
-  img.src = posterUrl;
-}
-
-// ── 2. Favicon animation ──────────────────────────────────────────────────
+// ── 1. Favicon animation ──────────────────────────────────────────────────
 let _faviconInterval = null;
 
 function startFaviconAnimation() {
