@@ -4852,3 +4852,198 @@ footer strong { color: rgba(255,255,255,0.55); font-weight: 600; }
 @media (max-width: 540px) {
   .details-panel { width: 100vw; border-left: none; }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SECTION 4 — PLAYER & WATCH PAGE
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Breadcrumb ──────────────────────────────────────────────────────────── */
+.watch-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 28px 6px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+}
+.watch-crumb {
+  color: rgba(255,255,255,0.4);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.watch-crumb:hover { color: #fff; }
+.watch-crumb-sep { opacity: 0.35; }
+.watch-crumb-current { color: rgba(255,255,255,0.7); }
+
+/* ── Player controls bar ─────────────────────────────────────────────────── */
+.watch-player-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.watch-ctrl-btn {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.6);
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.watch-ctrl-btn:hover {
+  background: rgba(255,44,44,0.15);
+  border-color: rgba(255,44,44,0.4);
+  color: #fff;
+}
+
+/* ── Auto-next / Up Next overlay ─────────────────────────────────────────── */
+.watch-autonext {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, transparent 100%);
+  padding: 32px 28px 24px;
+  z-index: 10;
+}
+
+#watch-iframe-placeholder {
+  position: relative;
+}
+
+.watch-autonext-inner {
+  max-width: 340px;
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.watch-autonext-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+.watch-autonext-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+}
+
+.watch-autonext-countdown {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.watch-autonext-ring {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+
+.watch-autonext-num {
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  position: relative;
+  z-index: 1;
+}
+
+.watch-autonext-btns {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.watch-autonext-play {
+  padding: 9px 20px;
+  background: #ff2c2c;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.watch-autonext-play:hover { background: #e01f1f; }
+
+.watch-autonext-cancel {
+  padding: 9px 16px;
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.watch-autonext-cancel:hover { background: rgba(255,255,255,0.18); }
+
+/* ── Keyboard shortcut overlay ───────────────────────────────────────────── */
+.watch-shortcuts-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.watch-shortcuts-overlay.visible { display: flex; }
+
+.watch-shortcuts-box {
+  background: linear-gradient(160deg, #140202 0%, #0a0808 100%);
+  border: 1px solid rgba(255,44,44,0.2);
+  border-radius: 16px;
+  padding: 28px 32px;
+  max-width: 420px;
+  width: 92%;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+}
+
+.watch-shortcuts-box h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 20px;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 13px;
+}
+.shortcut-row:last-child { border-bottom: none; }
+.shortcut-key {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: monospace;
+}
+.shortcut-desc { color: rgba(255,255,255,0.6); }

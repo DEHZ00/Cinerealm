@@ -1539,6 +1539,15 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+// ── Dynamic page title while watching ────────────────────────────────────
+function updatePageTitle(title, isPlaying) {
+  if (isPlaying) {
+    document.title = "▶ " + title + " — CineRealm";
+  } else {
+    document.title = title + " — CineRealm";
+  }
+}
+
 // ── Handle browser back/forward for episode navigation ────────────────────
 window.addEventListener("popstate", (e) => {
   if (!e.state) return;
