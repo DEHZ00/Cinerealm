@@ -5486,3 +5486,19 @@ section {
     display: none !important;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SECTION 9 — PERFORMANCE
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Blur-up image loading */
+.card-img-blur {
+  filter: blur(8px);
+  transform: scale(1.05);
+  transition: filter 0.4s ease, transform 0.4s ease;
+}
+
+.card-img-loaded {
+  filter: none;
+  transform: scale(1);
+}

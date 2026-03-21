@@ -170,7 +170,14 @@ function switchPage(page) {
   window.scrollTo(0, 0);
 }
 
-// ---- API Call Helper ----
+// ── Section 9 — Performance ───────────────────────────────────────────────
+
+// Request deduplication + short-term cache
+// Prevents the same endpoint being fetched multiple times simultaneously
+const _apiCache   = new Map(); // url → {data, ts}
+const _apiPending = new Map(); // url → Promise
+const API_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 async function apiCall(endpoint, params = {}) {
   try {
     showLoading(true);
@@ -179,16 +186,42 @@ async function apiCall(endpoint, params = {}) {
 
     console.log("API Call:", url);
 
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    // Return cached result if fresh
+    const cached = _apiCache.get(url);
+    if (cached && Date.now() - cached.ts < API_CACHE_TTL) {
+      showLoading(false);
+      return cached.data;
+    }
 
-    const data = await res.json();
+    // Deduplicate — if same URL is already in flight, wait for it
+    if (_apiPending.has(url)) {
+      showLoading(false);
+      return _apiPending.get(url);
+    }
+
+    // New request
+    const promise = fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        _apiCache.set(url, { data, ts: Date.now() });
+        _apiPending.delete(url);
+        return data;
+      })
+      .catch(err => {
+        _apiPending.delete(url);
+        throw err;
+      });
+
+    _apiPending.set(url, promise);
+    const data = await promise;
     showLoading(false);
     return data;
   } catch (err) {
     console.error("API Error:", err);
     showLoading(false);
-    showError("Failed to load data. Check console for details.");
     return null;
   }
 }
@@ -243,9 +276,18 @@ function createMovieCard(movie, type = "movie") {
   const typeBadge = type === "tv" ? "TV" : (type === "anime" ? "Anime" : "Movie");
   const inWL = isInWatchlist(movie.id, type);
 
+  // Blur-up: use w92 thumbnail as placeholder, swap to w500 on load
+  const thumbSrc = "https://image.tmdb.org/t/p/w92" + movie.poster_path;
+  const fullSrc  = IMG_BASE + movie.poster_path;
+
   card.innerHTML = `
     <div class="card-image-wrapper">
-      <img src="${IMG_BASE + movie.poster_path}" alt="${title}" loading="lazy">
+      <img
+        src="${thumbSrc}"
+        data-src="${fullSrc}"
+        alt="${title}"
+        class="card-img-blur"
+        loading="lazy">
       <span class="card-type-badge">${typeBadge}</span>
       ${percent > 0 ? '<div class="progress-bar" style="width:' + percent + '%"></div>' : ""}
       <div class="card-hover-shine"></div>
@@ -255,6 +297,27 @@ function createMovieCard(movie, type = "movie") {
       </p>
     </div>
   `;
+
+  // Blur-up: swap to full res image once it loads
+  const img = card.querySelector("img");
+  const fullImg = new Image();
+  fullImg.onload = () => {
+    img.src = fullSrc;
+    img.classList.remove("card-img-blur");
+    img.classList.add("card-img-loaded");
+  };
+  fullImg.src = fullSrc;
+
+  // Preload on hover — prefetch details after 300ms hover so panel opens instantly
+  let hoverTimer = null;
+  card.addEventListener("mouseenter", () => {
+    hoverTimer = setTimeout(() => {
+      apiCall("/" + type + "/" + movie.id); // warms the cache
+    }, 300);
+  });
+  card.addEventListener("mouseleave", () => {
+    clearTimeout(hoverTimer);
+  });
 
   // Click card → open fullscreen details
   card.addEventListener("click", () => showMovieDetails(movie, type));
