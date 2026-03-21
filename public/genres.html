@@ -156,8 +156,8 @@
     <a href="/trending" class="nav-btn">Trending</a>
     <a href="/genres" class="nav-btn active">Genres</a>
     <a href="/watchlist" class="nav-btn">Watchlist</a>
-    <a href="/legal" class="nav-btn">Legal</a>
     <a href="/games" class="nav-btn">Games</a>
+    <a href="/legal" class="nav-btn">Legal</a>
   </nav>
 </header>
 
@@ -192,6 +192,13 @@
 </main>
 
 <!-- Details Modal -->
+<!-- Details Side Panel -->
+<div id="detailsOverlay" class="details-overlay" onclick="closeDetailsPanel()"></div>
+<div id="detailsPanel" class="details-panel" style="display:none;">
+  <button class="details-panel-close" onclick="closeDetailsPanel()">✕</button>
+  <div id="detailsPanelBody" class="details-panel-body"></div>
+</div>
+
 <div id="detailsModal" class="modal" style="display:none;">
   <div class="modal-content">
     <span class="close-btn">&times;</span>
