@@ -343,7 +343,6 @@
     const iframe = document.createElement("iframe");
     iframe.src = url;
     iframe.setAttribute("allow", "autoplay; encrypted-media; fullscreen; picture-in-picture");
-    iframe.setAttribute("allowfullscreen", "");
     iframe.loading = "lazy";
     iframePlaceholder.appendChild(iframe);
     return iframe;

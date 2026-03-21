@@ -1008,7 +1008,8 @@ function addRowScrollArrows(row) {
 
 // ── Re-run personal rows when returning to the page ───────────────────────
 function refreshPersonalRows() {
-  if (!document.getElementById("continueWatching")) return; // only on home
+  // Only run on home page — these elements don't exist on other pages
+  if (!document.getElementById("continueWatching")) return;
   loadHistory();
   renderContinueWatching();
   loadBecauseYouWatched();
@@ -1016,7 +1017,7 @@ function refreshPersonalRows() {
 
 // pageshow fires on back/forward navigation (bfcache restore)
 window.addEventListener("pageshow", (e) => {
-  if (e.persisted) refreshPersonalRows(); // came from bfcache (back button)
+  if (e.persisted) refreshPersonalRows();
 });
 
 // visibilitychange fires when switching tabs
