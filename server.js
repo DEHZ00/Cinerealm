@@ -11,7 +11,7 @@ const crypto = require("crypto");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ── Middleware: parse JSON bodies ──────────────────────────────────────────
+// ──  parse JSON bodies ──────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: false }));
 const MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === "true";
 const MAINTENANCE_PASSWORD = process.env.MAINTENANCE_PASSWORD || "cinerealm2026";
 
-// Paths that always bypass maintenance
+//always bypass maintenance
 const BYPASS_PATHS = [
   "/maintenance-auth",
   "/style.css",
@@ -34,7 +34,7 @@ const BYPASS_PATHS = [
 ];
 
 function makeToken(password) {
-  // Simple deterministic token from password — no in-memory state needed
+  // token from password — no in-memory state
   return crypto.createHmac("sha256", password + "cr_salt_2026").update("maintenance_access").digest("hex");
 }
 
@@ -50,7 +50,7 @@ app.use((req, res, next) => {
   // Always allow bypass paths
   if (BYPASS_PATHS.some(p => req.path.startsWith(p))) return next();
 
-  // Check session cookie (works across serverless restarts)
+  // Check session cookie 
   if (isValidSession(req.headers.cookie, MAINTENANCE_PASSWORD)) return next();
 
   // Not authenticated — for API/fetch requests return JSON error, for pages return maintenance HTML
@@ -69,7 +69,7 @@ app.post("/maintenance-auth", (req, res) => {
     const token = makeToken(MAINTENANCE_PASSWORD);
     res.setHeader(
       "Set-Cookie",
-      `cr_maintenance_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=28800`
+      `cr_maintenance_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=7200`
     );
     res.json({ success: true });
   } else {
@@ -94,7 +94,7 @@ app.use(express.static(path.join(__dirname, "public"), {
   etag: true,
 }));
 
-// ── SPA / Pretty URL Routing ───────────────────────────────────────────────
+// ── SPA  URL Routing ───────────────────────────────────────────────
 // Maps clean URLs → HTML files in /public
 const routes = {
   "/":          "index.html",
@@ -131,7 +131,9 @@ Object.entries(routes).forEach(([route, file]) => {
 
 // ── 404 Fallback ──────────────────────────────────────────────────────────
 app.use((req, res) => {
-  res.status(404).send("404 - Not Found");
+  res.status(404).sendFile(path.join(__dirname, "public", "404.html"), err => {
+    if (err) res.status(404).send("404 - Not Found");
+  });
 });
 
 // ── Start ──────────────────────────────────────────────────────────────────

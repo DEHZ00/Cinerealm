@@ -1106,3 +1106,500 @@ iframe {
   right: 15px;         
   z-index: 9999;       
 }
+/* ═══════════════════════════════════════════════════════════════════════════
+   PREMIUM UPGRADES — Season Dropdown, Modal, Cards, Animations, Scrollbar
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Global smooth scroll ─────────────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+
+/* ── Custom scrollbar (webkit) ────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+::-webkit-scrollbar-thumb { background: rgba(255,44,44,0.4); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #ff2c2c; }
+
+/* ── Section headings with accent line ───────────────────────────────────── */
+section h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+section h2::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 20px;
+  background: #ff2c2c;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+/* ── Movie card — premium hover glow ─────────────────────────────────────── */
+.movie-card {
+  transition: transform 0.22s cubic-bezier(.22,.68,0,1.2), box-shadow 0.22s ease;
+}
+.movie-card:hover {
+  transform: translateY(-6px) scale(1.04);
+  box-shadow: 0 16px 40px rgba(255,44,44,0.18), 0 4px 12px rgba(0,0,0,0.5);
+}
+
+/* ── Card image shimmer skeleton ─────────────────────────────────────────── */
+.card-image-wrapper img {
+  background: linear-gradient(90deg,#1c1c1c 25%,#2a2a2a 50%,#1c1c1c 75%);
+  background-size: 200% 100%;
+}
+.card-image-wrapper img[src=""] {
+  animation: shimmer 1.4s infinite;
+}
+
+/* ── Play button glow pulse on hover ─────────────────────────────────────── */
+.play-btn {
+  position: relative;
+  overflow: hidden;
+}
+.play-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.15);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+.play-btn:hover::after { transform: translateX(0); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PREMIUM SEASON / EPISODE PANEL
+   ══════════════════════════════════════════════════════════════════════════ */
+
+#player-season-dropdown {
+  background: rgba(0,0,0,0.45);
+  border-bottom: 1px solid rgba(255,44,44,0.1);
+  padding: 16px 18px 12px;
+}
+
+/* Season select */
+.season-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 10px 36px 10px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 10px;
+  border: 1.5px solid rgba(255,44,44,0.4);
+  background: rgba(0,0,0,0.7)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23ff2c2c' d='M6 8L0 0h12z'/%3E%3C/svg%3E")
+    no-repeat right 12px center;
+  color: #fff;
+  cursor: pointer;
+  margin-bottom: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  min-width: 200px;
+}
+.season-select:focus {
+  outline: none;
+  border-color: #ff2c2c;
+  box-shadow: 0 0 0 3px rgba(255,44,44,0.15);
+}
+.season-select option { background: #111; }
+
+/* Episode row wrapper */
+.episode-row-wrapper {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+/* Scroll arrow buttons */
+.scroll-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.6);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+  align-self: center;
+}
+.scroll-btn:hover {
+  background: rgba(255,44,44,0.15);
+  color: #ff2c2c;
+  border-color: rgba(255,44,44,0.3);
+}
+
+/* Episode list */
+.episode-list {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 4px 2px 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,44,44,0.3) transparent;
+}
+.episode-list::-webkit-scrollbar { height: 4px; }
+.episode-list::-webkit-scrollbar-thumb { background: rgba(255,44,44,0.3); border-radius: 99px; }
+
+/* Episode card — premium redesign */
+.episode-card {
+  flex: 0 0 auto;
+  width: 160px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  position: relative;
+}
+.episode-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255,44,44,0.4);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.episode-card.playing-episode {
+  border-color: #ff2c2c;
+  box-shadow: 0 0 0 2px rgba(255,44,44,0.25);
+}
+
+/* Episode thumbnail */
+.episode-poster {
+  width: 100%;
+  height: 88px;
+  object-fit: cover;
+  display: block;
+  background: #1a1a1a;
+}
+
+/* Episode info */
+.episode-info {
+  padding: 8px 10px 10px;
+}
+.episode-info strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #fff;
+  margin-bottom: 3px;
+}
+.episode-info p {
+  font-size: 11px;
+  line-height: 1.35;
+  max-height: 2.7em;
+  overflow: hidden;
+  color: rgba(255,255,255,0.45);
+  margin: 0;
+}
+
+/* Resume badge on episode card */
+.resume-badge {
+  display: inline-block;
+  background: rgba(255,44,44,0.2);
+  color: #ff6b6b;
+  border: 1px solid rgba(255,44,44,0.3);
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-bottom: 3px;
+  letter-spacing: 0.2px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PREMIUM DETAILS MODAL
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.modal {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+  background: rgba(0,0,0,0.75);
+}
+.modal[style*="flex"] { display: flex !important; }
+
+.modal-content {
+  background: linear-gradient(160deg, #110000 0%, #0d0d0d 100%);
+  border: 1px solid rgba(255,44,44,0.2);
+  border-radius: 18px;
+  width: 92%;
+  max-width: 680px;
+  max-height: 88vh;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.7);
+  animation: modalIn 0.25s cubic-bezier(.22,.68,0,1.15);
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.93) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-content::-webkit-scrollbar { display: none; }
+
+/* Backdrop hero behind modal */
+.details-hero {
+  width: 100%;
+  height: 160px;
+  background-size: cover;
+  background-position: center top;
+  position: relative;
+  flex-shrink: 0;
+}
+.details-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, #0d0d0d 100%);
+}
+
+.close-btn {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.6);
+  border-radius: 50%;
+  font-size: 18px;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  float: none;
+  font-weight: 400;
+}
+.close-btn:hover { background: #ff2c2c; color: #fff; }
+
+.details-card {
+  display: flex;
+  gap: 18px;
+  padding: 0 22px 24px;
+  margin: -40px 0 0;
+  position: relative;
+  z-index: 2;
+  overflow-y: auto;
+  max-height: calc(88vh - 160px);
+}
+
+.details-poster {
+  width: 120px;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+  flex-shrink: 0;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+  border: 2px solid rgba(255,255,255,0.08);
+}
+
+.details-info {
+  flex: 1;
+  padding-top: 44px;
+  min-width: 0;
+}
+
+.details-info h2 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 6px;
+  line-height: 1.2;
+}
+
+.details-stars {
+  color: #ffd700;
+  font-size: 14px;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+.details-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.detail-chip {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  font-weight: 600;
+}
+
+.detail-chip--rating {
+  background: rgba(255,215,0,0.1);
+  border-color: rgba(255,215,0,0.25);
+  color: #ffd700;
+}
+
+.genres-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0 0 10px;
+}
+
+.genre-tag {
+  background: rgba(255,44,44,0.1);
+  border: 1px solid rgba(255,44,44,0.25);
+  color: #ff6b6b;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.overview {
+  font-size: 13px;
+  line-height: 1.65;
+  color: rgba(255,255,255,0.6);
+  margin: 0 0 16px;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.details-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.details-play-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 22px;
+  background: #ff2c2c;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 999px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.15s, box-shadow 0.18s;
+  box-shadow: 0 6px 20px rgba(255,44,44,0.35);
+}
+.details-play-btn:hover {
+  background: #e01f1f;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(255,44,44,0.45);
+}
+
+.details-watchlist-btn {
+  padding: 10px 18px;
+  background: rgba(255,255,255,0.07);
+  border: 1.5px solid rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s;
+}
+.details-watchlist-btn:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.3);
+}
+
+/* ── Mobile modal ─────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .details-card { flex-direction: column; align-items: center; margin-top: -20px; }
+  .details-poster { width: 100px; height: 150px; }
+  .details-info { padding-top: 12px; text-align: center; }
+  .details-meta, .genres-chips, .details-actions { justify-content: center; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   NAV — active indicator underline
+   ══════════════════════════════════════════════════════════════════════════ */
+.nav-btn {
+  position: relative;
+  text-decoration: none;
+}
+.nav-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  background: #ff2c2c;
+  border-radius: 99px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PAGE FADE-IN ANIMATION
+   ══════════════════════════════════════════════════════════════════════════ */
+.page.active {
+  animation: pageFadeIn 0.3s ease both;
+}
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE NAV — horizontal scroll instead of wrap
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .nav-links {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .nav-btn { flex-shrink: 0; white-space: nowrap; }
+}
+
+/* ── Episode progress bar under thumbnail ─────────────────────────────────── */
+.episode-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255,255,255,0.1);
+}
+.episode-progress-fill {
+  height: 100%;
+  background: #ff2c2c;
+  border-radius: 0 2px 2px 0;
+  transition: width 0.3s ease;
+}
+
+/* ── Now playing badge on episode thumbnail ───────────────────────────────── */
+.episode-now-playing-badge {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  background: rgba(255,44,44,0.9);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  backdrop-filter: blur(4px);
+}

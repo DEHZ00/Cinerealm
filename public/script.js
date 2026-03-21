@@ -281,32 +281,61 @@ card.querySelector(".play-btn").onclick = (e) => {
 
 // ---- Show Movie Details in Modal ----
 async function showMovieDetails(movie, type) {
-  const data = await apiCall(`/${type}/${movie.id}`);
+  const data = await apiCall("/" + type + "/" + movie.id);
   if (!data) return;
 
-  const genres = data.genres?.map(g => g.name).join(", ") || "N/A";
-  const rating = data.vote_average?.toFixed(1) || "N/A";
-  const overview = data.overview || "No description available";
-  const releaseDate = data.release_date || data.first_air_date || "N/A";
-  const runtime = data.runtime ? `${data.runtime} min` : (data.episode_run_time?.[0] + " min" || "N/A");
+  const genres  = data.genres?.map(g => g.name).join(" · ") || "N/A";
+  const rating  = data.vote_average?.toFixed(1) || "N/A";
+  const overview = data.overview || "No description available.";
+  const releaseDate = (data.release_date || data.first_air_date || "N/A").split("-")[0];
+  const runtime = data.runtime
+    ? Math.floor(data.runtime / 60) + "h " + (data.runtime % 60) + "m"
+    : (data.episode_run_time?.[0] ? data.episode_run_time[0] + " min/ep" : "N/A");
+  const seasons = data.number_of_seasons ? data.number_of_seasons + " Season" + (data.number_of_seasons > 1 ? "s" : "") : "";
+  const ratingStars = Math.round((data.vote_average || 0) / 2);
+  const stars = "★".repeat(ratingStars) + "☆".repeat(5 - ratingStars);
+
+  const watchUrl = type === "movie"
+    ? "/watch/movie/" + movie.id
+    : "/watch/tv/" + movie.id + "/season/1/episode/1";
+
+  const inWL = isInWatchlist(movie.id, type);
 
   detailsBody.innerHTML = `
+    <div class="details-hero" style="
+      background-image: url(https://image.tmdb.org/t/p/w780${data.backdrop_path || movie.poster_path});
+    "></div>
     <div class="details-card">
       <img src="${IMG_BASE + movie.poster_path}" alt="${movie.title || movie.name}" class="details-poster">
       <div class="details-info">
         <h2>${movie.title || movie.name}</h2>
+        <div class="details-stars">${stars} <span style="opacity:.5;font-size:12px;">${rating}/10</span></div>
         <div class="details-meta">
-          <span class="rating">⭐ ${rating}/10</span>
-          <span class="release">${releaseDate}</span>
-          <span class="runtime">${runtime}</span>
+          <span class="detail-chip">${releaseDate}</span>
+          <span class="detail-chip">${runtime}</span>
+          ${seasons ? '<span class="detail-chip">' + seasons + '</span>' : ""}
+          <span class="detail-chip detail-chip--rating">⭐ ${rating}</span>
         </div>
-        <p class="genres"><strong>Genres:</strong> ${genres}</p>
+        <p class="genres-chips">${data.genres?.map(g => '<span class="genre-tag">' + g.name + '</span>').join("") || ""}</p>
         <p class="overview">${overview}</p>
+        <div class="details-actions">
+          <a href="${watchUrl}" class="details-play-btn">▶ Play Now</a>
+          <button class="details-watchlist-btn" id="modalWatchlistBtn">
+            ${inWL ? "★ In Watchlist" : "☆ Add to Watchlist"}
+          </button>
+        </div>
       </div>
     </div>
   `;
-  
-  detailsModal.style.display = "block";
+
+  // Wire up watchlist button inside modal
+  document.getElementById("modalWatchlistBtn").onclick = () => {
+    toggleWatchlist(movie.id, type, movie);
+    const btn = document.getElementById("modalWatchlistBtn");
+    if (btn) btn.textContent = isInWatchlist(movie.id, type) ? "★ In Watchlist" : "☆ Add to Watchlist";
+  };
+
+  detailsModal.style.display = "flex";
 }
 
 // Close modal
@@ -528,13 +557,19 @@ function insertIframe(url) {
   const iframe = document.createElement("iframe");
   iframe.id = "active-player-iframe";
   iframe.src = url;
-  iframe.setAttribute("allow", "autoplay; encrypted-media; fullscreen");
+
+  // Popup blocker — omitting allow-popups and allow-popups-to-escape-sandbox
+  // blocks window.open() and target="_blank" links from inside the iframe.
+  // This kills ~85-90% of popup ads without breaking video playback.
+  iframe.setAttribute("sandbox",
+    "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
+  );
+  iframe.setAttribute("allow", "autoplay; encrypted-media; fullscreen; picture-in-picture");
   iframe.setAttribute("allowfullscreen", "");
   iframe.style.width = "100%";
   iframe.style.height = "600px";
   iframe.style.border = "none";
   iframe.loading = "lazy";
-  // attach a basic error handler
   iframe.addEventListener("error", () => {
     const err = document.getElementById("player-error");
     if (err) err.style.display = "block";
@@ -812,8 +847,26 @@ async function renderSeasonsDropdown(tvId, media, extraOpts = {}) {
         ? `<span class="resume-badge">Resume at ${formatTime(epProgress)}</span>`
         : "";
 
+      // Check if this is the currently playing episode
+      const isPlaying = extraOpts.season === seasonNumber && extraOpts.episode === ep.episode_number;
+      if (isPlaying) epDiv.classList.add("playing-episode");
+
+      // Progress bar percentage
+      const epData = historyData.find(h =>
+        h.type === "tv" && h.tmdbId === tvId &&
+        h.season === seasonNumber && h.episode === ep.episode_number
+      );
+      const pct = epData && epData.duration ? Math.min(100, (epData.progress / epData.duration) * 100) : 0;
+      const progressBar = pct > 0
+        ? `<div class="episode-progress-bar"><div class="episode-progress-fill" style="width:${pct}%"></div></div>`
+        : "";
+
       epDiv.innerHTML = `
-        <img src="${ep.still_path ? IMG_BASE + ep.still_path : ""}" alt="${ep.name}" class="episode-poster">
+        <div style="position:relative;">
+          <img src="${ep.still_path ? IMG_BASE + ep.still_path : ""}" alt="${ep.name}" class="episode-poster">
+          ${isPlaying ? '<div class="episode-now-playing-badge">▶ Playing</div>' : ""}
+          ${progressBar}
+        </div>
         <div class="episode-info">
           <strong>${ep.episode_number}. ${ep.name}</strong>
           ${resumeBadge}
@@ -824,9 +877,21 @@ async function renderSeasonsDropdown(tvId, media, extraOpts = {}) {
       epDiv.addEventListener("click", () => {
         const lastProgress = getHistoryProgress(tvId, "tv", seasonNumber, ep.episode_number);
 
+        // Remove playing class from all cards, add to clicked
+        episodeList.querySelectorAll(".episode-card").forEach(c => {
+          c.classList.remove("playing-episode");
+          const badge = c.querySelector(".episode-now-playing-badge");
+          if (badge) badge.remove();
+        });
+        epDiv.classList.add("playing-episode");
+
         // Update browser URL without reloading
         const newUrl = "/watch/tv/" + tvId + "/season/" + seasonNumber + "/episode/" + ep.episode_number;
         history.pushState({ tvId, seasonNumber, episode: ep.episode_number }, "", newUrl);
+
+        // Update extraOpts so highlight stays correct
+        extraOpts.season  = seasonNumber;
+        extraOpts.episode = ep.episode_number;
 
         loadPlayer(tvId, "tv", media.title || media.name || "", {
           ...extraOpts,
@@ -837,6 +902,11 @@ async function renderSeasonsDropdown(tvId, media, extraOpts = {}) {
       });
 
       episodeList.appendChild(epDiv);
+
+      // Auto-scroll to playing episode after render
+      if (isPlaying) {
+        setTimeout(() => epDiv.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" }), 150);
+      }
     });
   }
 
@@ -1032,38 +1102,46 @@ function buildHeroDots() {
 function showHeroSlide(index) {
   if (!heroItems.length) return;
   const movie = heroItems[index];
-  const heroBg = document.getElementById("heroBg");
-  const heroTitle = document.getElementById("heroTitle");
+  const heroBg       = document.getElementById("heroBg");
+  const heroTitle    = document.getElementById("heroTitle");
   const heroOverview = document.getElementById("heroOverview");
   const dotsContainer = document.getElementById("heroDots");
 
   if (!heroBg || !heroTitle || !heroOverview) return;
 
-  heroBg.style.backgroundImage = `url(${IMG_BASE.replace("/w500", "/w780")}${movie.backdrop_path})`;
-  heroTitle.textContent = movie.title || movie.name || "Trending title";
+  heroBg.style.backgroundImage = "url(" + IMG_BASE.replace("/w500", "/w1280") + movie.backdrop_path + ")";
+
+  // Title works for both movie (title) and tv (name)
+  const displayTitle = movie.title || movie.name || "Trending Now";
+  const mediaType    = movie.media_type || (movie.title ? "movie" : "tv");
+  const typeBadge    = mediaType === "tv" ? "TV Show" : "Movie";
+
+  heroTitle.innerHTML = displayTitle + ' <span style="font-size:13px;font-weight:600;background:rgba(255,44,44,0.85);color:#fff;padding:3px 10px;border-radius:999px;vertical-align:middle;letter-spacing:0.5px;">' + typeBadge + '</span>';
   heroOverview.textContent = movie.overview || "";
 
-  // update dots
+  // Update dots
   if (dotsContainer) {
     dotsContainer.querySelectorAll(".hero-dot").forEach((dot, i) => {
       dot.classList.toggle("active", i === index);
     });
   }
 
-  // hook up buttons
+  // Buttons
   const playBtn = document.getElementById("heroPlayBtn");
   const moreBtn = document.getElementById("heroMoreBtn");
 
   if (playBtn) {
     playBtn.onclick = () => {
-      window.location.href = `/watch/movie/${movie.id}`;
+      if (mediaType === "tv") {
+        window.location.href = "/watch/tv/" + movie.id + "/season/1/episode/1";
+      } else {
+        window.location.href = "/watch/movie/" + movie.id;
+      }
     };
   }
 
   if (moreBtn) {
-    moreBtn.onclick = () => {
-      showMovieDetails(movie, "movie");
-    };
+    moreBtn.onclick = () => showMovieDetails(movie, mediaType);
   }
 }
 
@@ -1075,15 +1153,27 @@ function nextHeroSlide() {
 
 async function initHeroCarousel() {
   const heroSection = document.getElementById("heroSection");
-  if (!heroSection) return; // not on this page
+  if (!heroSection) return;
 
-  const data = await apiCall("/trending/movie/week");
-  if (!data || !data.results || !data.results.length) {
-    heroSection.style.display = "none";
-    return;
+  // Fetch both trending movies and TV, merge and shuffle
+  const [movieData, tvData] = await Promise.all([
+    apiCall("/trending/movie/week"),
+    apiCall("/trending/tv/week")
+  ]);
+
+  const movies = (movieData?.results || []).filter(m => m.backdrop_path).slice(0, 4).map(m => ({ ...m, media_type: "movie" }));
+  const shows  = (tvData?.results  || []).filter(m => m.backdrop_path).slice(0, 3).map(m => ({ ...m, media_type: "tv"    }));
+
+  // Interleave: movie, tv, movie, tv...
+  const merged = [];
+  const maxLen = Math.max(movies.length, shows.length);
+  for (let i = 0; i < maxLen; i++) {
+    if (movies[i]) merged.push(movies[i]);
+    if (shows[i])  merged.push(shows[i]);
   }
 
-  heroItems = data.results.filter(m => m.backdrop_path).slice(0, 5);
+  heroItems = merged.slice(0, 6);
+
   if (!heroItems.length) {
     heroSection.style.display = "none";
     return;
@@ -1094,7 +1184,7 @@ async function initHeroCarousel() {
   showHeroSlide(0);
 
   if (heroTimer) clearInterval(heroTimer);
-  heroTimer = setInterval(nextHeroSlide, 12000); // ~12s per slide
+  heroTimer = setInterval(nextHeroSlide, 12000);
 }
 
 // ---- Navigation ----
