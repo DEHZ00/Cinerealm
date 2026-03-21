@@ -123,6 +123,7 @@
       <div class="watch-player-header">
         <h3 id="watchPlayerTitle">Now Playing</h3>
         <div class="watch-player-controls">
+          <button class="watch-ctrl-btn" id="watchPartyBtn" title="Watch Party">👥</button>
           <button class="watch-ctrl-btn" id="watchPipBtn" title="Picture in Picture">⧉</button>
           <button class="watch-ctrl-btn" id="watchFullscreenBtn" title="Fullscreen">⛶</button>
         </div>
@@ -193,7 +194,252 @@
 
 <script src="/script.js"></script>
 
-<!-- Keyboard shortcuts overlay -->
+<!-- Watch Party Panel -->
+<div id="watchPartyPanel" class="wp-panel" style="display:none;">
+  <div class="wp-panel-inner">
+    <div class="wp-header">
+      <h3>👥 Watch Party</h3>
+      <button class="wp-close" id="wpClose">✕</button>
+    </div>
+
+    <!-- No room state -->
+    <div id="wpNoRoom" class="wp-section">
+      <p class="wp-desc">Watch together in sync with friends. Create a room and share the link.</p>
+      <div class="wp-name-row">
+        <input id="wpNameInput" class="wp-input" placeholder="Your name" maxlength="20" autocomplete="off">
+      </div>
+      <button class="wp-btn-primary" id="wpCreateBtn">🎬 Create Room</button>
+      <div class="wp-divider">or</div>
+      <div class="wp-join-row">
+        <input id="wpRoomInput" class="wp-input" placeholder="Room code" maxlength="8" autocomplete="off" style="text-transform:uppercase;">
+        <button class="wp-btn-secondary" id="wpJoinBtn">Join</button>
+      </div>
+    </div>
+
+    <!-- In room state -->
+    <div id="wpInRoom" class="wp-section" style="display:none;">
+      <div class="wp-room-info">
+        <div class="wp-room-code-wrap">
+          <span class="wp-room-label">Room Code</span>
+          <span class="wp-room-code" id="wpRoomCode">—</span>
+          <button class="wp-copy-btn" id="wpCopyLink" title="Copy invite link">📋 Copy Link</button>
+        </div>
+        <div class="wp-role-badge" id="wpRoleBadge">Host</div>
+      </div>
+
+      <!-- Members list -->
+      <div class="wp-members-label">Members <span id="wpMemberCount">0</span></div>
+      <div class="wp-members" id="wpMembers"></div>
+
+      <!-- Chat -->
+      <div class="wp-chat-box" id="wpChatBox"></div>
+      <div class="wp-chat-input-row">
+        <input id="wpChatInput" class="wp-input" placeholder="Message…" maxlength="200" autocomplete="off">
+        <button class="wp-btn-secondary" id="wpSendBtn">→</button>
+      </div>
+
+      <button class="wp-leave-btn" id="wpLeaveBtn">Leave Room</button>
+    </div>
+  </div>
+</div>
+<div id="wpOverlay" class="wp-overlay" style="display:none;"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, push, off, remove, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
+  authDomain: "cinerealm-8b7b9.firebaseapp.com",
+  databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
+  projectId: "cinerealm-8b7b9",
+  storageBucket: "cinerealm-8b7b9.firebasestorage.app",
+  messagingSenderId: "1076768481536",
+  appId: "1:1076768481536:web:4fd3bdc3f222e4850ad3e5"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+// ── State ─────────────────────────────────────────────────────────────────
+let wpRoomId   = null;
+let wpUserId   = "u_" + Math.random().toString(36).slice(2, 8);
+let wpIsHost   = false;
+let wpName     = localStorage.getItem("cr_wp_name") || "";
+let wpListeners = [];
+
+// Check URL for room param on load
+const urlRoom = new URLSearchParams(window.location.search).get("party");
+if (urlRoom) {
+  document.getElementById("wpRoomInput").value = urlRoom.toUpperCase();
+  // Auto-open panel
+  setTimeout(() => document.getElementById("watchPartyBtn")?.click(), 1500);
+}
+
+// ── Panel open/close ──────────────────────────────────────────────────────
+document.getElementById("watchPartyBtn").onclick = () => {
+  const panel = document.getElementById("watchPartyPanel");
+  const overlay = document.getElementById("wpOverlay");
+  panel.style.display = "flex";
+  overlay.style.display = "block";
+  if (wpNameInput.value === "" && wpName) wpNameInput.value = wpName;
+};
+
+function closePanel() {
+  document.getElementById("watchPartyPanel").style.display = "none";
+  document.getElementById("wpOverlay").style.display = "none";
+}
+
+document.getElementById("wpClose").onclick = closePanel;
+document.getElementById("wpOverlay").onclick = closePanel;
+
+// ── Name input ────────────────────────────────────────────────────────────
+const wpNameInput = document.getElementById("wpNameInput");
+wpNameInput.value = wpName;
+wpNameInput.oninput = () => {
+  wpName = wpNameInput.value.trim() || "Anonymous";
+  localStorage.setItem("cr_wp_name", wpName);
+};
+
+// ── Generate room code ────────────────────────────────────────────────────
+function genCode() {
+  return Math.random().toString(36).slice(2, 6).toUpperCase();
+}
+
+// ── Create room ───────────────────────────────────────────────────────────
+document.getElementById("wpCreateBtn").onclick = async () => {
+  const name = wpNameInput.value.trim() || "Host";
+  wpName = name;
+  localStorage.setItem("cr_wp_name", name);
+
+  const code = genCode();
+  wpRoomId = code;
+  wpIsHost = true;
+
+  const ctx = window._watchContext || {};
+  await set(ref(db, "rooms/" + code), {
+    host: wpUserId,
+    content: {
+      type: ctx.type || "movie",
+      tmdbId: ctx.tmdbId || 0,
+      season: ctx.season || null,
+      episode: ctx.episode || null,
+      title: ctx.title || document.getElementById("watchTitle")?.textContent || ""
+    },
+    createdAt: serverTimestamp()
+  });
+
+  await set(ref(db, "rooms/" + code + "/members/" + wpUserId), {
+    name, isHost: true, joinedAt: serverTimestamp()
+  });
+
+  enterRoom(code);
+};
+
+// ── Join room ─────────────────────────────────────────────────────────────
+document.getElementById("wpJoinBtn").onclick = async () => {
+  const code = document.getElementById("wpRoomInput").value.trim().toUpperCase();
+  if (!code || code.length < 4) return showToast("Enter a valid room code", "error");
+
+  const snap = await get(ref(db, "rooms/" + code));
+  if (!snap.exists()) return showToast("Room not found", "error");
+
+  const name = wpNameInput.value.trim() || "Guest";
+  wpName = name;
+  wpRoomId = code;
+  wpIsHost = false;
+
+  await set(ref(db, "rooms/" + code + "/members/" + wpUserId), {
+    name, isHost: false, joinedAt: serverTimestamp()
+  });
+
+  enterRoom(code);
+};
+
+// ── Enter room UI ─────────────────────────────────────────────────────────
+function enterRoom(code) {
+  document.getElementById("wpNoRoom").style.display = "none";
+  document.getElementById("wpInRoom").style.display = "block";
+  document.getElementById("wpRoomCode").textContent = code;
+  document.getElementById("wpRoleBadge").textContent = wpIsHost ? "👑 Host" : "👤 Guest";
+
+  // Copy invite link
+  document.getElementById("wpCopyLink").onclick = () => {
+    const url = window.location.origin + window.location.pathname + "?party=" + code;
+    navigator.clipboard.writeText(url).then(() => showToast("Invite link copied!", "success"));
+  };
+
+  // Listen for members
+  const membersRef = ref(db, "rooms/" + code + "/members");
+  const membersUnsub = onValue(membersRef, snap => {
+    const members = snap.val() || {};
+    const list = document.getElementById("wpMembers");
+    document.getElementById("wpMemberCount").textContent = Object.keys(members).length;
+    list.innerHTML = Object.entries(members).map(([uid, m]) => `
+      <div class="wp-member ${uid === wpUserId ? "wp-member-me" : ""}">
+        <span class="wp-member-icon">${m.isHost ? "👑" : "👤"}</span>
+        <span class="wp-member-name">${m.name}${uid === wpUserId ? " (you)" : ""}</span>
+      </div>
+    `).join("");
+  });
+  wpListeners.push(() => off(membersRef, "value"));
+
+  // Listen for chat messages
+  const chatRef = ref(db, "rooms/" + code + "/chat");
+  const chatUnsub = onValue(chatRef, snap => {
+    const msgs = snap.val() || {};
+    const box = document.getElementById("wpChatBox");
+    const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+    box.innerHTML = Object.values(msgs)
+      .sort((a,b) => (a.ts||0) - (b.ts||0))
+      .map(m => `
+        <div class="wp-msg ${m.uid === wpUserId ? "wp-msg-me" : ""}">
+          <span class="wp-msg-name">${m.name}</span>
+          <span class="wp-msg-text">${m.text}</span>
+        </div>
+      `).join("");
+    if (atBottom) box.scrollTop = box.scrollHeight;
+  });
+  wpListeners.push(() => off(chatRef, "value"));
+
+  // Send chat
+  const sendMsg = () => {
+    const input = document.getElementById("wpChatInput");
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = "";
+    push(ref(db, "rooms/" + code + "/chat"), {
+      uid: wpUserId, name: wpName, text,
+      ts: Date.now()
+    });
+  };
+  document.getElementById("wpSendBtn").onclick = sendMsg;
+  document.getElementById("wpChatInput").onkeydown = e => { if (e.key === "Enter") sendMsg(); };
+
+  // Leave room
+  document.getElementById("wpLeaveBtn").onclick = leaveRoom;
+
+  // Remove member on page leave
+  window.addEventListener("beforeunload", () => {
+    remove(ref(db, "rooms/" + code + "/members/" + wpUserId));
+  });
+}
+
+// ── Leave room ────────────────────────────────────────────────────────────
+async function leaveRoom() {
+  if (!wpRoomId) return;
+  wpListeners.forEach(fn => fn());
+  wpListeners = [];
+  await remove(ref(db, "rooms/" + wpRoomId + "/members/" + wpUserId));
+  wpRoomId = null;
+  wpIsHost = false;
+  document.getElementById("wpNoRoom").style.display = "block";
+  document.getElementById("wpInRoom").style.display = "none";
+  showToast("Left the watch party", "info");
+}
+</script>
 <div id="shortcutsOverlay" class="watch-shortcuts-overlay" onclick="this.classList.remove('visible')">
   <div class="watch-shortcuts-box" onclick="event.stopPropagation()">
     <h3>⌨️ Keyboard Shortcuts</h3>
@@ -216,6 +462,10 @@
     <div class="shortcut-row">
       <span class="shortcut-desc">Close / Back</span>
       <span class="shortcut-key">Esc</span>
+    </div>
+    <div class="shortcut-row">
+      <span class="shortcut-desc">Watch Party</span>
+      <span class="shortcut-key">P</span>
     </div>
     <div class="shortcut-row">
       <span class="shortcut-desc">Show this menu</span>
@@ -495,6 +745,11 @@ window.addEventListener("message", function(event) {
     if (e.key === "Escape") {
       const overlay = document.getElementById("shortcutsOverlay");
       if (overlay) overlay.classList.remove("visible");
+      return;
+    }
+
+    if (e.key === "p" || e.key === "P") {
+      document.getElementById("watchPartyBtn")?.click();
       return;
     }
 
