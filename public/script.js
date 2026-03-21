@@ -1885,8 +1885,6 @@ function initHomeGenreFilter() {
 }
 
 // ── Section 6 — Home Page Features ───────────────────────────────────────
-
-// New Episodes This Week
 async function loadNewEpisodes() {
   const container = document.getElementById("newEpisodes");
   if (!container) return;
@@ -1957,54 +1955,25 @@ async function loadBecauseYouWatched() {
   });
 }
 
-// Hidden Gems — high rating, low popularity
-async function loadHiddenGems() {
-  const container = document.getElementById("hiddenGems");
-  if (!container) return;
-  showSkeletons(container, 8);
-
-  const data = await apiCall("/discover/movie", {
-    sort_by: "vote_average.desc",
-    "vote_average.gte": 7.5,
-    "vote_count.gte": 500,
-    "popularity.lte": 30,
-    without_genres: "99,10755" // exclude documentaries and kids
-  });
-
-  container.innerHTML = "";
-  if (!data?.results?.length) {
-    container.closest("section").style.display = "none";
-    return;
-  }
-
-  data.results
-    .filter(i => i.poster_path)
-    .slice(0, 20)
-    .forEach((item, idx) => {
-      const card = createMovieCard(item, "movie");
-      if (card) {
-        // Add gem badge
-        const badge = document.createElement("span");
-        badge.className = "card-gem-badge";
-        badge.textContent = "💎 Hidden Gem";
-        card.querySelector(".card-image-wrapper").appendChild(badge);
-        card.style.animationDelay = (idx * 35) + "ms";
-        container.appendChild(card);
-      }
-    });
-}
 
 // ---- Initial Load ----
-loadHistory();
-loadWatchlist();
-fetchMovies("/movie/now_playing", "newMovies", "movie");
-fetchMovies("/movie/popular", "popularMovies", "movie");
-fetchMovies("/movie/top_rated", "topRatedMovies", "movie");
-fetchMovies("/tv/popular", "popularTV", "tv");
-fetchMovies("/tv/top_rated", "topRatedTV", "tv");
-renderContinueWatching();
-loadNewEpisodes();
-loadBecauseYouWatched();
-loadHiddenGems();
-initHomeGenreFilter();
+function initHomePage() {
+  loadHistory();
+  loadWatchlist();
+  fetchMovies("/movie/now_playing", "newMovies", "movie");
+  fetchMovies("/movie/popular", "popularMovies", "movie");
+  fetchMovies("/movie/top_rated", "topRatedMovies", "movie");
+  fetchMovies("/tv/popular", "popularTV", "tv");
+  fetchMovies("/tv/top_rated", "topRatedTV", "tv");
+  renderContinueWatching();
+  loadNewEpisodes();
+  loadBecauseYouWatched();
+  initHomeGenreFilter();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initHomePage);
+} else {
+  initHomePage();
+}
 
