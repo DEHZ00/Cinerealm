@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cine Realm</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="script.js" defer></script>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/script.js" defer></script>
  <meta name="description" content="Watch the latest movies, TV shows, and anime online.">
   <meta name="keywords" content="movies, TV shows, streaming, online, anime, CineRealm, free movies, trending shows, cine realm, watch movies">
   <meta name="robots" content="index, follow">
@@ -82,6 +82,7 @@
     <a href="/genres" style="display:inline-block;margin-top:10px;font-size:13px;color:#ff2c2c;text-decoration:none;font-weight:600;">View full genres page →</a>
   </section>
 
+
   <section>
     <h2><span class="section-title-text">Continue Watching</span></h2>
     <div id="continueWatching" class="movie-row">
@@ -89,15 +90,30 @@
     </div>
   </section>
 
+  <!-- Because You Watched — only shown if watch history exists -->
+  <section id="becauseYouWatchedSection" style="display:none;">
+    <h2><span class="section-title-text" id="becauseYouWatchedTitle">Because You Watched</span></h2>
+    <div id="becauseYouWatched" class="movie-row"></div>
+  </section>
+
+  <section>
+    <h2><span class="section-title-text">🔴 New Episodes This Week</span> <a href="/trending" class="see-all">See All →</a></h2>
+    <div id="newEpisodes" class="movie-row"></div>
+  </section>
+
   <section>
     <h2><span class="section-title-text">New Releases</span> <a href="/movies" class="see-all">See All →</a></h2>
     <div id="newMovies" class="movie-row"></div>
   </section>
 
-
   <section>
     <h2><span class="section-title-text">Popular Movies</span> <a href="/movies" class="see-all">See All →</a></h2>
     <div id="popularMovies" class="movie-row"></div>
+  </section>
+
+  <section>
+    <h2><span class="section-title-text">💎 Hidden Gems</span> <a href="/genres" class="see-all">Browse →</a></h2>
+    <div id="hiddenGems" class="movie-row"></div>
   </section>
 
   <section>

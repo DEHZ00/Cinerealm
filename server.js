@@ -89,9 +89,20 @@ app.get("/notification.json", (req, res) => {
 });
 
 // ── Static Files ───────────────────────────────────────────────────────────
+// CSS, JS, HTML — no-cache so deploys propagate instantly
+app.use((req, res, next) => {
+  const ext = path.extname(req.path).toLowerCase();
+  if ([".css", ".js", ".html"].includes(ext) || req.path === "/") {
+    res.setHeader("Cache-Control", "no-cache, must-revalidate");
+  } else if ([".png", ".jpg", ".jpeg", ".webp", ".ico", ".svg", ".woff", ".woff2"].includes(ext)) {
+    res.setHeader("Cache-Control", "public, max-age=604800"); // 7 days for images/fonts
+  }
+  next();
+});
+
 app.use(express.static(path.join(__dirname, "public"), {
-  maxAge: "1d",
   etag: true,
+  lastModified: true,
 }));
 
 // ── SPA / Pretty URL Routing ───────────────────────────────────────────────
@@ -105,6 +116,7 @@ const routes = {
   "/legal":     "legal.html",
   "/games":     "games.html",
   "/genres":    "genres.html",
+  "/games-proxy": "games-proxy.html",
 };
 
 // Dynamic watch routes: /watch/movie/:id  /watch/tv/:id/season/:s/episode/:e

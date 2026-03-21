@@ -1884,6 +1884,116 @@ function initHomeGenreFilter() {
   loadChips(activeType);
 }
 
+// ── Section 6 — Home Page Features ───────────────────────────────────────
+
+// New Episodes This Week
+async function loadNewEpisodes() {
+  const container = document.getElementById("newEpisodes");
+  if (!container) return;
+  showSkeletons(container, 8);
+  const data = await apiCall("/tv/airing_today");
+  container.innerHTML = "";
+  if (!data?.results) return;
+  data.results
+    .filter(i => i.poster_path)
+    .slice(0, 20)
+    .forEach((item, idx) => {
+      const card = createMovieCard(item, "tv");
+      if (card) {
+        card.style.animationDelay = (idx * 35) + "ms";
+        container.appendChild(card);
+      }
+    });
+}
+
+// Because You Watched — personalized row based on most-watched genre
+async function loadBecauseYouWatched() {
+  const section = document.getElementById("becauseYouWatchedSection");
+  const container = document.getElementById("becauseYouWatched");
+  const titleEl = document.getElementById("becauseYouWatchedTitle");
+  if (!section || !container) return;
+
+  loadHistory();
+  if (!historyData || historyData.length < 2) return;
+
+  // Find most watched title from history
+  const recent = [...historyData]
+    .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0))
+    .find(h => h.tmdbId && h.type);
+
+  if (!recent) return;
+
+  // Fetch its details to get genres
+  const details = await apiCall("/" + recent.type + "/" + recent.tmdbId);
+  if (!details?.genres?.length) return;
+
+  const genre = details.genres[0];
+  const recentTitle = details.title || details.name || "Your Recent Watch";
+
+  // Fetch similar content by genre
+  const endpoint = recent.type === "movie"
+    ? "/discover/movie"
+    : "/discover/tv";
+
+  const data = await apiCall(endpoint, { with_genres: genre.id, sort_by: "popularity.desc" });
+  if (!data?.results?.length) return;
+
+  const filtered = data.results
+    .filter(i => i.poster_path && i.id !== recent.tmdbId)
+    .slice(0, 20);
+
+  if (!filtered.length) return;
+
+  titleEl.textContent = "Because You Watched " + recentTitle;
+  section.style.display = "block";
+  container.innerHTML = "";
+
+  filtered.forEach((item, idx) => {
+    const card = createMovieCard(item, recent.type);
+    if (card) {
+      card.style.animationDelay = (idx * 35) + "ms";
+      container.appendChild(card);
+    }
+  });
+}
+
+// Hidden Gems — high rating, low popularity
+async function loadHiddenGems() {
+  const container = document.getElementById("hiddenGems");
+  if (!container) return;
+  showSkeletons(container, 8);
+
+  const data = await apiCall("/discover/movie", {
+    sort_by: "vote_average.desc",
+    "vote_average.gte": 7.5,
+    "vote_count.gte": 500,
+    "popularity.lte": 30,
+    without_genres: "99,10755" // exclude documentaries and kids
+  });
+
+  container.innerHTML = "";
+  if (!data?.results?.length) {
+    container.closest("section").style.display = "none";
+    return;
+  }
+
+  data.results
+    .filter(i => i.poster_path)
+    .slice(0, 20)
+    .forEach((item, idx) => {
+      const card = createMovieCard(item, "movie");
+      if (card) {
+        // Add gem badge
+        const badge = document.createElement("span");
+        badge.className = "card-gem-badge";
+        badge.textContent = "💎 Hidden Gem";
+        card.querySelector(".card-image-wrapper").appendChild(badge);
+        card.style.animationDelay = (idx * 35) + "ms";
+        container.appendChild(card);
+      }
+    });
+}
+
 // ---- Initial Load ----
 loadHistory();
 loadWatchlist();
@@ -1893,4 +2003,8 @@ fetchMovies("/movie/top_rated", "topRatedMovies", "movie");
 fetchMovies("/tv/popular", "popularTV", "tv");
 fetchMovies("/tv/top_rated", "topRatedTV", "tv");
 renderContinueWatching();
+loadNewEpisodes();
+loadBecauseYouWatched();
+loadHiddenGems();
 initHomeGenreFilter();
+

@@ -5295,3 +5295,20 @@ footer strong { color: rgba(255,255,255,0.55); font-weight: 600; }
 @media (max-width: 480px) {
   #searchBar { max-width: 130px; }
 }
+
+/* ── Section 6 — Home Features ───────────────────────────────────────────── */
+.card-gem-badge {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  background: rgba(0,0,0,0.75);
+  color: #ffd700;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  backdrop-filter: blur(4px);
+  z-index: 3;
+  white-space: nowrap;
+}
