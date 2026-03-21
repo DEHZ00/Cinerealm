@@ -959,7 +959,62 @@ function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
 }
 
 
-// ── Fetch Movies or TV ────────────────────────────────────────────────────
+// ── Row scroll arrows ─────────────────────────────────────────────────────
+function addRowScrollArrows(row) {
+  if (!row || row.dataset.arrowsAdded) return;
+  const section = row.closest("section");
+  if (!section) return;
+
+  // Wrap row in a scroll container if not already wrapped
+  const existing = section.querySelector(".row-scroll-wrap");
+  if (existing) return;
+
+  const wrap = document.createElement("div");
+  wrap.className = "row-scroll-wrap";
+
+  const leftBtn = document.createElement("button");
+  leftBtn.className = "row-arrow row-arrow-left";
+  leftBtn.innerHTML = "&#8249;";
+  leftBtn.setAttribute("aria-label", "Scroll left");
+
+  const rightBtn = document.createElement("button");
+  rightBtn.className = "row-arrow row-arrow-right";
+  rightBtn.innerHTML = "&#8250;";
+  rightBtn.setAttribute("aria-label", "Scroll right");
+
+  // Insert wrap around the row
+  row.parentNode.insertBefore(wrap, row);
+  wrap.appendChild(leftBtn);
+  wrap.appendChild(row);
+  wrap.appendChild(rightBtn);
+
+  const SCROLL_AMT = 600;
+  leftBtn.addEventListener("click", () => row.scrollBy({ left: -SCROLL_AMT, behavior: "smooth" }));
+  rightBtn.addEventListener("click", () => row.scrollBy({ left: SCROLL_AMT, behavior: "smooth" }));
+
+  // Show/hide arrows based on scroll position
+  function updateArrows() {
+    leftBtn.style.opacity  = row.scrollLeft > 10 ? "1" : "0.3";
+    leftBtn.style.pointerEvents = row.scrollLeft > 10 ? "auto" : "none";
+    const atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 10;
+    rightBtn.style.opacity = atEnd ? "0.3" : "1";
+    rightBtn.style.pointerEvents = atEnd ? "none" : "auto";
+  }
+  row.addEventListener("scroll", updateArrows, { passive: true });
+  updateArrows();
+
+  row.dataset.arrowsAdded = "1";
+}
+
+// ── Re-run personal rows when returning to the page ───────────────────────
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    // Re-read history and refresh personal rows
+    loadHistory();
+    renderContinueWatching();
+    loadBecauseYouWatched();
+  }
+});
 function showSkeletons(container, count = 8) {
   container.innerHTML = Array(count).fill(
     '<div class="skeleton-card"><div class="skeleton-card-img"></div><div class="skeleton-card-title"></div></div>'
@@ -985,11 +1040,13 @@ async function fetchMovies(endpoint, containerId, type = "movie") {
     .forEach(item => {
       const card = createMovieCard(item, type);
       if (card) {
-        card.style.animationDelay = (index * 40) + "ms";
         container.appendChild(card);
         index++;
       }
     });
+
+  // Add scroll arrows to the parent section if not already there
+  addRowScrollArrows(container);
 }
 
   // Show options
@@ -1209,9 +1266,7 @@ async function renderContinueWatching() {
   if (compact.length === 0) {
     container.innerHTML = `<p class="placeholder">No movies or shows to continue. Start watching to see them here!</p>`;
     return;
-  }
-
-  for (const entry of compact) {
+  }  for (const entry of compact) {
     try {
       const type = entry.type || "movie";
       const tmdbId = entry.tmdbId;
@@ -1232,6 +1287,7 @@ async function renderContinueWatching() {
       console.error("Failed to build continue-watching card:", err);
     }
   }
+  addRowScrollArrows(container);
 }
 
 
@@ -1920,11 +1976,9 @@ async function loadNewEpisodes() {
     .slice(0, 20)
     .forEach((item, idx) => {
       const card = createMovieCard(item, "tv");
-      if (card) {
-        card.style.animationDelay = (idx * 35) + "ms";
-        container.appendChild(card);
-      }
+      if (card) container.appendChild(card);
     });
+  addRowScrollArrows(container);
 }
 
 // Because You Watched — personalized row based on most recent watch
