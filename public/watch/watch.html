@@ -260,6 +260,28 @@
   const genres  = data.genres?.map(g => g.name).join(" · ") || "";
   const overview = data.overview || "";
 
+  // ── Stamp history immediately so Continue Watching order is correct ──────
+  // This runs regardless of whether the source sends progress events
+  try {
+    const rawHistory = JSON.parse(localStorage.getItem("history") || "[]");
+    const key = type + "_" + tmdbId;
+    let entry = rawHistory.find(h => {
+      const hid = h.tmdbId || h.id;
+      return h.type === type && String(hid) === String(tmdbId);
+    });
+    if (!entry) {
+      entry = { tmdbId, type, progress: 0, duration: 0, addedAt: Date.now() };
+      rawHistory.push(entry);
+    } else {
+      entry.addedAt = Date.now(); // always update timestamp on visit
+    }
+    if (type === "tv" && season && episode) {
+      entry.season  = season;
+      entry.episode = episode;
+    }
+    localStorage.setItem("history", JSON.stringify(rawHistory));
+  } catch(e) { /* ignore */ }
+
   document.title = `${title} — CineRealm`;
   document.getElementById("watchTitle").textContent      = title;
   document.getElementById("watchPlayerTitle").textContent = title;

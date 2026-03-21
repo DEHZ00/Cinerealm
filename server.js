@@ -89,24 +89,32 @@ app.get("/notification.json", (req, res) => {
 });
 
 // ── Static Files ───────────────────────────────────────────────────────────
-// CSS, JS, HTML — no-cache so deploys propagate instantly
-app.use((req, res, next) => {
-  const ext = path.extname(req.path).toLowerCase();
-  if ([".css", ".js", ".html"].includes(ext) || req.path === "/") {
-    res.setHeader("Cache-Control", "no-cache, must-revalidate");
-  } else if ([".png", ".jpg", ".jpeg", ".webp", ".ico", ".svg", ".woff", ".woff2"].includes(ext)) {
-    res.setHeader("Cache-Control", "public, max-age=604800"); // 7 days for images/fonts
-  }
-  next();
-});
-
 app.use(express.static(path.join(__dirname, "public"), {
-  etag: true,
-  lastModified: true,
+  etag: false,
+  lastModified: false,
+  setHeaders: (res, filePath) => {
+    const ext = path.extname(filePath).toLowerCase();
+    if ([".css", ".js", ".html"].includes(ext)) {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+    } else if ([".png", ".jpg", ".jpeg", ".webp", ".ico", ".svg", ".woff", ".woff2"].includes(ext)) {
+      res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+    }
+  }
 }));
 
+// Helper — send HTML file with no-cache headers
+function sendHTML(res, filePath) {
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.sendFile(filePath, err => {
+    if (err) res.status(404).send("Not Found");
+  });
+}
+
 // ── SPA / Pretty URL Routing ───────────────────────────────────────────────
-// Maps clean URLs → HTML files in /public
 const routes = {
   "/":          "index.html",
   "/movies":    "movies/movies.html",
@@ -119,25 +127,18 @@ const routes = {
   "/games-proxy": "games-proxy.html",
 };
 
-// Dynamic watch routes: /watch/movie/:id  /watch/tv/:id/season/:s/episode/:e
+// Dynamic watch routes
 app.get("/watch/:type/:id", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "watch", "watch.html"), err => {
-    if (err) res.status(404).send("Not Found");
-  });
+  sendHTML(res, path.join(__dirname, "public", "watch", "watch.html"));
 });
 app.get("/watch/:type/:id/season/:season/episode/:episode", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "watch", "watch.html"), err => {
-    if (err) res.status(404).send("Not Found");
-  });
+  sendHTML(res, path.join(__dirname, "public", "watch", "watch.html"));
 });
 
 // Named routes
 Object.entries(routes).forEach(([route, file]) => {
   app.get(route, (req, res) => {
-    const filePath = path.join(__dirname, "public", file);
-    res.sendFile(filePath, err => {
-      if (err) res.status(404).send("Not Found");
-    });
+    sendHTML(res, path.join(__dirname, "public", file));
   });
 });
 
