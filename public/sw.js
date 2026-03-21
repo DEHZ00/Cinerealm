@@ -2,7 +2,7 @@
  * CineRealm Service Worker v2
  */
 
-const SW_VERSION   = "cr-v2";
+const SW_VERSION   = "cr-v3";
 const STATIC_CACHE = SW_VERSION + "-static";
 const IMAGE_CACHE  = SW_VERSION + "-images";
 const API_CACHE    = SW_VERSION + "-api";
