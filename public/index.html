@@ -141,7 +141,14 @@
   <div id="player-iframe-placeholder" class="iframe-placeholder"></div>
 </div>
 
-<!-- Movie Details Modal -->
+<!-- Details Side Panel -->
+<div id="detailsOverlay" class="details-overlay" onclick="closeDetailsPanel()"></div>
+<div id="detailsPanel" class="details-panel" style="display:none;">
+  <button class="details-panel-close" onclick="closeDetailsPanel()">✕</button>
+  <div id="detailsPanelBody" class="details-panel-body"></div>
+</div>
+
+<!-- Details Modal (legacy fallback) -->
 <div id="detailsModal" class="modal" style="display:none;">
   <div class="modal-content">
     <span class="close-btn">&times;</span>

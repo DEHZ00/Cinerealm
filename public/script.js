@@ -282,21 +282,82 @@ card.querySelector(".play-btn").onclick = (e) => {
   return card;
 }
 
-// ---- Show Movie Details in Modal ----
-async function showMovieDetails(movie, type) {
-  const data = await apiCall("/" + type + "/" + movie.id);
-  if (!data) return;
+// ── Details Side Panel ────────────────────────────────────────────────────
+let detailsPanelOpen = false;
 
-  const genres  = data.genres?.map(g => g.name).join(" · ") || "N/A";
-  const rating  = data.vote_average?.toFixed(1) || "N/A";
-  const overview = data.overview || "No description available.";
-  const releaseDate = (data.release_date || data.first_air_date || "N/A").split("-")[0];
-  const runtime = data.runtime
+function closeDetailsPanel() {
+  const panel = document.getElementById("detailsPanel");
+  const overlay = document.getElementById("detailsOverlay");
+  if (!panel) return;
+  panel.classList.remove("panel-open");
+  overlay.classList.remove("overlay-visible");
+  detailsPanelOpen = false;
+  setTimeout(() => {
+    panel.style.display = "none";
+    overlay.style.display = "none";
+  }, 320);
+}
+
+function openDetailsPanel() {
+  const panel = document.getElementById("detailsPanel");
+  const overlay = document.getElementById("detailsOverlay");
+  if (!panel) return;
+  panel.style.display = "flex";
+  overlay.style.display = "block";
+  requestAnimationFrame(() => {
+    panel.classList.add("panel-open");
+    overlay.classList.add("overlay-visible");
+  });
+  detailsPanelOpen = true;
+}
+
+// Keep old modal working as fallback — vars already declared at top of file
+
+async function showMovieDetails(movie, type) {
+  const panel = document.getElementById("detailsPanel");
+
+  // Use side panel if available, fallback to old modal
+  if (!panel) {
+    return showMovieDetailsModal(movie, type);
+  }
+
+  // Show panel immediately with skeleton
+  const panelBody = document.getElementById("detailsPanelBody");
+  panelBody.innerHTML = `
+    <div class="panel-skeleton">
+      <div class="panel-skeleton-backdrop"></div>
+      <div class="panel-skeleton-content">
+        <div class="panel-skel panel-skel-title"></div>
+        <div class="panel-skel panel-skel-meta"></div>
+        <div class="panel-skel panel-skel-overview"></div>
+      </div>
+    </div>
+  `;
+  openDetailsPanel();
+
+  // Fetch all data in parallel
+  const [data, credits, videos, similar] = await Promise.all([
+    apiCall("/" + type + "/" + movie.id),
+    apiCall("/" + type + "/" + movie.id + "/credits").catch(() => null),
+    apiCall("/" + type + "/" + movie.id + "/videos").catch(() => null),
+    apiCall("/" + type + "/" + movie.id + "/similar").catch(() => null),
+  ]);
+
+  if (!data) { closeDetailsPanel(); return; }
+
+  const title       = data.title || data.name || "";
+  const rating      = data.vote_average?.toFixed(1) || "N/A";
+  const releaseYear = (data.release_date || data.first_air_date || "").split("-")[0];
+  const runtime     = data.runtime
     ? Math.floor(data.runtime / 60) + "h " + (data.runtime % 60) + "m"
-    : (data.episode_run_time?.[0] ? data.episode_run_time[0] + " min/ep" : "N/A");
-  const seasons = data.number_of_seasons ? data.number_of_seasons + " Season" + (data.number_of_seasons > 1 ? "s" : "") : "";
-  const ratingStars = Math.round((data.vote_average || 0) / 2);
-  const stars = "★".repeat(ratingStars) + "☆".repeat(5 - ratingStars);
+    : (data.episode_run_time?.[0] ? data.episode_run_time[0] + " min/ep" : "");
+  const seasons     = data.number_of_seasons
+    ? data.number_of_seasons + " Season" + (data.number_of_seasons > 1 ? "s" : "") : "";
+  const overview    = data.overview || "No description available.";
+  const backdrop    = data.backdrop_path
+    ? "https://image.tmdb.org/t/p/w1280" + data.backdrop_path : "";
+  const poster      = movie.poster_path
+    ? IMG_BASE + movie.poster_path : "";
 
   const watchUrl = type === "movie"
     ? "/watch/movie/" + movie.id
@@ -304,52 +365,202 @@ async function showMovieDetails(movie, type) {
 
   const inWL = isInWatchlist(movie.id, type);
 
-  detailsBody.innerHTML = `
-    <div class="details-hero" style="
-      background-image: url(https://image.tmdb.org/t/p/w780${data.backdrop_path || movie.poster_path});
-    "></div>
-    <div class="details-card">
-      <img src="${IMG_BASE + movie.poster_path}" alt="${movie.title || movie.name}" class="details-poster">
-      <div class="details-info">
-        <h2>${movie.title || movie.name}</h2>
-        <div class="details-stars">${stars} <span style="opacity:.5;font-size:12px;">${rating}/10</span></div>
-        <div class="details-meta">
-          <span class="detail-chip">${releaseDate}</span>
-          <span class="detail-chip">${runtime}</span>
-          ${seasons ? '<span class="detail-chip">' + seasons + '</span>' : ""}
-          <span class="detail-chip detail-chip--rating">⭐ ${rating}</span>
+  // Watched state
+  const watchedKey = "cr_watched_" + type + "_" + movie.id;
+  const isWatched  = localStorage.getItem(watchedKey) === "1";
+
+  // Resume banner for TV
+  let resumeBanner = "";
+  if (type === "tv" && historyData.length) {
+    const last = historyData
+      .filter(h => h.type === "tv" && h.tmdbId === movie.id && h.season && h.episode && h.progress > 30)
+      .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0))[0];
+    if (last) {
+      const resumeUrl = "/watch/tv/" + movie.id + "/season/" + last.season + "/episode/" + last.episode;
+      resumeBanner = `
+        <a href="${resumeUrl}" class="panel-resume-banner">
+          <span class="panel-resume-icon">▶</span>
+          <div>
+            <div class="panel-resume-label">Continue Watching</div>
+            <div class="panel-resume-sub">S${last.season} E${last.episode} · ${formatTime(last.progress)} in</div>
+          </div>
+          <span class="panel-resume-arrow">→</span>
+        </a>
+      `;
+    }
+  }
+
+  // Trailer
+  const trailerKey = videos?.results?.find(v =>
+    v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")
+  )?.key;
+  const trailerBtn = trailerKey
+    ? `<button class="panel-trailer-btn" id="panelTrailerBtn" data-key="${trailerKey}">🎬 Watch Trailer</button>`
+    : "";
+
+  // Cast
+  const castItems = (credits?.cast || []).slice(0, 12);
+  const castHTML = castItems.length ? `
+    <div class="panel-section-title">Cast</div>
+    <div class="panel-cast-row">
+      ${castItems.map(c => `
+        <div class="panel-cast-card" onclick="searchCast('${c.name.replace(/'/g, "\\'")}')">
+          <img src="${c.profile_path ? IMG_BASE + c.profile_path : ""}"
+               alt="${c.name}"
+               class="panel-cast-img"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="panel-cast-img panel-cast-placeholder" style="display:none;">👤</div>
+          <div class="panel-cast-name">${c.name}</div>
+          <div class="panel-cast-char">${c.character || ""}</div>
         </div>
-        <p class="genres-chips">${data.genres?.map(g => '<span class="genre-tag">' + g.name + '</span>').join("") || ""}</p>
-        <p class="overview">${overview}</p>
-        <div class="details-actions">
-          <a href="${watchUrl}" class="details-play-btn">▶ Play Now</a>
-          <button class="details-watchlist-btn" id="modalWatchlistBtn">
-            ${inWL ? "★ In Watchlist" : "☆ Add to Watchlist"}
-          </button>
+      `).join("")}
+    </div>
+  ` : "";
+
+  // Similar titles
+  const similarItems = (similar?.results || []).filter(i => i.poster_path).slice(0, 10);
+  const similarHTML = similarItems.length ? `
+    <div class="panel-section-title">More Like This</div>
+    <div class="panel-similar-row">
+      ${similarItems.map(s => `
+        <div class="panel-similar-card" onclick="showMovieDetails({id:${s.id},poster_path:'${s.poster_path}',title:'${(s.title||s.name||"").replace(/'/g,"\\'")}'},'${type}')">
+          <img src="${IMG_BASE + s.poster_path}" alt="${s.title || s.name}" loading="lazy">
+          <div class="panel-similar-title">${s.title || s.name || ""}</div>
+        </div>
+      `).join("")}
+    </div>
+  ` : "";
+
+  // Collections
+  let collectionHTML = "";
+  if (type === "movie" && data.belongs_to_collection) {
+    const col = await apiCall("/collection/" + data.belongs_to_collection.id).catch(() => null);
+    if (col?.parts?.length > 1) {
+      const parts = col.parts.filter(p => p.poster_path).sort((a,b) => (a.release_date||"").localeCompare(b.release_date||""));
+      collectionHTML = `
+        <div class="panel-section-title">📚 ${col.name}</div>
+        <div class="panel-similar-row">
+          ${parts.map(p => `
+            <div class="panel-similar-card" onclick="showMovieDetails({id:${p.id},poster_path:'${p.poster_path}',title:'${(p.title||"").replace(/'/g,"\\'")}'},'movie')">
+              <img src="${IMG_BASE + p.poster_path}" alt="${p.title}" loading="lazy">
+              <div class="panel-similar-title">${p.title}</div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+  }
+
+  panelBody.innerHTML = `
+    ${backdrop ? `<div class="panel-backdrop" style="background-image:url(${backdrop})"></div>` : ""}
+
+    <div class="panel-main">
+      <div class="panel-top">
+        <img src="${poster}" alt="${title}" class="panel-poster">
+        <div class="panel-info">
+          <h2 class="panel-title">${title}</h2>
+          <div class="panel-meta">
+            ${releaseYear ? `<span class="panel-chip">${releaseYear}</span>` : ""}
+            ${runtime ? `<span class="panel-chip">${runtime}</span>` : ""}
+            ${seasons ? `<span class="panel-chip">${seasons}</span>` : ""}
+            <span class="panel-chip panel-chip-rating">⭐ ${rating}</span>
+            ${isWatched ? '<span class="panel-chip panel-chip-watched">✓ Watched</span>' : ""}
+          </div>
+          <div class="panel-genres">
+            ${(data.genres||[]).map(g => `<span class="genre-tag">${g.name}</span>`).join("")}
+          </div>
+          <p class="panel-overview">${overview}</p>
+          <div class="panel-actions">
+            <a href="${watchUrl}" class="details-play-btn">▶ Play Now</a>
+            <button class="details-watchlist-btn" id="panelWatchlistBtn">
+              ${inWL ? "★ In Watchlist" : "☆ Watchlist"}
+            </button>
+            <button class="panel-watched-btn ${isWatched ? "watched" : ""}" id="panelWatchedBtn" title="Mark as watched">
+              ${isWatched ? "✓" : "○"}
+            </button>
+            <button class="panel-share-btn" id="panelShareBtn" title="Share">⬆</button>
+          </div>
+          ${trailerBtn}
         </div>
       </div>
+
+      ${resumeBanner}
+
+      <!-- Trailer embed (hidden until clicked) -->
+      <div id="panelTrailerWrap" class="panel-trailer-wrap" style="display:none;">
+        <iframe id="panelTrailerIframe" src="" allow="autoplay;fullscreen" allowfullscreen></iframe>
+        <button class="panel-trailer-close" id="panelTrailerClose">✕ Close Trailer</button>
+      </div>
+
+      ${castHTML}
+      ${similarHTML}
+      ${collectionHTML}
     </div>
   `;
 
-  // Wire up watchlist button inside modal
-  document.getElementById("modalWatchlistBtn").onclick = () => {
+  // Wire buttons
+  document.getElementById("panelWatchlistBtn").onclick = () => {
     toggleWatchlist(movie.id, type, movie);
-    const btn = document.getElementById("modalWatchlistBtn");
-    if (btn) btn.textContent = isInWatchlist(movie.id, type) ? "★ In Watchlist" : "☆ Add to Watchlist";
+    const btn = document.getElementById("panelWatchlistBtn");
+    if (btn) btn.textContent = isInWatchlist(movie.id, type) ? "★ In Watchlist" : "☆ Watchlist";
   };
 
+  document.getElementById("panelWatchedBtn").onclick = () => {
+    const btn = document.getElementById("panelWatchedBtn");
+    const nowWatched = localStorage.getItem(watchedKey) === "1";
+    if (nowWatched) {
+      localStorage.removeItem(watchedKey);
+      btn.textContent = "○";
+      btn.classList.remove("watched");
+    } else {
+      localStorage.setItem(watchedKey, "1");
+      btn.textContent = "✓";
+      btn.classList.add("watched");
+    }
+  };
+
+  document.getElementById("panelShareBtn").onclick = () => {
+    const shareUrl = window.location.origin + watchUrl;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      showToast("Link copied to clipboard!", "success");
+    }).catch(() => {
+      showToast("Copy: " + shareUrl, "info");
+    });
+  };
+
+  if (trailerKey) {
+    document.getElementById("panelTrailerBtn").onclick = () => {
+      const wrap   = document.getElementById("panelTrailerWrap");
+      const iframe = document.getElementById("panelTrailerIframe");
+      wrap.style.display = "block";
+      iframe.src = "https://www.youtube.com/embed/" + trailerKey + "?autoplay=1";
+      document.getElementById("panelTrailerBtn").style.display = "none";
+    };
+    document.getElementById("panelTrailerClose").onclick = () => {
+      document.getElementById("panelTrailerWrap").style.display = "none";
+      document.getElementById("panelTrailerIframe").src = "";
+      document.getElementById("panelTrailerBtn").style.display = "inline-flex";
+    };
+  }
+}
+
+function searchCast(name) {
+  window.location.href = "/search?q=" + encodeURIComponent(name);
+}
+
+// Legacy modal fallback (used if panel not in DOM)
+async function showMovieDetailsModal(movie, type) {
+  const data = await apiCall("/" + type + "/" + movie.id);
+  if (!data) return;
   detailsModal.style.display = "flex";
 }
 
-// Close modal
-closeBtn.onclick = () => {
-  detailsModal.style.display = "none";
-};
-
+// Close modal (legacy)
+if (closeBtn) {
+  closeBtn.onclick = () => { detailsModal.style.display = "none"; };
+}
 window.onclick = (e) => {
-  if (e.target === detailsModal) {
-    detailsModal.style.display = "none";
-  }
+  if (e.target === detailsModal) detailsModal.style.display = "none";
 };
 
 // ----------------- MULTI-SOURCE PLAYER -----------------
