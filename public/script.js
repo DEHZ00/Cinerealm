@@ -1913,13 +1913,16 @@ async function loadBecauseYouWatched() {
 
   // Always re-read from localStorage so we get the latest
   const history = JSON.parse(localStorage.getItem("history") || "[]");
-  if (!history.length) return;
+  console.log("[BYW] history entries:", history.length, history);
+
+  if (!history.length) { console.log("[BYW] no history, hiding"); return; }
 
   // Find most recently watched entry — handle both tmdbId and id field names
   const recent = [...history]
     .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0))
     .find(h => (h.tmdbId || h.id) && h.type);
 
+  console.log("[BYW] most recent:", recent);
   if (!recent) return;
 
   const tmdbId = recent.tmdbId || recent.id;

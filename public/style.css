@@ -5312,3 +5312,32 @@ footer strong { color: rgba(255,255,255,0.55); font-weight: 600; }
   z-index: 3;
   white-space: nowrap;
 }
+
+/* ── Scroll fix — prevent section padding from clipping rows ─────────────── */
+section {
+  overflow: visible;
+}
+
+.movie-row {
+  overflow-x: auto !important;
+  overflow-y: visible;
+  /* Negative margin trick so row can scroll edge-to-edge under section padding */
+  margin-left: -4px;
+  margin-right: -4px;
+  padding-left: 4px;
+  padding-right: 4px;
+  /* Force hardware acceleration for smooth scroll on mobile */
+  -webkit-overflow-scrolling: touch;
+  will-change: scroll-position;
+}
+
+/* Remove conflicting card entrance animation that can block pointer events during play */
+.movie-card {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.movie-card:hover {
+  transform: translateY(-6px) scale(1.03) !important;
+}
