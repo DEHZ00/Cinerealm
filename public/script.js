@@ -927,7 +927,20 @@ function renderSourcePills(media, defaultName, opts) {
     }
     const err = document.getElementById("player-error") || document.getElementById("watch-player-error");
     if (err) err.style.display = "none";
-    const url = buildProviderUrl(providerKey, media, opts);
+
+    // Always use the latest season/episode from _watchContext so switching
+    // sources after changing episodes doesn't reset back to S1E1
+    const ctx = window._watchContext;
+    const currentMedia = ctx ? {
+      ...media,
+      season:  ctx.season  ?? media.season,
+      episode: ctx.episode ?? media.episode,
+      tmdbId:  ctx.tmdbId  ?? media.tmdbId,
+      type:    ctx.type    ?? media.type,
+    } : media;
+
+    const currentOpts = ctx ? { ...opts, season: currentMedia.season, episode: currentMedia.episode } : opts;
+    const url = buildProviderUrl(providerKey, currentMedia, currentOpts);
     const provider = PROVIDERS.find(p => p.key === providerKey);
     insertIframe(url, provider?.sandbox === true);
   }
