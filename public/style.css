@@ -6229,3 +6229,334 @@ header.header-hidden {
   transform: none;
   text-shadow: none;
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SECTION 14 — ANIME
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Skip intro/recap button */
+.skip-intro-btn {
+  position: fixed;
+  bottom: 110px;
+  right: 24px;
+  padding: 10px 22px;
+  background: rgba(10,10,10,0.85);
+  border: 2px solid rgba(255,255,255,0.7);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  z-index: 600;
+  backdrop-filter: blur(10px);
+  transition: all 0.15s;
+  display: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  letter-spacing: 0.2px;
+}
+.skip-intro-btn.visible { display: block; }
+.skip-intro-btn:hover {
+  background: rgba(255,255,255,0.15);
+  border-color: #fff;
+  transform: scale(1.02);
+}
+
+/* Anime card badge */
+.card-anime-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: rgba(255,44,44,0.85);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
+  z-index: 2;
+}
+
+/* Dub badge on cards */
+.card-dub-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0,150,100,0.85);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(4px);
+  z-index: 2;
+}
+
+@media (max-width: 768px) {
+  .skip-intro-btn { bottom: 80px; right: 16px; font-size: 13px; padding: 9px 18px; }
+}
+
+/* ── Theater mode ────────────────────────────────────────────────────────── */
+body.theater-mode header,
+body.theater-mode .watch-info-bar,
+body.theater-mode .watch-breadcrumb,
+body.theater-mode #watch-skeleton {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+body.theater-mode #watch-player-container {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body.theater-mode {
+  background: #000;
+}
+
+body.theater-mode #watch-content {
+  padding-top: 0;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   TAB CLOAK — Global
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.cr-cloak-btn {
+  position: fixed;
+  bottom: 80px;
+  right: 16px;
+  z-index: 8500;
+  background: rgba(8,4,4,0.9);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.55);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  font-family: 'Inter', system-ui, sans-serif;
+  letter-spacing: 0.2px;
+}
+.cr-cloak-btn:hover {
+  border-color: rgba(255,44,44,0.35);
+  color: #ff6b6b;
+  box-shadow: 0 4px 20px rgba(255,44,44,0.15);
+}
+.cr-cloak-btn.active {
+  border-color: rgba(255,44,44,0.5);
+  color: #ff6b6b;
+  background: rgba(255,44,44,0.1);
+}
+
+/* Panel */
+.cr-cloak-panel {
+  position: fixed;
+  bottom: 120px;
+  right: 16px;
+  width: 320px;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: linear-gradient(160deg, #160202 0%, #0a0606 100%);
+  border: 1px solid rgba(255,44,44,0.2);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  z-index: 8501;
+  display: none;
+  flex-direction: column;
+  animation: cloakPanelIn 0.2s cubic-bezier(0.22,0.68,0,1.1);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,44,44,0.2) transparent;
+}
+.cr-cloak-panel.open { display: flex; }
+
+@keyframes cloakPanelIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.cr-cloak-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  background: #160202;
+  z-index: 1;
+  border-radius: 16px 16px 0 0;
+}
+.cr-cloak-panel-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+}
+.cr-cloak-panel-close {
+  background: none; border: none;
+  color: rgba(255,255,255,0.4); cursor: pointer;
+  font-size: 18px; padding: 2px 6px;
+  border-radius: 6px; transition: all 0.15s;
+}
+.cr-cloak-panel-close:hover { color: #fff; background: rgba(255,255,255,0.08); }
+
+.cr-cloak-section {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.cr-cloak-section:last-child { border-bottom: none; }
+
+.cr-cloak-section-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Presets grid */
+.cr-cloak-presets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.cr-cloak-preset {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 9px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.7);
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.15s;
+  text-align: left;
+}
+.cr-cloak-preset:hover {
+  background: rgba(255,44,44,0.1);
+  border-color: rgba(255,44,44,0.3);
+  color: #fff;
+}
+.cr-cloak-preset.selected {
+  background: rgba(255,44,44,0.15);
+  border-color: rgba(255,44,44,0.45);
+  color: #ff6b6b;
+}
+.cr-cloak-preset img {
+  width: 14px; height: 14px;
+  object-fit: contain; flex-shrink: 0;
+}
+
+/* Inputs */
+.cr-cloak-input-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.cr-cloak-input-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.4); }
+.cr-cloak-input {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 8px 11px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.cr-cloak-input:focus { border-color: rgba(255,44,44,0.4); }
+.cr-cloak-input::placeholder { color: rgba(255,255,255,0.25); }
+
+/* Buttons */
+.cr-cloak-btn-row { display: flex; gap: 6px; margin-top: 8px; }
+.cr-cloak-action-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cr-cloak-action-btn.primary { background: #ff2c2c; color: #fff; }
+.cr-cloak-action-btn.primary:hover { background: #e01f1f; }
+.cr-cloak-action-btn.secondary {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.6);
+}
+.cr-cloak-action-btn.secondary:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+/* Active cloak indicator */
+.cr-cloak-active-badge {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(255,44,44,0.1);
+  border: 1px solid rgba(255,44,44,0.2);
+  border-radius: 8px;
+  font-size: 11px;
+  color: #ff6b6b;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.cr-cloak-active-badge.visible { display: flex; }
+
+/* Panic key display */
+.cr-panic-key-display {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 5px;
+  font-size: 11px;
+  font-family: monospace;
+  color: #fff;
+  font-weight: 700;
+}
+
+/* Custom presets list */
+.cr-custom-preset-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 7px;
+  margin-bottom: 5px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+}
+.cr-custom-preset-item button {
+  background: none; border: none;
+  color: rgba(255,44,44,0.6); cursor: pointer;
+  font-size: 13px; padding: 0 2px;
+  margin-left: auto; transition: color 0.15s;
+}
+.cr-custom-preset-item button:hover { color: #ff2c2c; }
+
+@media (max-width: 768px) {
+  .cr-cloak-btn { bottom: 70px; }
+  .cr-cloak-panel { bottom: 112px; width: calc(100vw - 32px); right: 16px; }
+}

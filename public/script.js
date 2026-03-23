@@ -806,9 +806,11 @@ function buildProviderUrl(providerKey, media, opts = {}) {
     let base = '';
     if (t === 'movie') base = 'https://vidzen.fun/movie/' + id;
     if (t === 'tv')    base = 'https://vidzen.fun/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
+    if (t === 'anime') base = 'https://vidzen.fun/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
     if (!base) return '';
     const params = {};
     if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? 'true' : 'false';
+    if (t === 'anime' && opts.dub !== undefined) params.dub = opts.dub ? '1' : '0';
     return base + buildQuery(params);
   }
 
@@ -1032,6 +1034,14 @@ function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
   }
 
   // Build options object for provider mapping
+  // For anime — read dub preference from localStorage and use anime-priority sources
+  const isAnime = media.type === "anime" || extraOpts.anime;
+  const animeDub = localStorage.getItem("cr_anime_dub") === "dub";
+  if (isAnime) {
+    extraOpts.dub = animeDub;
+    media.type = "anime";
+  }
+
   const opts = {
     color: extraOpts.color || "#ffffff",
     colour: extraOpts.color || "#ffffff",
@@ -1061,8 +1071,9 @@ function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
     opacity: extraOpts.opacity ?? undefined
   };
 
-  // Render provider pills
-  const tabs = renderSourcePills(media, DEFAULT_SOURCE, opts);
+  // Render provider pills — Jupiter first for anime
+  const animeDefault = (media.type === "anime") ? "Jupiter" : DEFAULT_SOURCE;
+  const tabs = renderSourcePills(media, animeDefault, opts);
   document.getElementById("player-tabs-placeholder").appendChild(tabs);
 
   const activeBtn = tabs.querySelector(".source-tab.active") || tabs.querySelector(".source-tab");
@@ -2224,6 +2235,360 @@ function sendLocalNotification(title, body, url = "/") {
 if (!window.location.pathname.startsWith("/watch")) {
   window.addEventListener("load", () => setTimeout(initPushNotifications, 3000));
 }
+
+// ── Global Tab Cloak System ───────────────────────────────────────────────
+(function() {
+  const BUILT_IN_PRESETS = [
+    { id: "gdocs",     name: "Google Docs",    title: "Document - Google Docs",             icon: "https://ssl.gstatic.com/docs/doclist/images/mediatype/icon_1_document_x32.png" },
+    { id: "gdrive",    name: "Google Drive",   title: "My Drive - Google Drive",            icon: "https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png" },
+    { id: "gslides",   name: "Google Slides",  title: "Presentation - Google Slides",       icon: "https://ssl.gstatic.com/docs/presentations/images/favicon5.ico" },
+    { id: "gsheets",   name: "Google Sheets",  title: "Spreadsheet - Google Sheets",        icon: "https://ssl.gstatic.com/docs/spreadsheets/favicon3.ico" },
+    { id: "classroom", name: "Classroom",      title: "Google Classroom",                   icon: "https://www.gstatic.com/images/branding/product/1x/classroom_2020q4_32dp.png" },
+    { id: "khan",      name: "Khan Academy",   title: "Khan Academy | Free Online Courses", icon: "https://cdn.kastatic.org/images/favicon.ico" },
+    { id: "quizlet",   name: "Quizlet",        title: "Quizlet",                            icon: "https://quizlet.com/favicon.ico" },
+    { id: "wiki",      name: "Wikipedia",      title: "Wikipedia, the free encyclopedia",   icon: "https://en.wikipedia.org/favicon.ico" },
+    { id: "canvas",    name: "Canvas",         title: "Dashboard - Canvas LMS",             icon: "https://du11hjcvx0uqb.cloudfront.net/dist/images/favicon-e10d657a73.ico" },
+    { id: "desmos",    name: "Desmos",         title: "Desmos | Graphing Calculator",       icon: "https://www.desmos.com/favicon.ico" },
+    { id: "outlook",   name: "Outlook",        title: "Mail - Outlook",                     icon: "https://res.cdn.office.net/assets/mail/pwa/v1/images/favicon.png" },
+    { id: "word",      name: "Word Online",    title: "Word - Microsoft 365",               icon: "https://res.cdn.office.net/assets/framework/v3/images/favicon.ico" },
+  ];
+
+  // Keys that are unreliable on Chromebook
+  const RISKY_KEYS = ["Escape","Tab","Enter"," ","Control","Alt","Meta","Shift","CapsLock","Backspace"];
+  const RISKY_PREFIXES = ["Alt","Ctrl","Meta"];
+
+  let _activePresetId = localStorage.getItem("cr_cloak_preset") || null;
+  let _panicKey       = localStorage.getItem("cr_panic_key")    || "F3";
+  let _panicUrl       = localStorage.getItem("cr_panic_url")    || "https://classroom.google.com";
+  let _customPresets  = JSON.parse(localStorage.getItem("cr_cloak_custom") || "[]");
+  let _panel          = null;
+  let _btn            = null;
+  let _listening      = false; // for key capture mode
+
+  // ── Favicon fix — removes ALL existing favicons and force-replaces ─────
+  function setFavicon(url) {
+    document.querySelectorAll("link[rel*='icon']").forEach(el => el.remove());
+    ["shortcut icon", "icon"].forEach(rel => {
+      const l = document.createElement("link");
+      l.rel   = rel;
+      l.type  = "image/x-icon";
+      l.href  = url + (url.includes("?") ? "&" : "?") + "_cr=" + Date.now();
+      document.head.appendChild(l);
+    });
+  }
+
+  function getDefaultTitle() {
+    const p = window.location.pathname;
+    return ({
+      "/":          "CineRealm — Stream Movies, TV & Anime",
+      "/movies":    "Movies — CineRealm",
+      "/trending":  "Trending — CineRealm",
+      "/watchlist": "My Watchlist — CineRealm",
+      "/search":    "Search — CineRealm",
+      "/genres":    "Genres — CineRealm",
+      "/anime":     "Anime — CineRealm",
+      "/games":     "Games — CineRealm",
+      "/stats":     "Stats — CineRealm",
+      "/legal":     "Legal — CineRealm",
+    })[p] || "CineRealm";
+  }
+
+  function applyCloak(title, iconUrl, presetId) {
+    document.title = title || document.title;
+    setFavicon(iconUrl || "/favicon.ico");
+    _activePresetId = presetId || null;
+    localStorage.setItem("cr_cloak_title",  title    || "");
+    localStorage.setItem("cr_cloak_icon",   iconUrl  || "");
+    localStorage.setItem("cr_cloak_preset", presetId || "");
+    updateUI();
+    if (typeof showToast === "function") showToast("Tab cloaked", "success");
+  }
+
+  function removeCloak() {
+    document.title = getDefaultTitle();
+    setFavicon("/favicon.ico");
+    _activePresetId = null;
+    localStorage.removeItem("cr_cloak_title");
+    localStorage.removeItem("cr_cloak_icon");
+    localStorage.removeItem("cr_cloak_preset");
+    updateUI();
+    if (typeof showToast === "function") showToast("Cloak removed", "info");
+  }
+
+  // Restore on load
+  const _savedTitle = localStorage.getItem("cr_cloak_title");
+  const _savedIcon  = localStorage.getItem("cr_cloak_icon");
+  if (_savedTitle || _savedIcon) {
+    setTimeout(() => {
+      if (_savedTitle) document.title = _savedTitle;
+      if (_savedIcon)  setFavicon(_savedIcon);
+    }, 150);
+  }
+
+  // ── Panic key ─────────────────────────────────────────────────────────
+  document.addEventListener("keydown", e => {
+    if (_listening) return; // don't fire panic while capturing key
+    if (["INPUT","TEXTAREA"].includes(document.activeElement?.tagName)) return;
+    if (e.key === _panicKey) {
+      e.preventDefault();
+      window.location.href = _panicUrl;
+    }
+  });
+
+  // ── UI helpers ────────────────────────────────────────────────────────
+  function updateUI() {
+    if (!_panel) return;
+    const badge    = _panel.querySelector("#crCloakBadge");
+    const badgeName = _panel.querySelector("#crCloakBadgeName");
+    const btn      = document.getElementById("crCloakBtn");
+    const allPresets = _panel.querySelectorAll(".cr-cloak-preset");
+
+    if (_activePresetId || _savedTitle) {
+      const p = BUILT_IN_PRESETS.find(x => x.id === _activePresetId)
+             || _customPresets.find(x => x.id === _activePresetId);
+      badge.classList.add("visible");
+      badgeName.textContent = p ? p.name : (document.title || "Custom");
+      if (btn) btn.classList.add("active");
+    } else {
+      badge.classList.remove("visible");
+      if (btn) btn.classList.remove("active");
+    }
+
+    allPresets.forEach(el => {
+      el.classList.toggle("selected", el.dataset.id === _activePresetId);
+    });
+
+    renderCustomPresets();
+  }
+
+  function renderCustomPresets() {
+    if (!_panel) return;
+    const section = _panel.querySelector("#crCustomPresetsSection");
+    const list    = _panel.querySelector("#crCustomPresetsList");
+    if (!list) return;
+    _customPresets = JSON.parse(localStorage.getItem("cr_cloak_custom") || "[]");
+    if (!_customPresets.length) { section.style.display = "none"; return; }
+    section.style.display = "block";
+    list.innerHTML = _customPresets.map((p, i) => `
+      <div class="cr-custom-preset-item">
+        <img src="${p.icon}" style="width:14px;height:14px;object-fit:contain;" onerror="this.style.display='none'">
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</span>
+        <button onclick="window._cloakApplyCustom(${i})" style="background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:700;">Use</button>
+        <button onclick="window._cloakDeleteCustom(${i})" style="background:none;border:none;color:rgba(255,100,100,0.5);cursor:pointer;font-size:13px;">✕</button>
+      </div>
+    `).join("");
+  }
+
+  window._cloakApplyCustom = function(i) {
+    const p = _customPresets[i];
+    if (p) applyCloak(p.title, p.icon, p.id);
+  };
+  window._cloakDeleteCustom = function(i) {
+    _customPresets.splice(i, 1);
+    localStorage.setItem("cr_cloak_custom", JSON.stringify(_customPresets));
+    renderCustomPresets();
+  };
+  window.removeCloak = removeCloak;
+
+  // ── Build panel ───────────────────────────────────────────────────────
+  function buildPanel() {
+    const el = document.createElement("div");
+    el.className = "cr-cloak-panel";
+    el.id = "crCloakPanel";
+    el.innerHTML = `
+      <div class="cr-cloak-panel-header">
+        <h4>🎭 Tab Cloak</h4>
+        <button class="cr-cloak-panel-close" id="crCloakClose">✕</button>
+      </div>
+
+      <div class="cr-cloak-section">
+        <div class="cr-cloak-active-badge" id="crCloakBadge">
+          <span>🟢 Cloaked as:</span>
+          <strong id="crCloakBadgeName"></strong>
+          <button onclick="removeCloak()" style="background:none;border:none;color:rgba(255,100,100,0.7);cursor:pointer;font-size:11px;margin-left:auto;padding:0 4px;">✕ Remove</button>
+        </div>
+        <div class="cr-cloak-section-label">Quick Presets</div>
+        <div class="cr-cloak-presets" id="crCloakPresets"></div>
+      </div>
+
+      <div class="cr-cloak-section">
+        <div class="cr-cloak-section-label">Custom Cloak</div>
+        <div class="cr-cloak-input-group">
+          <div class="cr-cloak-input-label">Tab Title</div>
+          <input class="cr-cloak-input" id="crCloakTitleInput" placeholder="e.g. Document - Google Docs" autocomplete="off">
+        </div>
+        <div class="cr-cloak-input-group">
+          <div class="cr-cloak-input-label">Favicon URL</div>
+          <input class="cr-cloak-input" id="crCloakIconInput" placeholder="https://site.com/favicon.ico" autocomplete="off">
+        </div>
+        <div class="cr-cloak-btn-row">
+          <button class="cr-cloak-action-btn primary" id="crCloakApply">Apply</button>
+          <button class="cr-cloak-action-btn secondary" id="crCloakRemove">Remove</button>
+          <button class="cr-cloak-action-btn secondary" id="crCloakSave">+ Save Preset</button>
+        </div>
+        <div class="cr-cloak-btn-row" style="margin-top:6px;">
+          <button class="cr-cloak-action-btn secondary" id="crCloakAboutBlank" style="flex:1;">Open in about:blank ↗</button>
+        </div>
+      </div>
+
+      <div class="cr-cloak-section" id="crCustomPresetsSection" style="display:none;">
+        <div class="cr-cloak-section-label">Your Saved Presets</div>
+        <div id="crCustomPresetsList"></div>
+      </div>
+
+      <div class="cr-cloak-section">
+        <div class="cr-cloak-section-label">Panic Key</div>
+        <p style="font-size:11px;color:rgba(255,255,255,0.35);margin:0 0 10px;line-height:1.5;">
+          Press <span class="cr-panic-key-display" id="crPanicKeyDisplay">${_panicKey}</span> anywhere on CineRealm to instantly redirect away.
+        </p>
+        <div class="cr-cloak-input-group">
+          <div class="cr-cloak-input-label">Key <span style="color:rgba(255,44,44,0.6);font-size:10px;margin-left:4px;" id="crPanicKeyWarn"></span></div>
+          <input class="cr-cloak-input" id="crPanicKeyInput" placeholder="Click then press a key..." value="${_panicKey}" readonly autocomplete="off">
+        </div>
+        <div class="cr-cloak-input-group">
+          <div class="cr-cloak-input-label">Redirect URL</div>
+          <input class="cr-cloak-input" id="crPanicUrlInput" placeholder="https://classroom.google.com" value="${_panicUrl}" autocomplete="off">
+        </div>
+        <div class="cr-cloak-btn-row">
+          <button class="cr-cloak-action-btn primary" id="crPanicSave">Save</button>
+          <button class="cr-cloak-action-btn secondary" id="crPanicTest">Test →</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(el);
+    return el;
+  }
+
+  function buildBtn() {
+    const el = document.createElement("button");
+    el.className = "cr-cloak-btn";
+    el.id = "crCloakBtn";
+    el.innerHTML = `<span>🎭</span><span>Cloak</span>`;
+    document.body.appendChild(el);
+    return el;
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────
+  window.addEventListener("load", () => {
+    _panel = buildPanel();
+    _btn   = buildBtn();
+
+    // Toggle panel
+    _btn.onclick = () => {
+      _panel.classList.toggle("open");
+      if (_panel.classList.contains("open")) updateUI();
+    };
+    _panel.querySelector("#crCloakClose").onclick = () => _panel.classList.remove("open");
+
+    // Close on outside click
+    document.addEventListener("click", e => {
+      if (_panel.classList.contains("open") &&
+          !_panel.contains(e.target) &&
+          e.target !== _btn) {
+        _panel.classList.remove("open");
+      }
+    });
+
+    // Build preset buttons
+    const presetsEl = _panel.querySelector("#crCloakPresets");
+    BUILT_IN_PRESETS.forEach(p => {
+      const btn = document.createElement("button");
+      btn.className = "cr-cloak-preset" + (_activePresetId === p.id ? " selected" : "");
+      btn.dataset.id = p.id;
+      btn.innerHTML = `<img src="${p.icon}" onerror="this.style.display='none'">${p.name}`;
+      btn.onclick = () => applyCloak(p.title, p.icon, p.id);
+      presetsEl.appendChild(btn);
+    });
+
+    // Apply custom cloak
+    _panel.querySelector("#crCloakApply").onclick = () => {
+      const t = _panel.querySelector("#crCloakTitleInput").value.trim();
+      const i = _panel.querySelector("#crCloakIconInput").value.trim();
+      if (!t && !i) { showToast("Enter a title or icon URL", "error"); return; }
+      applyCloak(t || document.title, i || "/favicon.ico", null);
+    };
+
+    // Remove cloak
+    _panel.querySelector("#crCloakRemove").onclick = removeCloak;
+
+    // Save custom preset
+    _panel.querySelector("#crCloakSave").onclick = () => {
+      const t = _panel.querySelector("#crCloakTitleInput").value.trim();
+      const i = _panel.querySelector("#crCloakIconInput").value.trim();
+      if (!t) { showToast("Enter a title to save", "error"); return; }
+      const newPreset = { id: "custom_" + Date.now(), name: t.slice(0,20), title: t, icon: i || "/favicon.ico" };
+      _customPresets.push(newPreset);
+      localStorage.setItem("cr_cloak_custom", JSON.stringify(_customPresets));
+      renderCustomPresets();
+      showToast("Preset saved", "success");
+    };
+
+    // About blank
+    _panel.querySelector("#crCloakAboutBlank").onclick = () => {
+      const w = window.open("about:blank", "_blank");
+      if (!w) { showToast("Allow popups to use about:blank", "error"); return; }
+      fetch(window.location.href)
+        .then(r => r.text())
+        .then(html => { w.document.open(); w.document.write(html); w.document.close(); });
+    };
+
+    // ── Panic key capture — click field then press key ────────────────
+    const panicKeyInput = _panel.querySelector("#crPanicKeyInput");
+    const panicWarn     = _panel.querySelector("#crPanicKeyWarn");
+
+    panicKeyInput.addEventListener("focus", () => {
+      _listening = true;
+      panicKeyInput.value = "Press a key...";
+      panicKeyInput.style.borderColor = "rgba(255,44,44,0.6)";
+    });
+
+    panicKeyInput.addEventListener("keydown", e => {
+      if (!_listening) return;
+      e.preventDefault();
+      const key = e.key;
+
+      // Warn about risky keys on Chromebook
+      const isRisky = RISKY_KEYS.includes(key) || RISKY_PREFIXES.some(p => key.startsWith(p));
+      if (isRisky) {
+        panicWarn.textContent = "⚠ May not work on Chromebook";
+      } else {
+        panicWarn.textContent = "";
+      }
+
+      panicKeyInput.value = key;
+      panicKeyInput.style.borderColor = "";
+      _listening = false;
+    });
+
+    panicKeyInput.addEventListener("blur", () => {
+      if (_listening) {
+        panicKeyInput.value = _panicKey;
+        _listening = false;
+        panicKeyInput.style.borderColor = "";
+      }
+    });
+
+    // Save panic settings
+    _panel.querySelector("#crPanicSave").onclick = () => {
+      const key = panicKeyInput.value.trim();
+      const url = _panel.querySelector("#crPanicUrlInput").value.trim();
+      if (!key || key === "Press a key...") { showToast("Press a key first", "error"); return; }
+      _panicKey = key;
+      _panicUrl = url || "https://classroom.google.com";
+      localStorage.setItem("cr_panic_key", _panicKey);
+      localStorage.setItem("cr_panic_url", _panicUrl);
+      _panel.querySelector("#crPanicKeyDisplay").textContent = _panicKey;
+      showToast("Panic key saved: " + _panicKey, "success");
+    };
+
+    // Test panic
+    _panel.querySelector("#crPanicTest").onclick = () => {
+      window.location.href = _panel.querySelector("#crPanicUrlInput").value || _panicUrl;
+    };
+
+    updateUI();
+  });
+})();
 
 // ── Service Worker Registration ────────────────────────────────────────────
 if ("serviceWorker" in navigator) {
