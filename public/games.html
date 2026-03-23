@@ -179,23 +179,13 @@ function retryLoad() {
 let loadTimeout;
 function resetTimeout() {
   clearTimeout(loadTimeout);
-  loadTimeout = setTimeout(showFallback, 10000);
+  loadTimeout = setTimeout(showFallback, 20000);
 }
 
 frame.addEventListener("load", () => {
   clearTimeout(loadTimeout);
-  try {
-    // Cross-origin success = real site loaded
-    const doc = frame.contentDocument;
-    if (!doc || doc.body?.innerHTML?.trim() === "") {
-      showFallback();
-    } else {
-      loading.classList.add("hidden");
-    }
-  } catch(e) {
-    // Cross-origin error = iframe loaded successfully
-    loading.classList.add("hidden");
-  }
+  // Cross-origin iframe — if it fired load, it loaded successfully
+  loading.classList.add("hidden");
 });
 
 frame.addEventListener("error", showFallback);
