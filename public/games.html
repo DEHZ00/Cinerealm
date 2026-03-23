@@ -86,9 +86,57 @@
     .games-btn:hover { background: #e01f1f; }
     .games-btn.secondary { background: rgba(255,255,255,0.1); margin-top: 4px; }
 
-    @media (max-width: 768px) {
-      .games-frame-wrap { height: calc(100vh - 56px); }
+    .game-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px; overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.18s ease, border-color 0.18s, box-shadow 0.18s;
+      text-decoration: none; display: block;
     }
+    .game-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255,44,44,0.35);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+    }
+    .game-thumb {
+      width: 100%; aspect-ratio: 16/9;
+      background: rgba(255,255,255,0.06);
+      display: flex; align-items: center;
+      justify-content: center; font-size: 32px;
+    }
+    .game-info { padding: 8px 10px 10px; }
+    .game-title { font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .game-cat { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 2px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .game-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+      z-index: 9000; display: none; flex-direction: column;
+    }
+    .game-modal.open { display: flex; }
+    .game-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px; background: rgba(0,0,0,0.8);
+      border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0;
+    }
+    .game-modal-title { font-size: 15px; font-weight: 700; color: #fff; }
+    .game-modal-actions { display: flex; gap: 10px; align-items: center; }
+    .game-modal-close {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      color: #fff; width: 32px; height: 32px; border-radius: 50%;
+      cursor: pointer; font-size: 16px; display: flex;
+      align-items: center; justify-content: center; transition: background 0.15s;
+    }
+    .game-modal-close:hover { background: #ff2c2c; }
+    .game-modal-newtab {
+      padding: 7px 14px; background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.7);
+      border-radius: 8px; font-size: 12px; font-weight: 600;
+      text-decoration: none; transition: background 0.15s;
+    }
+    .game-modal-newtab:hover { background: rgba(255,255,255,0.14); color: #fff; }
+    .game-modal-frame { flex: 1; background: #000; }
+    .game-modal-frame iframe { width: 100%; height: 100%; border: none; display: block; }
+    
   </style>
 </head>
 <body>
@@ -129,8 +177,19 @@
     <div class="games-fallback" id="gamesFallback">
       <h3>Games unavailable</h3>
       <p>Something went wrong loading the games. Try opening directly or refreshing.</p>
-      <a href="https://script.google.com/a/macros/sjusd.org/s/AKfycbxf1Po29U2cbDiqpF_yvmr9EQV5skeKh46B5kdMJ5WANitA7aGMwleigMjsU38R1LZ6/exec" target="_blank" rel="noopener" class="games-btn">Open Games ↗</a>
+      <a href="https://script.google.com/macros/s/AKfycbwaaDm312JSA01O5icTI1nPDOSroO08pd0cEctw--dcEHAtI_evElMvq14zSUG_Hei0pw/exec" target="_blank" rel="noopener" class="games-btn">Open Games ↗</a>
       <button class="games-btn secondary" onclick="retryLoad()">Try Again</button>
+    </div>
+
+    <!-- Fallback grid for non-school users -->
+    <div id="gamesFallbackGrid" style="display:none; padding: 20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <h2 style="margin:0;font-size:18px;font-weight:800;color:#fff;">Games</h2>
+          <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.4);">Open full library: <a href="https://script.google.com/macros/s/AKfycbwaaDm312JSA01O5icTI1nPDOSroO08pd0cEctw--dcEHAtI_evElMvq14zSUG_Hei0pw/exec" target="_blank" style="color:#ff6b6b;">click here ↗</a></p>
+        </div>
+      </div>
+      <div id="fallbackGridInner" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;"></div>
     </div>
 
     <iframe
@@ -144,6 +203,20 @@
   </div>
 </main>
 
+<!-- Game modal for fallback grid -->
+<div class="game-modal" id="gameModal">
+  <div class="game-modal-header">
+    <span class="game-modal-title" id="gameModalTitle"></span>
+    <div class="game-modal-actions">
+      <a class="game-modal-newtab" id="gameModalNewTab" href="#" target="_blank" rel="noopener">New tab ↗</a>
+      <button class="game-modal-close" id="gameModalClose">✕</button>
+    </div>
+  </div>
+  <div class="game-modal-frame">
+    <iframe id="gameModalIframe" src="" allow="fullscreen; autoplay; gamepad" allowfullscreen></iframe>
+  </div>
+</div>
+
 <div id="detailsOverlay" class="details-overlay" onclick="closeDetailsPanel()"></div>
 <div id="detailsPanel" class="details-panel" style="display:none;">
   <button class="details-panel-close" onclick="closeDetailsPanel()">✕</button>
@@ -155,16 +228,25 @@
 
 <script src="/script.js" defer></script>
 <script>
-const GAMES_URL = "https://script.google.com/a/macros/sjusd.org/s/AKfycbxf1Po29U2cbDiqpF_yvmr9EQV5skeKh46B5kdMJ5WANitA7aGMwleigMjsU38R1LZ6/exec";
+const GAMES_URL = "https://script.google.com/macros/s/AKfycbwaaDm312JSA01O5icTI1nPDOSroO08pd0cEctw--dcEHAtI_evElMvq14zSUG_Hei0pw/exec";
 
 const frame   = document.getElementById("gamesFrame");
 const loading = document.getElementById("gamesLoading");
 const fallback = document.getElementById("gamesFallback");
+const grid    = document.getElementById("gamesFallbackGrid");
 
 function showFallback() {
   loading.classList.add("hidden");
   loading.style.display = "none";
   fallback.classList.add("visible");
+}
+
+function showGrid() {
+  loading.classList.add("hidden");
+  loading.style.display = "none";
+  grid.style.display = "block";
+  frame.style.display = "none";
+  renderFallbackGrid();
 }
 
 function retryLoad() {
@@ -179,20 +261,102 @@ function retryLoad() {
 let loadTimeout;
 function resetTimeout() {
   clearTimeout(loadTimeout);
-  loadTimeout = setTimeout(showFallback, 20000);
+  loadTimeout = setTimeout(showGrid, 8000);
 }
 
 frame.addEventListener("load", () => {
   clearTimeout(loadTimeout);
-  // Cross-origin iframe — if it fired load, it loaded successfully
+  try {
+    const url = frame.contentWindow.location.href;
+    if (url.includes("accounts.google.com") || url.includes("login")) {
+      showGrid(); return;
+    }
+  } catch(e) {
+    // Cross-origin = real content loaded successfully
+  }
   loading.classList.add("hidden");
 });
 
-frame.addEventListener("error", showFallback);
+// accounts.google.com refuses to embed so it fires error not load
+frame.addEventListener("error", showGrid);
 
-// Start loading
+// Quick poll — detect if iframe got blocked/errored fast
+const _quickCheck = setInterval(() => {
+  try {
+    const url = frame.contentWindow.location.href;
+    if (url && (url.includes("accounts.google.com") || url.includes("error"))) {
+      clearInterval(_quickCheck);
+      clearTimeout(loadTimeout);
+      showGrid();
+    }
+  } catch(e) {
+    // Still loading cross-origin content — fine
+  }
+}, 300);
+setTimeout(() => clearInterval(_quickCheck), 25000);
+
 frame.src = GAMES_URL;
 resetTimeout();
+
+// ── Fallback games grid ───────────────────────────────────────────────────
+const GAMES = [
+  { title: "Slope",            cat: "Action",  icon: "🎮", url: "https://slope-game.github.io/",                              newTab: false },
+  { title: "1v1.LOL",          cat: "Action",  icon: "🔫", url: "https://1v1.lol/",                                           newTab: true  },
+  { title: "Krunker.io",       cat: "Shooter", icon: "🎯", url: "https://krunker.io/",                                        newTab: true  },
+  { title: "Shell Shockers",   cat: "Shooter", icon: "🥚", url: "https://shellshock.io/",                                     newTab: true  },
+  { title: "Bullet Force",     cat: "Shooter", icon: "💥", url: "https://www.crazygames.com/embed/bullet-force-multiplayer",  newTab: false },
+  { title: "2048",             cat: "Puzzle",  icon: "🔢", url: "https://2048.io/",                                           newTab: false },
+  { title: "Cut the Rope",     cat: "Puzzle",  icon: "🍬", url: "https://www.crazygames.com/embed/cut-the-rope-remastered",   newTab: false },
+  { title: "Moto X3M",         cat: "Racing",  icon: "🏍️", url: "https://www.crazygames.com/embed/moto-x3m",                 newTab: false },
+  { title: "Drive Mad",        cat: "Racing",  icon: "🚗", url: "https://www.crazygames.com/embed/drive-mad",                 newTab: false },
+  { title: "Drift Boss",       cat: "Racing",  icon: "🏎️", url: "https://www.crazygames.com/embed/drift-boss",               newTab: false },
+  { title: "Basketball Stars", cat: "Sports",  icon: "🏀", url: "https://www.crazygames.com/embed/basketball-stars",         newTab: false },
+  { title: "Stickman Hook",    cat: "Sports",  icon: "🕹️", url: "https://www.crazygames.com/embed/stickman-hook",            newTab: false },
+  { title: "Paper.io 2",       cat: "Other",   icon: "📄", url: "https://www.crazygames.com/embed/paper-io-2",               newTab: false },
+  { title: "Cookie Clicker",   cat: "Other",   icon: "🍪", url: "https://orteil.dashnet.org/cookieclicker/",                 newTab: false },
+  { title: "Flappy Bird",      cat: "Other",   icon: "🐦", url: "https://flappybird.io/",                                    newTab: false },
+  { title: "Among Us",         cat: "Other",   icon: "👾", url: "https://www.crazygames.com/embed/among-us-online-edition",  newTab: false },
+  { title: "Minecraft Classic", cat: "Other",  icon: "⛏️", url: "https://classic.minecraft.net/",                           newTab: true  },
+  { title: "Agar.io",          cat: "Other",   icon: "🔵", url: "https://agar.io/",                                          newTab: true  },
+];
+
+let gridModal = null;
+
+function renderFallbackGrid() {
+  const container = document.getElementById("fallbackGridInner");
+  if (!container || container.dataset.rendered) return;
+  container.dataset.rendered = "1";
+  container.innerHTML = GAMES.map((g, i) => `
+    <div class="game-card" onclick="openFallbackGame(${i})">
+      <div class="game-thumb">${g.icon}</div>
+      <div class="game-info">
+        <div class="game-title">${g.title}</div>
+        <div class="game-cat">${g.cat}${g.newTab ? ' · new tab' : ''}</div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function openFallbackGame(idx) {
+  const game = GAMES[idx];
+  if (!game) return;
+  if (game.newTab) { window.open(game.url, "_blank", "noopener"); return; }
+  if (!gridModal) gridModal = document.getElementById("gameModal");
+  document.getElementById("gameModalTitle").textContent = game.title;
+  document.getElementById("gameModalNewTab").href = game.url;
+  document.getElementById("gameModalIframe").src = game.url;
+  gridModal.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeGame() {
+  if (gridModal) gridModal.classList.remove("open");
+  document.getElementById("gameModalIframe").src = "";
+  document.body.style.overflow = "";
+}
+
+document.getElementById("gameModalClose").onclick = closeGame;
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeGame(); });
 </script>
 
 <script>window.va = window.va || function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
