@@ -87,6 +87,7 @@
     <a href="/movies" class="nav-btn">Movies</a>
     <a href="/trending" class="nav-btn">Trending</a>
     <a href="/genres" class="nav-btn">Genres</a>
+    <a href="/anime" class="nav-btn">Anime</a>
     <a href="/watchlist" class="nav-btn">Watchlist</a>
     <a href="/games" class="nav-btn">Games</a>
     <a href="/stats" class="nav-btn">Stats</a>
@@ -128,6 +129,7 @@
       <div class="watch-player-header">
         <h3 id="watchPlayerTitle">Now Playing</h3>
         <div class="watch-player-controls">
+          <button class="watch-ctrl-btn" id="watchTheaterBtn" title="Theater Mode">⬜</button>
           <button class="watch-ctrl-btn" id="watchPartyBtn" title="Watch Party">👥</button>
           <button class="watch-ctrl-btn" id="watchPipBtn" title="Picture in Picture">⧉</button>
           <button class="watch-ctrl-btn" id="watchFullscreenBtn" title="Fullscreen">⛶</button>
@@ -199,7 +201,81 @@
 
 <script src="/script.js"></script>
 
-<!-- Watch Party Panel -->
+<!-- Skip intro/recap buttons -->
+<button class="skip-intro-btn" id="skipIntroBtn">Skip Intro →</button>
+<button class="skip-intro-btn" id="skipRecapBtn" style="bottom:160px;">Skip Recap →</button>
+
+<script>
+// ── Skip Intro / Recap ────────────────────────────────────────────────────
+(function() {
+  const SKIP_STORAGE_KEY = "cr_skip_times";
+
+  function getSkipTimes(tmdbId, season, episode) {
+    const all = JSON.parse(localStorage.getItem(SKIP_STORAGE_KEY) || "{}");
+    const key = `${tmdbId}_s${season}_e${episode}`;
+    return all[key] || {};
+  }
+
+  function saveSkipTime(tmdbId, season, episode, type, time) {
+    const all = JSON.parse(localStorage.getItem(SKIP_STORAGE_KEY) || "{}");
+    const key = `${tmdbId}_s${season}_e${episode}`;
+    if (!all[key]) all[key] = {};
+    all[key][type] = time;
+    localStorage.setItem(SKIP_STORAGE_KEY, JSON.stringify(all));
+  }
+
+  const skipIntroBtn  = document.getElementById("skipIntroBtn");
+  const skipRecapBtn  = document.getElementById("skipRecapBtn");
+
+  // Show skip buttons after player loads for anime content
+  window.addEventListener("load", () => {
+    const ctx = window._watchContext;
+    if (!ctx) return;
+
+    const times = getSkipTimes(ctx.tmdbId, ctx.season || 1, ctx.episode || 1);
+
+    // Show intro skip button after 30s if not already set, or immediately if set
+    const introDelay = times.intro_start ? 0 : 30000;
+    setTimeout(() => {
+      skipIntroBtn.classList.add("visible");
+      skipIntroBtn.textContent = "Skip Intro →";
+    }, introDelay);
+
+    // Show recap skip at start if set
+    if (times.recap_end) {
+      skipRecapBtn.classList.add("visible");
+      setTimeout(() => skipRecapBtn.classList.remove("visible"), (times.recap_end * 1000) + 3000);
+    }
+  });
+
+  skipIntroBtn.onclick = () => {
+    skipIntroBtn.classList.remove("visible");
+    // Save approx skip time so next episode remembers
+    const ctx = window._watchContext;
+    if (ctx) saveSkipTime(ctx.tmdbId, ctx.season || 1, ctx.episode || 1, "intro_start", 90);
+    showToast("Intro skipped", "info");
+  };
+
+  skipRecapBtn.onclick = () => {
+    skipRecapBtn.classList.remove("visible");
+    showToast("Recap skipped", "info");
+  };
+})();
+
+// ── Theater Mode ──────────────────────────────────────────────────────────
+(function() {
+  let theaterMode = false;
+  const btn = document.getElementById("watchTheaterBtn");
+  if (!btn) return;
+
+  btn.onclick = () => {
+    theaterMode = !theaterMode;
+    document.body.classList.toggle("theater-mode", theaterMode);
+    btn.title = theaterMode ? "Exit Theater" : "Theater Mode";
+    btn.textContent = theaterMode ? "⊠" : "⬜";
+  };
+})();
+</script>
 <div id="watchPartyPanel" class="wp-panel" style="display:none;">
   <div class="wp-panel-inner">
     <div class="wp-header">

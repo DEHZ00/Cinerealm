@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Anime – CineRealm</title>
+  <meta name="description" content="Watch anime on CineRealm — sub and dub, seasonal, all genres." />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#ff2c2c">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta property="og:title" content="Anime – CineRealm">
+  <meta property="og:image" content="https://cinerealm.online/android-chrome-512x512.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* ── Anime page specific styles ── */
+    .anime-page { max-width: 1400px; margin: 0 auto; padding: 0 20px 100px; }
+
+    /* Dub/Sub toggle */
+    .anime-dub-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 0 0;
+      margin-bottom: 8px;
+    }
+    .anime-dub-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.45);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .dub-toggle {
+      display: flex;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 999px;
+      padding: 3px;
+      gap: 2px;
+    }
+    .dub-toggle-btn {
+      padding: 5px 16px;
+      border-radius: 999px;
+      border: none;
+      background: none;
+      color: rgba(255,255,255,0.5);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .dub-toggle-btn.active {
+      background: #ff2c2c;
+      color: #fff;
+    }
+
+    /* Genre chips */
+    .anime-genres-wrap {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 12px 0 4px;
+      scrollbar-width: none;
+      flex-wrap: nowrap;
+    }
+    .anime-genres-wrap::-webkit-scrollbar { display: none; }
+    .anime-genre-chip {
+      padding: 6px 16px;
+      border-radius: 999px;
+      border: 1.5px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.6);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .anime-genre-chip.active {
+      background: rgba(255,44,44,0.15);
+      border-color: rgba(255,44,44,0.5);
+      color: #ff6b6b;
+    }
+    .anime-genre-chip:hover:not(.active) {
+      border-color: rgba(255,255,255,0.2);
+      color: #fff;
+    }
+
+    /* Seasonal banner */
+    .anime-season-banner {
+      background: linear-gradient(135deg, rgba(255,44,44,0.12) 0%, rgba(100,0,0,0.08) 100%);
+      border: 1px solid rgba(255,44,44,0.2);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin: 16px 0 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .anime-season-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .anime-season-sub {
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+      margin-top: 2px;
+    }
+    .anime-season-badge {
+      padding: 4px 12px;
+      background: #ff2c2c;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: 0.5px;
+    }
+
+    /* Skip intro/outro buttons — shown on watch page via JS */
+    .skip-btn {
+      position: fixed;
+      bottom: 100px;
+      right: 24px;
+      padding: 10px 22px;
+      background: rgba(0,0,0,0.75);
+      border: 2px solid rgba(255,255,255,0.6);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 500;
+      backdrop-filter: blur(8px);
+      transition: all 0.15s;
+      display: none;
+    }
+    .skip-btn.visible { display: block; }
+    .skip-btn:hover { background: rgba(255,255,255,0.15); border-color: #fff; }
+  </style>
+</head>
+<body>
+
+<div id="appIntro" class="intro hidden">
+  <div class="intro-logo"></div>
+  <p class="intro-tagline">Stream Movies, TV &amp; Anime</p>
+  <div class="intro-bar-wrap"><div class="intro-bar"></div></div>
+</div>
+<div id="site-notification"></div>
+
+<header>
+  <div class="header-left">
+    <h1><a href="/" style="text-decoration:none;">CineRealm</a></h1>
+  </div>
+  <input type="text" id="searchBar" placeholder="Search anime..." autocomplete="off">
+  <nav class="nav-links">
+    <a href="/" class="nav-btn">Home</a>
+    <a href="/movies" class="nav-btn">Movies</a>
+    <a href="/trending" class="nav-btn">Trending</a>
+    <a href="/genres" class="nav-btn">Genres</a>
+    <a href="/anime" class="nav-btn active">Anime</a>
+    <a href="/watchlist" class="nav-btn">Watchlist</a>
+    <a href="/games" class="nav-btn">Games</a>
+    <a href="/stats" class="nav-btn">Stats</a>
+    <a href="/legal" class="nav-btn">Legal</a>
+  </nav>
+</header>
+
+<main class="anime-page">
+
+  <!-- Dub/Sub toggle -->
+  <div class="anime-dub-bar">
+    <span class="anime-dub-label">Audio</span>
+    <div class="dub-toggle">
+      <button class="dub-toggle-btn active" id="subBtn" onclick="setDubSub('sub')">SUB</button>
+      <button class="dub-toggle-btn" id="dubBtn" onclick="setDubSub('dub')">DUB</button>
+    </div>
+  </div>
+
+  <!-- Genre chips -->
+  <div class="anime-genres-wrap" id="animeGenreChips">
+    <button class="anime-genre-chip active" data-genre="">All Anime</button>
+    <button class="anime-genre-chip" data-genre="10759">Action</button>
+    <button class="anime-genre-chip" data-genre="16">Animation</button>
+    <button class="anime-genre-chip" data-genre="35">Comedy</button>
+    <button class="anime-genre-chip" data-genre="80">Crime</button>
+    <button class="anime-genre-chip" data-genre="99">Documentary</button>
+    <button class="anime-genre-chip" data-genre="18">Drama</button>
+    <button class="anime-genre-chip" data-genre="10751">Family</button>
+    <button class="anime-genre-chip" data-genre="14">Fantasy</button>
+    <button class="anime-genre-chip" data-genre="27">Horror</button>
+    <button class="anime-genre-chip" data-genre="9648">Mystery</button>
+    <button class="anime-genre-chip" data-genre="10765">Sci-Fi</button>
+    <button class="anime-genre-chip" data-genre="10749">Romance</button>
+    <button class="anime-genre-chip" data-genre="53">Thriller</button>
+  </div>
+
+  <!-- Seasonal banner -->
+  <div class="anime-season-banner">
+    <div>
+      <div class="anime-season-title" id="seasonTitle">This Season's Anime</div>
+      <div class="anime-season-sub" id="seasonSub">Currently airing</div>
+    </div>
+    <span class="anime-season-badge" id="seasonBadge">AIRING NOW</span>
+  </div>
+
+  <!-- Rows injected by JS -->
+  <div id="animeRows"></div>
+
+</main>
+
+<!-- Details panel -->
+<div id="detailsOverlay" class="details-overlay" onclick="closeDetailsPanel()"></div>
+<div id="detailsPanel" class="details-panel" style="display:none;">
+  <button class="details-panel-close" onclick="closeDetailsPanel()">✕</button>
+  <div id="detailsPanelBody" class="details-panel-body"></div>
+</div>
+<div id="detailsModal" class="modal" style="display:none;">
+  <div class="modal-content"><span class="close-btn">&times;</span><div id="detailsBody"></div></div>
+</div>
+
+<!-- Mobile bottom nav -->
+<nav class="mobile-bottom-nav">
+  <a href="/" class="mobile-nav-item">
+    <span class="mobile-nav-icon">🏠</span>
+    <span class="mobile-nav-label">Home</span>
+  </a>
+  <a href="/search" class="mobile-nav-item">
+    <span class="mobile-nav-icon">🔍</span>
+    <span class="mobile-nav-label">Search</span>
+  </a>
+  <a href="/anime" class="mobile-nav-item active">
+    <span class="mobile-nav-icon">⛩️</span>
+    <span class="mobile-nav-label">Anime</span>
+  </a>
+  <a href="/watchlist" class="mobile-nav-item">
+    <span class="mobile-nav-icon">★</span>
+    <span class="mobile-nav-label">Watchlist</span>
+  </a>
+  <a href="/stats" class="mobile-nav-item">
+    <span class="mobile-nav-icon">📊</span>
+    <span class="mobile-nav-label">Stats</span>
+  </a>
+</nav>
+
+<script src="/script.js" defer></script>
+<script>
+// ── Dub/Sub state ─────────────────────────────────────────────────────────
+let animeDubMode = localStorage.getItem("cr_anime_dub") === "dub" ? "dub" : "sub";
+
+function setDubSub(mode) {
+  animeDubMode = mode;
+  localStorage.setItem("cr_anime_dub", mode);
+  document.getElementById("subBtn").classList.toggle("active", mode === "sub");
+  document.getElementById("dubBtn").classList.toggle("active", mode === "dub");
+}
+
+// Init toggle from saved preference
+setDubSub(animeDubMode);
+
+// ── Season label ──────────────────────────────────────────────────────────
+function getSeasonLabel() {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  if (month >= 1  && month <= 3)  return { season: "Winter", year };
+  if (month >= 4  && month <= 6)  return { season: "Spring", year };
+  if (month >= 7  && month <= 9)  return { season: "Summer", year };
+  return { season: "Fall", year };
+}
+
+const { season, year } = getSeasonLabel();
+document.getElementById("seasonTitle").textContent = `${season} ${year} Anime`;
+document.getElementById("seasonSub").textContent = `Currently airing this ${season.toLowerCase()}`;
+
+// ── Genre filter ──────────────────────────────────────────────────────────
+let activeAnimeGenre = "";
+document.querySelectorAll(".anime-genre-chip").forEach(chip => {
+  chip.onclick = () => {
+    document.querySelectorAll(".anime-genre-chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    activeAnimeGenre = chip.dataset.genre;
+    loadAnimeRows();
+  };
+});
+
+// ── Anime rows ────────────────────────────────────────────────────────────
+const ANIME_ROWS = [
+  { title: "Airing This Season", endpoint: "/trending/tv/week", params: { with_genres: "16", with_original_language: "ja" } },
+  { title: "Popular Anime",      endpoint: "/tv/popular",       params: { with_genres: "16", with_original_language: "ja" } },
+  { title: "Top Rated Anime",    endpoint: "/tv/top_rated",     params: { with_genres: "16", with_original_language: "ja" } },
+  { title: "Action Anime",       endpoint: "/discover/tv",      params: { with_genres: "16,10759", with_original_language: "ja", sort_by: "popularity.desc" } },
+  { title: "Fantasy Anime",      endpoint: "/discover/tv",      params: { with_genres: "16,14", with_original_language: "ja", sort_by: "popularity.desc" } },
+  { title: "Romance Anime",      endpoint: "/discover/tv",      params: { with_genres: "16,10749", with_original_language: "ja", sort_by: "popularity.desc" } },
+  { title: "Comedy Anime",       endpoint: "/discover/tv",      params: { with_genres: "16,35", with_original_language: "ja", sort_by: "popularity.desc" } },
+  { title: "Thriller & Horror",  endpoint: "/discover/tv",      params: { with_genres: "16,27", with_original_language: "ja", sort_by: "popularity.desc" } },
+  { title: "Sci-Fi Anime",       endpoint: "/discover/tv",      params: { with_genres: "16,10765", with_original_language: "ja", sort_by: "popularity.desc" } },
+];
+
+async function loadAnimeRows() {
+  const container = document.getElementById("animeRows");
+  container.innerHTML = "";
+
+  for (const row of ANIME_ROWS) {
+    const section = document.createElement("section");
+    section.innerHTML = `
+      <div class="section-header">
+        <h2>${row.title}</h2>
+      </div>
+      <div class="movie-row-wrapper">
+        <div class="movie-row" id="animeRow_${ANIME_ROWS.indexOf(row)}"></div>
+      </div>
+    `;
+    container.appendChild(section);
+    showSkeletons("animeRow_" + ANIME_ROWS.indexOf(row), 10);
+  }
+
+  // Fetch all rows in parallel
+  await Promise.all(ANIME_ROWS.map(async (row, i) => {
+    try {
+      const params = { ...row.params };
+      if (activeAnimeGenre) {
+        // Merge genre filter
+        params.with_genres = params.with_genres
+          ? params.with_genres + "," + activeAnimeGenre
+          : activeAnimeGenre;
+      }
+
+      const data = await apiCall(row.endpoint, params);
+      const rowEl = document.getElementById("animeRow_" + i);
+      if (!rowEl) return;
+      rowEl.innerHTML = "";
+
+      const results = (data?.results || []).filter(item =>
+        item.poster_path &&
+        (item.original_language === "ja" || row.params.with_original_language === "ja")
+      ).slice(0, 20);
+
+      if (!results.length) {
+        rowEl.innerHTML = '<p style="color:rgba(255,255,255,0.3);font-size:13px;padding:10px;">No results</p>';
+        return;
+      }
+
+      results.forEach(item => {
+        // Tag as anime type for proper source routing
+        item._isAnime = true;
+        const card = createMovieCard(item, "tv");
+        if (card) {
+          card.dataset.type = "anime";
+          card.dataset.anime = "1";
+          rowEl.appendChild(card);
+        }
+      });
+
+      addRowScrollArrows(rowEl.parentElement);
+    } catch(e) {
+      console.warn("Anime row failed:", row.title, e);
+    }
+  }));
+}
+
+// Override card click for anime — passes dub preference
+const _origShowDetails = window.showMovieDetails;
+window.showAnimeDetails = function(item, type) {
+  // Mark as anime so watch page uses anime sources
+  item._isAnime = true;
+  if (typeof showMovieDetails === "function") {
+    showMovieDetails(item, "tv", { anime: true, dub: animeDubMode === "dub" });
+  }
+};
+
+// Init
+window.addEventListener("load", loadAnimeRows);
+</script>
+
+<script>window.va = window.va || function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<script>window.si = window.si || function(){(window.siq=window.siq||[]).push(arguments);};</script>
+<script defer src="/_vercel/speed-insights/script.js"></script>
+<script src="https://uptime.betterstack.com/widgets/announcement.js" data-id="240420" async type="text/javascript"></script>
+
+</body>
+</html>
