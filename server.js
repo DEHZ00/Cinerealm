@@ -144,6 +144,7 @@ const routes = {
   "/legal":     "legal.html",
   "/games":     "games.html",
   "/genres":    "genres.html",
+  "/anime":     "anime.html",
   "/stats":     "stats.html",
   "/games-proxy": "games-proxy.html",
 };
