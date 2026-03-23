@@ -136,6 +136,89 @@
     .game-modal-newtab:hover { background: rgba(255,255,255,0.14); color: #fff; }
     .game-modal-frame { flex: 1; background: #000; }
     .game-modal-frame iframe { width: 100%; height: 100%; border: none; display: block; }
+
+    /* Tab cloak button */
+    .cloak-btn {
+      position: fixed;
+      bottom: 80px;
+      right: 16px;
+      z-index: 8000;
+      background: rgba(10,10,10,0.85);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.6);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.15s;
+    }
+    .cloak-btn:hover { border-color: rgba(255,44,44,0.4); color: #ff6b6b; }
+
+    /* Cloak panel */
+    .cloak-panel {
+      position: fixed;
+      bottom: 120px;
+      right: 16px;
+      width: 300px;
+      background: linear-gradient(160deg, #140202 0%, #0a0808 100%);
+      border: 1px solid rgba(255,44,44,0.2);
+      border-radius: 14px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+      z-index: 8001;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .cloak-panel.open { display: flex; }
+    .cloak-panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .cloak-panel-header span { font-size: 13px; font-weight: 800; color: #fff; }
+    .cloak-panel-close {
+      background: none; border: none; color: rgba(255,255,255,0.4);
+      cursor: pointer; font-size: 16px; padding: 0 4px;
+      transition: color 0.15s;
+    }
+    .cloak-panel-close:hover { color: #fff; }
+    .cloak-panel-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+    .cloak-presets { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .cloak-preset-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 10px; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.75);
+      font-size: 11px; font-weight: 600; transition: all 0.15s;
+    }
+    .cloak-preset-btn:hover { background: rgba(255,44,44,0.12); border-color: rgba(255,44,44,0.3); color: #fff; }
+    .cloak-preset-btn img { width: 14px; height: 14px; object-fit: contain; }
+    .cloak-input {
+      width: 100%; padding: 8px 10px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; color: #fff; font-size: 12px; outline: none;
+      transition: border-color 0.15s;
+    }
+    .cloak-input:focus { border-color: rgba(255,44,44,0.4); }
+    .cloak-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; }
+    .cloak-row { display: flex; gap: 6px; }
+    .cloak-apply-btn {
+      padding: 8px 14px; background: #ff2c2c; border: none;
+      border-radius: 8px; color: #fff; font-size: 12px; font-weight: 700;
+      cursor: pointer; transition: background 0.15s; white-space: nowrap;
+    }
+    .cloak-apply-btn:hover { background: #e01f1f; }
+    .cloak-reset-btn {
+      padding: 8px 12px; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+      color: rgba(255,255,255,0.5); font-size: 12px; cursor: pointer;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .cloak-reset-btn:hover { color: #fff; }
+    .cloak-divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 2px 0; }
+    .cloak-panic-note { font-size: 11px; color: rgba(255,255,255,0.35); line-height: 1.4; }
     
   </style>
 </head>
@@ -224,6 +307,47 @@
 </div>
 <div id="detailsModal" class="modal" style="display:none;">
   <div class="modal-content"><span class="close-btn">&times;</span><div id="detailsBody"></div></div>
+</div>
+
+<!-- Tab Cloak Button & Panel -->
+<button class="cloak-btn" id="cloakToggle">🎭 Cloak</button>
+
+<div class="cloak-panel" id="cloakPanel">
+  <div class="cloak-panel-header">
+    <span>Tab Cloak</span>
+    <button class="cloak-panel-close" id="cloakClose">✕</button>
+  </div>
+  <div class="cloak-panel-body">
+
+    <div class="cloak-label">Quick Presets</div>
+    <div class="cloak-presets" id="cloakPresets"></div>
+
+    <hr class="cloak-divider">
+
+    <div class="cloak-label">Custom Title</div>
+    <input class="cloak-input" id="cloakTitleInput" placeholder="Tab title..." autocomplete="off">
+
+    <div class="cloak-label">Custom Icon URL</div>
+    <div class="cloak-row">
+      <input class="cloak-input" id="cloakIconInput" placeholder="https://site.com/favicon.ico" autocomplete="off">
+    </div>
+    <div class="cloak-row">
+      <button class="cloak-apply-btn" id="cloakApply">Apply</button>
+      <button class="cloak-reset-btn" id="cloakReset">Reset</button>
+      <button class="cloak-apply-btn" id="cloakAboutBlank" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);">about:blank</button>
+    </div>
+
+    <hr class="cloak-divider">
+
+    <div class="cloak-label">Panic Key</div>
+    <p class="cloak-panic-note">Press this key to instantly redirect away</p>
+    <div class="cloak-row">
+      <input class="cloak-input" id="panicKeyInput" placeholder="Key e.g. F1, Escape" autocomplete="off" style="flex:1">
+      <input class="cloak-input" id="panicUrlInput" placeholder="Redirect URL" autocomplete="off" style="flex:2">
+      <button class="cloak-apply-btn" id="panicSave">Save</button>
+    </div>
+
+  </div>
 </div>
 
 <script src="/script.js" defer></script>
@@ -355,8 +479,103 @@ function closeGame() {
   document.body.style.overflow = "";
 }
 
-document.getElementById("gameModalClose").onclick = closeGame;
-document.addEventListener("keydown", e => { if (e.key === "Escape") closeGame(); });
+// ── Tab Cloak (runs on parent page, actually works) ───────────────────────
+(function() {
+  const PRESETS = [
+    { name: "Classroom",  title: "Classroom",                    icon: "https://www.gstatic.com/images/branding/product/1x/classroom_2020q4_32dp.png" },
+    { name: "Google Docs",title: "Document - Google Docs",       icon: "https://ssl.gstatic.com/docs/doclist/images/mediatype/icon_1_document_x32.png" },
+    { name: "Google Drive",title: "My Drive - Google Drive",     icon: "https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png" },
+    { name: "Khan Academy",title: "Khan Academy",                icon: "https://cdn.kastatic.org/images/favicon.ico" },
+    { name: "Quizlet",    title: "Quizlet",                      icon: "https://quizlet.com/favicon.ico" },
+    { name: "Desmos",     title: "Desmos | Graphing Calculator", icon: "https://www.desmos.com/favicon.ico" },
+    { name: "Wikipedia",  title: "Wikipedia",                    icon: "https://en.wikipedia.org/favicon.ico" },
+    { name: "Slides",     title: "Presentation - Google Slides", icon: "https://ssl.gstatic.com/docs/presentations/images/favicon5.ico" },
+  ];
+
+  let panicKey = localStorage.getItem("cr_panic_key") || "F1";
+  let panicUrl = localStorage.getItem("cr_panic_url") || "https://classroom.google.com";
+
+  // Restore saved cloak
+  const savedTitle = localStorage.getItem("cr_cloak_title");
+  const savedIcon  = localStorage.getItem("cr_cloak_icon");
+  if (savedTitle) applyCloak(savedTitle, savedIcon);
+
+  function applyCloak(title, iconUrl) {
+    document.title = title || "Games – CineRealm";
+    const link = document.querySelector("link[rel*='icon']") || document.createElement("link");
+    link.rel = "shortcut icon";
+    link.type = "image/png";
+    link.href = iconUrl || "/favicon.ico";
+    document.head.appendChild(link);
+    if (title) localStorage.setItem("cr_cloak_title", title);
+    if (iconUrl) localStorage.setItem("cr_cloak_icon", iconUrl);
+  }
+
+  function resetCloak() {
+    document.title = "Games – CineRealm";
+    const link = document.querySelector("link[rel*='icon']");
+    if (link) link.href = "/favicon.ico";
+    localStorage.removeItem("cr_cloak_title");
+    localStorage.removeItem("cr_cloak_icon");
+    document.getElementById("cloakTitleInput").value = "";
+    document.getElementById("cloakIconInput").value = "";
+  }
+
+  // Build presets
+  const presetsEl = document.getElementById("cloakPresets");
+  PRESETS.forEach(p => {
+    const btn = document.createElement("button");
+    btn.className = "cloak-preset-btn";
+    btn.innerHTML = `<img src="${p.icon}" onerror="this.style.display='none'">${p.name}`;
+    btn.onclick = () => { applyCloak(p.title, p.icon); showToast("Tab cloaked as " + p.name, "success"); };
+    presetsEl.appendChild(btn);
+  });
+
+  // Panel toggle
+  const panel  = document.getElementById("cloakPanel");
+  const toggle = document.getElementById("cloakToggle");
+  const close  = document.getElementById("cloakClose");
+  toggle.onclick = () => panel.classList.toggle("open");
+  close.onclick  = () => panel.classList.remove("open");
+
+  // Apply custom
+  document.getElementById("cloakApply").onclick = () => {
+    const t = document.getElementById("cloakTitleInput").value.trim();
+    const i = document.getElementById("cloakIconInput").value.trim();
+    if (!t && !i) return;
+    applyCloak(t, i);
+    showToast("Tab cloaked", "success");
+  };
+
+  // Reset
+  document.getElementById("cloakReset").onclick = () => { resetCloak(); showToast("Cloak removed", "info"); };
+
+  // About blank
+  document.getElementById("cloakAboutBlank").onclick = () => {
+    const w = window.open("about:blank", "_blank");
+    if (!w) { showToast("Allow popups to use this", "error"); return; }
+    fetch(window.location.href)
+      .then(r => r.text())
+      .then(html => { w.document.open(); w.document.write(html); w.document.close(); });
+  };
+
+  // Panic key
+  document.getElementById("panicKeyInput").value = panicKey;
+  document.getElementById("panicUrlInput").value = panicUrl;
+  document.getElementById("panicSave").onclick = () => {
+    panicKey = document.getElementById("panicKeyInput").value.trim() || "F1";
+    panicUrl = document.getElementById("panicUrlInput").value.trim() || "https://classroom.google.com";
+    localStorage.setItem("cr_panic_key", panicKey);
+    localStorage.setItem("cr_panic_url", panicUrl);
+    showToast("Panic key saved", "success");
+  };
+
+  document.addEventListener("keydown", e => {
+    if (e.key === panicKey && !["INPUT","TEXTAREA"].includes(document.activeElement?.tagName)) {
+      window.location.href = panicUrl;
+    }
+  });
+})();
 </script>
 
 <script>window.va = window.va || function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
