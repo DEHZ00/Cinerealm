@@ -109,8 +109,9 @@ window.CR_CLOAK_PRESETS = [
     id:    "1LoginUportalL",
     name:  "One Login Portal light",
     title: "User Portal - Home",
-    icon:  "https://www.sjusd.onelogin.com/favicon.ico"
+    icon:  "https://sjusd.onelogin.com/favicon.ico?return=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwYXJhbXMiOnt9LCJmZl9tdWx0aXBsZV9icmFuZHMiOmZhbHNlLCJtZXRob2QiOiJnZXQiLCJ1cmkiOiJodHRwczovL3NqdXNkLm9uZWxvZ2luLmNvbS8iLCJhdWQiOiJBQ0NFU1MiLCJpc3MiOiJNT05PUkFJTCIsImJyYW5kX2lkIjoibWFzdGVyIiwiZXhwIjoxNzc0Mzc3NTk1fQ.qgfe209_1Z_MYE-w9l_SYMD5nVa6u8kxgwONora0nIg#app="
   },
+  
   {
     id:    "wghsWeb",
     name:  "WGHS website",
