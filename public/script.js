@@ -522,6 +522,9 @@ function createMovieCard(movie, type = "movie") {
     <span class="card-user-rating" title="Your rating: ${"★".repeat(userReview.stars)}">
       ${"★".repeat(userReview.stars)}
     </span>` : "";
+
+  // Blur-up sources
+  const thumbSrc = "https://image.tmdb.org/t/p/w92" + movie.poster_path;
   const fullSrc  = IMG_BASE + movie.poster_path;
 
   card.innerHTML = `
