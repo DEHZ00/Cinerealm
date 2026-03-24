@@ -92,6 +92,18 @@ window.CR_CLOAK_PRESETS = [
     title: "Duolingo",
     icon:  "https://d35aaqx5ub95lt.cloudfront.net/favicon.ico"
   },
+   {
+    id:    "1Login",
+    name:  "One Login",
+    title: "OneLogin",
+    icon:  "https://www.onelogin.com/favicon.ico"
+  },
+   {
+    id:    "1LoginUportal",
+    name:  "One Login Portal",
+    title: "User Portal - Home",
+    icon:  "https://www.onelogin.com/favicon.ico"
+  },
 
   // ── Microsoft / Work ─────────────────────────────────────────────────────
   {
