@@ -225,16 +225,15 @@ function switchPage(page) {
 // Request deduplication + short-term cache
 // Prevents the same endpoint being fetched multiple times simultaneously
 const _apiCache   = new Map(); // url → {data, ts}
-const _apiPending = new Map(); // url → Promise
-const API_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const _apiPending = new Map(); // url → Promise (deduplication)
+const API_CACHE_TTL = 10 * 60 * 1000; // 10 minutes (up from 5)
+const API_CACHE_MAX = 300; // max entries before eviction
 
 async function apiCall(endpoint, params = {}) {
   try {
     showLoading(true);
     const queryString = new URLSearchParams(params).toString();
     const url = `${BACKEND_URL}/api/tmdb${endpoint}${queryString ? "?" + queryString : ""}`;
-
-    console.log("API Call:", url);
 
     // Return cached result if fresh
     const cached = _apiCache.get(url);
@@ -249,8 +248,13 @@ async function apiCall(endpoint, params = {}) {
       return _apiPending.get(url);
     }
 
-    // New request
-    const promise = fetch(url)
+    // Evict oldest if cache is full
+    if (_apiCache.size >= API_CACHE_MAX) {
+      const oldestKey = _apiCache.keys().next().value;
+      _apiCache.delete(oldestKey);
+    }
+
+    const promise = fetch(url, { signal: AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined })
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -270,7 +274,6 @@ async function apiCall(endpoint, params = {}) {
     showLoading(false);
     return data;
   } catch (err) {
-    console.error("API Error:", err);
     showLoading(false);
     return null;
   }
@@ -1415,23 +1418,41 @@ async function fetchMovies(endpoint, containerId, type = "movie") {
   if (!container) return;
 
   showSkeletons(container);
-  const data = await apiCall(endpoint);
+  try {
+    const data = await apiCall(endpoint);
 
-  if (!data || !data.results) {
-    container.innerHTML = `<p class="placeholder">No content found</p>`;
-    return;
+    if (!data || !data.results) {
+      container.innerHTML = `
+        <div style="padding:20px;color:rgba(255,255,255,0.3);font-size:13px;display:flex;align-items:center;gap:10px;">
+          <span>Failed to load</span>
+          <button onclick="fetchMovies('${endpoint}','${containerId}','${type}')"
+            style="padding:4px 10px;background:rgba(255,44,44,0.15);border:1px solid rgba(255,44,44,0.3);border-radius:6px;color:#ff6b6b;font-size:12px;cursor:pointer;">
+            Retry
+          </button>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = "";
+    data.results
+      .filter(item => item.poster_path)
+      .slice(0, 40)
+      .forEach(item => {
+        const card = createMovieCard(item, type);
+        if (card) container.appendChild(card);
+      });
+
+    addRowScrollArrows(container);
+  } catch(e) {
+    container.innerHTML = `
+      <div style="padding:20px;color:rgba(255,255,255,0.3);font-size:13px;display:flex;align-items:center;gap:10px;">
+        <span>Something went wrong</span>
+        <button onclick="fetchMovies('${endpoint}','${containerId}','${type}')"
+          style="padding:4px 10px;background:rgba(255,44,44,0.15);border:1px solid rgba(255,44,44,0.3);border-radius:6px;color:#ff6b6b;font-size:12px;cursor:pointer;">
+          Retry
+        </button>
+      </div>`;
   }
-
-  container.innerHTML = "";
-  data.results
-    .filter(item => item.poster_path)
-    .slice(0, 40)
-    .forEach(item => {
-      const card = createMovieCard(item, type);
-      if (card) container.appendChild(card);
-    });
-
-  addRowScrollArrows(container);
 }
 
   // Show options
@@ -3127,6 +3148,103 @@ if (!window.location.pathname.startsWith("/watch")) {
   });
 })();
 
+// ── Section 22 — Frontend Performance Optimizations ──────────────────────
+
+// 1. Link prefetching — prefetch likely next pages on idle
+(function prefetchLikelyPages() {
+  if (!("requestIdleCallback" in window)) return;
+  const currentPath = window.location.pathname;
+  const allPages = ["/", "/movies", "/trending", "/watchlist", "/anime", "/genres", "/search", "/stats"];
+  const toPreload = allPages.filter(p => p !== currentPath).slice(0, 4);
+
+  requestIdleCallback(() => {
+    toPreload.forEach(url => {
+      const link = document.createElement("link");
+      link.rel = "prefetch";
+      link.href = url;
+      link.as = "document";
+      document.head.appendChild(link);
+    });
+  }, { timeout: 3000 });
+})();
+
+// 2. IntersectionObserver-based lazy loading for all images
+// (upgrades native loading="lazy" with better control)
+(function initLazyImages() {
+  const observer = new IntersectionObserver((entries, obs) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const img = entry.target;
+      const src = img.dataset.src || img.dataset.lazySrc;
+      if (src && img.src !== src) {
+        img.src = src;
+        img.removeAttribute("data-src");
+        img.removeAttribute("data-lazy-src");
+      }
+      obs.unobserve(img);
+    });
+  }, { rootMargin: "200px", threshold: 0 });
+
+  // Observe existing lazy images
+  document.querySelectorAll("img[data-src], img[data-lazy-src]").forEach(img => observer.observe(img));
+
+  // MutationObserver to catch dynamically added images
+  const mutObs = new MutationObserver(mutations => {
+    mutations.forEach(m => {
+      m.addedNodes.forEach(node => {
+        if (node.nodeType !== 1) return;
+        const imgs = node.nodeName === "IMG" ? [node] : [...node.querySelectorAll("img[data-src]")];
+        imgs.forEach(img => observer.observe(img));
+      });
+    });
+  });
+  mutObs.observe(document.body, { childList: true, subtree: true });
+})();
+
+// 3. Preconnect to frequently used origins
+(function addPreconnects() {
+  const origins = [
+    "https://image.tmdb.org",
+    "https://ez-streaming-api.vercel.app",
+    "https://graphql.anilist.co",
+  ];
+  origins.forEach(origin => {
+    if (document.querySelector(`link[rel="preconnect"][href="${origin}"]`)) return;
+    const link = document.createElement("link");
+    link.rel = "preconnect";
+    link.href = origin;
+    link.crossOrigin = "anonymous";
+    document.head.appendChild(link);
+  });
+})();
+
+// 4. Debounced scroll handler — prevents layout thrashing on scroll
+(function optimizeScrollHandler() {
+  let _scrollTicking = false;
+  const _scrollListeners = [];
+
+  window.addOptimizedScrollListener = function(fn) {
+    _scrollListeners.push(fn);
+  };
+
+  window.addEventListener("scroll", () => {
+    if (_scrollTicking) return;
+    _scrollTicking = true;
+    requestAnimationFrame(() => {
+      _scrollListeners.forEach(fn => fn());
+      _scrollTicking = false;
+    });
+  }, { passive: true });
+})();
+
+// 5. Periodically clean stale cache entries
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of _apiCache) {
+    if (now - val.ts > API_CACHE_TTL) _apiCache.delete(key);
+  }
+}, 5 * 60 * 1000);
+
 // ── Service Worker Registration ────────────────────────────────────────────
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -3516,19 +3634,29 @@ function initHomePage() {
   loadHistory();
   loadWatchlist();
   renderRecentlyViewed();
-  fetchMovies("/movie/now_playing", "newMovies", "movie");
-  fetchMovies("/movie/popular", "popularMovies", "movie");
-  fetchMovies("/movie/top_rated", "topRatedMovies", "movie");
-  fetchMovies("/tv/popular", "popularTV", "tv");
-  fetchMovies("/tv/top_rated", "topRatedTV", "tv");
+
+  // Fire all standard rows in parallel — no awaiting each other
+  Promise.all([
+    fetchMovies("/movie/now_playing",  "newMovies",      "movie"),
+    fetchMovies("/movie/popular",      "popularMovies",  "movie"),
+    fetchMovies("/movie/top_rated",    "topRatedMovies", "movie"),
+    fetchMovies("/tv/popular",         "popularTV",      "tv"),
+    fetchMovies("/tv/top_rated",       "topRatedTV",     "tv"),
+  ]);
+
+  // Personal rows (sequential is fine — they depend on history)
   renderContinueWatching();
   loadNewEpisodes();
   loadBecauseYouWatched();
   initHomeGenreFilter();
-  loadUpNext();
-  loadTopPicks();
-  loadGenrePersonalRows();
   loadTrendingTicker();
+
+  // Personalized rows — slightly delayed so core content loads first
+  setTimeout(() => {
+    loadUpNext();
+    loadTopPicks();
+    loadGenrePersonalRows();
+  }, 800);
 }
 
 // ── Section 17 — HD Vote System ──────────────────────────────────────────
