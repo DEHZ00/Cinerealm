@@ -7786,3 +7786,23 @@ body.theater-mode #watch-content {
   .cr-profile-hero { flex-direction: column; align-items: center; text-align: center; }
   .cr-profile-stats { justify-content: center; }
 }
+
+/* ── Role badges ─────────────────────────────────────────────────────────── */
+.cr-role-owner     { color: #ffd700; }
+.cr-role-developer { color: #a78bfa; }
+.cr-role-verified  { color: #60a5fa; }
+.cr-role-moderator { color: #34d399; }
+
+/* Owner special glow on avatar */
+.cr-avatar.cr-owner-avatar {
+  border-color: #ffd700;
+  box-shadow: 0 0 12px rgba(255,215,0,0.4);
+}
+
+/* Username badge next to name in reviews/chat */
+.cr-inline-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 1px 6px; border-radius: 4px;
+  font-size: 10px; font-weight: 800;
+  vertical-align: middle; margin-left: 4px;
+}

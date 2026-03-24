@@ -4533,6 +4533,7 @@ function openProfileDropdown(anchor) {
       <div style="min-width:0;">
         <div style="font-size:14px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
         ${username ? `<div style="font-size:12px;color:rgba(255,255,255,0.35);">@${username}</div>` : ""}
+        <div id="crDdRoleBadge" style="margin-top:4px;"></div>
       </div>
     </div>
     <div class="cr-dd-divider"></div>
@@ -4551,6 +4552,14 @@ function openProfileDropdown(anchor) {
   dd.style.right = (window.innerWidth - rect.right) + "px";
 
   document.getElementById("crEditProfileBtn").onclick = () => { dd.remove(); openEditProfileModal(); };
+
+  // Load role badge async
+  if (_crUser) {
+    getUserRole(_crUser.uid).then(role => {
+      const badgeEl = document.getElementById("crDdRoleBadge");
+      if (badgeEl && role) badgeEl.innerHTML = getRoleBadgeHTML(role);
+    });
+  }
 
   // Close on outside click
   setTimeout(() => {
@@ -4705,15 +4714,40 @@ function openEditProfileModal() {
 
 // ── Achievements system ───────────────────────────────────────────────────
 const ACHIEVEMENTS = [
-  { id: "first_watch",   icon: "🎬", name: "First Watch",     desc: "Watch your first title",          check: (h,w) => h.length >= 1 },
-  { id: "ten_movies",    icon: "🎞",  name: "Movie Buff",      desc: "Watch 10 movies",                 check: (h,w) => h.filter(x=>x.type==="movie").length >= 10 },
-  { id: "fifty_movies",  icon: "🏆",  name: "Cinephile",       desc: "Watch 50 movies",                 check: (h,w) => h.filter(x=>x.type==="movie").length >= 50 },
-  { id: "binge_watcher", icon: "📺",  name: "Binge Watcher",   desc: "Watch 5 TV episodes in one day",  check: (h,w) => { const today = new Date().toDateString(); return h.filter(x=>x.type==="tv"&&new Date(x.addedAt).toDateString()===today).length >= 5; }},
-  { id: "ten_watchlist", icon: "📋",  name: "Collector",       desc: "Add 10 items to watchlist",       check: (h,w) => w.length >= 10 },
-  { id: "genre_explorer",icon: "🌍",  name: "Genre Explorer",  desc: "Watch titles in 5 different genres", check: (h,w) => { const gs = new Set(); h.forEach(x => (x.genres||[]).forEach(g => gs.add(g))); return gs.size >= 5; }},
-  { id: "reviewer",      icon: "⭐",  name: "Critic",          desc: "Write your first review",          check: (h,w) => Object.keys(JSON.parse(localStorage.getItem("cr_reviews")||"{}")).length >= 1 },
-  { id: "watchparty",    icon: "👥",  name: "Party Host",      desc: "Host a watch party",               check: (h,w) => !!localStorage.getItem("cr_hosted_party") },
+  { id: "member",        icon: "🎬", name: "CineRealm User", desc: "Welcome to CineRealm!",              check: () => true },
+  { id: "first_watch",  icon: "▶️",  name: "First Watch",    desc: "Watch your first title",             check: (h,w) => h.length >= 1 },
+  { id: "ten_movies",   icon: "🎞",  name: "Movie Buff",     desc: "Watch 10 movies",                    check: (h,w) => h.filter(x=>x.type==="movie").length >= 10 },
+  { id: "fifty_movies", icon: "🎭",  name: "Film Freak",     desc: "Watch 50 movies",                    check: (h,w) => h.filter(x=>x.type==="movie").length >= 50 },
+  { id: "binge_watcher",icon: "📺",  name: "Binge Watcher",  desc: "Watch 5 TV episodes in one day",     check: (h,w) => { const today=new Date().toDateString(); return h.filter(x=>x.type==="tv"&&new Date(x.addedAt||0).toDateString()===today).length>=5; }},
+  { id: "ten_watchlist",icon: "📋",  name: "Collector",      desc: "Add 10 items to watchlist",          check: (h,w) => w.length >= 10 },
+  { id: "genre_explorer",icon:"🌍",  name: "Genre Explorer", desc: "Watch titles in 5 different genres", check: (h,w) => { const gs=new Set(); h.forEach(x=>(x.genres||[]).forEach(g=>gs.add(g))); return gs.size>=5; }},
+  { id: "reviewer",     icon: "⭐",  name: "Critic",         desc: "Write your first review",            check: (h,w) => Object.keys(JSON.parse(localStorage.getItem("cr_reviews")||"{}")).length>=1 },
+  { id: "watchparty",   icon: "👥",  name: "Party Host",     desc: "Host a watch party",                 check: (h,w) => !!localStorage.getItem("cr_hosted_party") },
+  { id: "top_reviewer", icon: "🏅",  name: "Top Reviewer",   desc: "Write 10 reviews",                   check: (h,w) => Object.keys(JSON.parse(localStorage.getItem("cr_reviews")||"{}")).length>=10 },
+  { id: "active",       icon: "🔥",  name: "Active",         desc: "Watched something in the last 7 days", check: (h,w) => { const week=Date.now()-7*24*60*60*1000; return h.some(x=>(x.addedAt||0)>=week); }},
 ];
+
+// ── Role badges (set manually in Firebase console) ────────────────────────
+const ROLE_BADGES = {
+  owner:     { icon: "👑", name: "Owner",     color: "#ffd700", bg: "rgba(255,215,0,0.12)",     border: "rgba(255,215,0,0.3)" },
+  developer: { icon: "🛠", name: "Developer", color: "#a78bfa", bg: "rgba(167,139,250,0.12)",   border: "rgba(167,139,250,0.3)" },
+  verified:  { icon: "✓",  name: "Verified",  color: "#60a5fa", bg: "rgba(96,165,250,0.12)",    border: "rgba(96,165,250,0.3)" },
+  moderator: { icon: "🛡", name: "Moderator", color: "#34d399", bg: "rgba(52,211,153,0.12)",    border: "rgba(52,211,153,0.3)" },
+};
+
+function getRoleBadgeHTML(role) {
+  if (!role || !ROLE_BADGES[role]) return "";
+  const r = ROLE_BADGES[role];
+  return `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:${r.bg};border:1px solid ${r.border};border-radius:999px;font-size:11px;font-weight:800;color:${r.color};">${r.icon} ${r.name}</span>`;
+}
+
+async function getUserRole(uid) {
+  try {
+    const { ref, get } = window._fbHelpers;
+    const snap = await get(ref(_fbDb, "users/" + uid + "/role"));
+    return snap.exists() ? snap.val() : null;
+  } catch(e) { return null; }
+}
 
 async function checkAndAwardAchievements() {
   if (!_crUser) return;
@@ -4836,6 +4870,80 @@ window.addEventListener("load", async () => {
     }
   });
 });
+
+
+// ── User Search ───────────────────────────────────────────────────────────
+async function searchUsers(query) {
+  if (!query || query.length < 2) return [];
+  try {
+    const { ref, get, orderByChild, startAt, endAt, query: dbQuery } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
+    const { getDatabase } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const db = getDatabase(app);
+
+    // Search usernames — Firebase doesn't support LIKE so we get a range
+    const q = query.toLowerCase();
+    const snap = await get(ref(db, "usernames"));
+    if (!snap.exists()) return [];
+
+    const matches = [];
+    snap.forEach(child => {
+      if (child.key.includes(q)) {
+        matches.push({ username: child.key, uid: child.val() });
+      }
+    });
+
+    // Fetch profiles for matches
+    const results = await Promise.all(matches.slice(0, 10).map(async m => {
+      try {
+        const pSnap = await get(ref(db, "users/" + m.uid + "/profile"));
+        const rSnap = await get(ref(db, "users/" + m.uid + "/role"));
+        return pSnap.exists() ? { ...pSnap.val(), role: rSnap.exists() ? rSnap.val() : null } : null;
+      } catch(e) { return null; }
+    }));
+
+    return results.filter(Boolean);
+  } catch(e) { return []; }
+}
+
+// Show user results in search overlay
+function renderUserSearchResults(users, container) {
+  if (!users.length) return;
+  const section = document.createElement("div");
+  section.innerHTML = `<div class="so-section-label">People</div>`;
+  const row = document.createElement("div");
+  row.style.cssText = "display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px;scrollbar-width:none;";
+  users.forEach(u => {
+    const avatar = u.avatarUrl || "";
+    const initial = (u.displayName || u.username || "?")[0].toUpperCase();
+    const card = document.createElement("a");
+    card.href = "/user/" + u.username;
+    card.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;width:72px;text-decoration:none;";
+    card.innerHTML = `
+      <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#ff2c2c,#cc0000);display:flex;align-items:center;justify-content:center;overflow:hidden;border:2px solid rgba(255,44,44,0.3);">
+        ${avatar ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;">` : `<span style="font-size:18px;font-weight:800;color:#fff;">${initial}</span>`}
+      </div>
+      <div style="font-size:11px;font-weight:700;color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;">${u.displayName || u.username}</div>
+      ${u.role ? `<div style="font-size:9px;color:${ROLE_BADGES[u.role]?.color||'#fff'};font-weight:800;">${ROLE_BADGES[u.role]?.icon||""} ${ROLE_BADGES[u.role]?.name||""}</div>` : `<div style="font-size:9px;color:rgba(255,255,255,0.3);">@${u.username}</div>`}
+    `;
+    row.appendChild(card);
+  });
+  section.appendChild(row);
+  container.insertBefore(section, container.firstChild);
+}
+
+// Patch runOverlaySearch to also search users
+const _origRunOverlaySearch = runOverlaySearch;
+window.runOverlaySearch = async function(query) {
+  await _origRunOverlaySearch(query);
+  // Also search users and prepend results
+  const users = await searchUsers(query);
+  if (users.length) {
+    const resultsEl = document.getElementById("searchOverlayResults");
+    if (resultsEl) renderUserSearchResults(users, resultsEl);
+  }
+};
 
 
 // ── Service Worker Registration ────────────────────────────────────────────

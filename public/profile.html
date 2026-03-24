@@ -85,14 +85,16 @@
     }
 
     const uid = uidSnap.val();
-    const [profileSnap, achSnap, historySnap] = await Promise.all([
+    const [profileSnap, achSnap, historySnap, roleSnap] = await Promise.all([
       get(ref(db, "users/" + uid + "/profile")),
       get(ref(db, "users/" + uid + "/achievements")),
       get(ref(db, "users/" + uid + "/history")),
+      get(ref(db, "users/" + uid + "/role")),
     ]);
 
     const profile = profileSnap.val();
     const achievements = achSnap.exists() ? achSnap.val() : {};
+    const role = roleSnap.exists() ? roleSnap.val() : null;
     const historyCount = historySnap.exists() ? Object.keys(historySnap.val()).length : 0;
 
     if (!profile) {
@@ -129,7 +131,7 @@
           ${avatar ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;">` : initial}
         </div>
         <div style="flex:1;min-width:0;">
-          <div class="cr-profile-name">${profile.displayName || profile.username}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><div class="cr-profile-name">${profile.displayName || profile.username}</div>${role && typeof ROLE_BADGES !== 'undefined' && ROLE_BADGES[role] ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:${ROLE_BADGES[role].bg};border:1px solid ${ROLE_BADGES[role].border};border-radius:999px;font-size:11px;font-weight:800;color:${ROLE_BADGES[role].color};">${ROLE_BADGES[role].icon} ${ROLE_BADGES[role].name}</span>` : ""}</div>
           <div class="cr-profile-username">@${profile.username}</div>
           ${profile.bio ? `<p class="cr-profile-bio">${profile.bio}</p>` : ""}
           <div class="cr-profile-stats">
