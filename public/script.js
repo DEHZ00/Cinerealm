@@ -801,6 +801,9 @@ async function showMovieDetails(movie, type) {
             </button>
             <button class="panel-share-btn" id="panelShareBtn" title="Share">⬆</button>
             <button class="panel-similar-btn" id="panelSimilarBtn" title="Find Similar">≈ Similar</button>
+            <button class="panel-review-btn" id="crReviewBtn">
+              ${getReview(movie.id, type) ? `✎ Your Review ${"★".repeat(getReview(movie.id, type).stars)}` : "★ Rate & Review"}
+            </button>
           </div>
           ${trailerBtn}
         </div>
@@ -831,10 +834,12 @@ async function showMovieDetails(movie, type) {
     if (btn) btn.textContent = isInWatchlist(movie.id, type) ? "★ In Watchlist" : "☆ Watchlist";
   };
 
-  // Rate & Review button
-  document.getElementById("crReviewBtn").onclick = () => {
-    openReviewModal(movie.id, type, title, getReview(movie.id, type));
-  };
+  // Rate & Review button — wired inside loadPanelReviews since it renders async
+  // but also handle if it's somehow in the main panel
+  const _directReviewBtn = document.getElementById("crReviewBtn");
+  if (_directReviewBtn) {
+    _directReviewBtn.onclick = () => openReviewModal(movie.id, type, title, getReview(movie.id, type));
+  }
 
   // Load reviews section async
   loadPanelReviews(movie.id, type, title);
@@ -3970,94 +3975,197 @@ window.addEventListener("load", () => {
   let _i=0;
   const _m=atob("SSBMb3ZlIFlvdSBBaXlhbmE=");
   const _sub=atob("WW91IG1ha2UgZXZlcnl0aGluZyBiZXR0ZXIgXHUyNzY1");
+  const _valid=[atob("QWl5YW5h"),atob("YWl5YW5h"),atob("QVJZQU5B"),atob("YWl5YW5h")];
+
+  // Desktop: Konami code
   document.addEventListener("keydown",function(e){
-    if(e.keyCode===_s[_i]){_i++;if(_i===_s.length){_i=0;_showSecret();}}else{_i=0;}
+    if(e.keyCode===_s[_i]){_i++;if(_i===_s.length){_i=0;_askName();}}else{_i=0;}
   });
+
+  // Mobile: tap logo 7 times + name prompt
+  window.addEventListener("load", () => {
+    const logo = document.querySelector("header h1, .header-left h1, #homeLink");
+    if (!logo) return;
+    let _tapCount = 0;
+    let _tapTimer = null;
+    logo.addEventListener("touchend", e => {
+      e.preventDefault();
+      _tapCount++;
+      clearTimeout(_tapTimer);
+      if (_tapCount === 5) { if(typeof showToast==="function") showToast("Keep going...", "info"); }
+      if (_tapCount >= 7) {
+        _tapCount = 0;
+        clearTimeout(_tapTimer);
+        _askName();
+        return;
+      }
+      _tapTimer = setTimeout(() => { _tapCount = 0; }, 700);
+    });
+  });
+
+  function _askName() {
+    const overlay = document.createElement("div");
+    overlay.style.cssText = "position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.85);backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;padding:24px;";
+    overlay.innerHTML = `
+      <div style="background:linear-gradient(160deg,#1a0010,#0d0008);border:1.5px solid rgba(255,150,200,0.25);border-radius:20px;padding:28px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.7);">
+        <div style="font-size:36px;margin-bottom:12px;">🐱</div>
+        <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:6px;">Who's there?</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:20px;">Enter your name to continue</div>
+        <input id="_cr_name_input" type="text" autocomplete="off" placeholder="Your name..."
+          style="width:100%;padding:11px 16px;border-radius:10px;border:1.5px solid rgba(255,150,200,0.2);background:rgba(255,255,255,0.06);color:#fff;font-size:15px;outline:none;text-align:center;box-sizing:border-box;font-family:inherit;"
+          oninput="this.style.borderColor='rgba(255,150,200,0.4)'">
+        <button id="_cr_name_submit" style="margin-top:14px;width:100%;padding:11px;background:linear-gradient(135deg,#ff69b4,#ff1493);border:none;border-radius:10px;color:#fff;font-weight:800;font-size:14px;cursor:pointer;">Continue ✨</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const input = overlay.querySelector("#_cr_name_input");
+    const submit = overlay.querySelector("#_cr_name_submit");
+    setTimeout(() => input.focus(), 100);
+
+    const check = () => {
+      const val = input.value.trim().toLowerCase();
+      overlay.remove();
+      if (_valid.map(v=>v.toLowerCase()).includes(val)) {
+        _showSecret();
+      } else {
+        // Wrong name — silently refresh after brief delay
+        setTimeout(() => window.location.reload(), 400);
+      }
+    };
+
+    submit.onclick = check;
+    input.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
+    overlay.addEventListener("click", e => { if (e.target === overlay) { overlay.remove(); } });
+  }
+
   function _showSecret(){
     if(document.getElementById("_cr_secret"))return;
     const o=document.createElement("div");
     o.id="_cr_secret";
     o.style.cssText="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;overflow:hidden;";
+
+    const style=document.createElement("style");
+    style.textContent=`
+      @keyframes _heartPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 30px rgba(255,105,180,0.8));}50%{transform:scale(1.25);filter:drop-shadow(0 0 60px rgba(255,20,147,1));}}
+      @keyframes _fadeUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+      @keyframes _shimmer{0%,100%{opacity:1;}50%{opacity:0.7;}}
+      @keyframes _catFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+      @keyframes _sparkle{0%{opacity:0;transform:scale(0) rotate(0deg);}50%{opacity:1;transform:scale(1) rotate(180deg);}100%{opacity:0;transform:scale(0) rotate(360deg);}}
+    `;
+    document.head.appendChild(style);
+
     o.innerHTML=`
-      <div id="_cr_s_bg" style="position:absolute;inset:0;background:#000;"></div>
+      <div id="_cr_s_bg" style="position:absolute;inset:0;background:linear-gradient(135deg,#1a0010,#0d0008,#1a0818);transition:background 2s ease;"></div>
       <canvas id="_cr_s_canvas" style="position:absolute;inset:0;pointer-events:none;"></canvas>
-      <div style="position:relative;z-index:2;text-align:center;padding:40px;max-width:520px;">
-        <div id="_cr_s_heart" style="font-size:80px;line-height:1;margin-bottom:24px;animation:_heartPulse 1.2s ease-in-out infinite;">&#10084;</div>
-        <div id="_cr_s_msg" style="font-size:42px;font-weight:900;color:#fff;letter-spacing:-1px;margin-bottom:12px;font-family:'Georgia',serif;opacity:0;transform:translateY(20px);transition:all 0.8s ease 0.3s;">${_m}</div>
-        <div id="_cr_s_sub" style="font-size:16px;color:rgba(255,255,255,0.6);letter-spacing:2px;text-transform:uppercase;opacity:0;transform:translateY(10px);transition:all 0.8s ease 0.7s;">${_sub}</div>
-        <div style="margin-top:48px;opacity:0;transition:opacity 0.5s ease 1.5s;" id="_cr_s_btn_wrap">
-          <button onclick="document.getElementById('_cr_secret').remove();document.body.style.overflow='';_cleanupSecret();" style="padding:12px 32px;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.3);border-radius:999px;color:rgba(255,255,255,0.7);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.18)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">Back to CineRealm</button>
+
+      <!-- Floating cat top left -->
+      <div style="position:absolute;top:40px;left:40px;font-size:40px;animation:_catFloat 3s ease-in-out infinite;opacity:0.7;">🐱</div>
+      <!-- Floating cat top right -->
+      <div style="position:absolute;top:60px;right:50px;font-size:32px;animation:_catFloat 2.5s ease-in-out infinite 0.5s;opacity:0.6;">🐾</div>
+      <!-- Matcha bottom left -->
+      <div style="position:absolute;bottom:80px;left:40px;font-size:28px;animation:_catFloat 4s ease-in-out infinite 1s;opacity:0.5;">🍵</div>
+      <!-- Sparkle corners -->
+      <div style="position:absolute;top:100px;right:80px;font-size:20px;animation:_sparkle 2s ease-in-out infinite;">✨</div>
+      <div style="position:absolute;bottom:120px;right:60px;font-size:16px;animation:_sparkle 2.5s ease-in-out infinite 0.8s;">✨</div>
+      <div style="position:absolute;top:150px;left:80px;font-size:14px;animation:_sparkle 3s ease-in-out infinite 0.3s;">🌸</div>
+
+      <div style="position:relative;z-index:2;text-align:center;padding:40px;max-width:560px;">
+
+        <!-- Big heart -->
+        <div id="_cr_s_heart" style="font-size:90px;line-height:1;margin-bottom:20px;animation:_heartPulse 1.4s ease-in-out infinite;display:inline-block;">🩷</div>
+
+        <!-- Cats row -->
+        <div style="font-size:28px;margin-bottom:20px;opacity:0;animation:_fadeUp 0.8s ease 0.2s forwards;letter-spacing:8px;">🐱 🌸 🐱</div>
+
+        <!-- Main message -->
+        <div id="_cr_s_msg" style="font-size:46px;font-weight:900;color:#fff;letter-spacing:-1px;margin-bottom:10px;font-family:'Georgia',serif;opacity:0;animation:_fadeUp 0.9s ease 0.5s forwards;text-shadow:0 0 40px rgba(255,105,180,0.8),0 0 80px rgba(255,20,147,0.4);">
+          I Love You Aiyana
+        </div>
+
+        <!-- Pink decorative line -->
+        <div style="width:120px;height:3px;background:linear-gradient(90deg,transparent,#ff69b4,#ff1493,#ff69b4,transparent);border-radius:999px;margin:0 auto 14px;opacity:0;animation:_fadeUp 0.8s ease 0.8s forwards;"></div>
+
+        <!-- Subtitle -->
+        <div id="_cr_s_sub" style="font-size:15px;color:rgba(255,200,230,0.75);letter-spacing:3px;text-transform:uppercase;opacity:0;animation:_fadeUp 0.8s ease 1s forwards;">
+          You make everything better 💕
+        </div>
+
+        <!-- Secondary message -->
+        <div style="margin-top:16px;font-size:13px;color:rgba(255,182,193,0.5);opacity:0;animation:_fadeUp 0.8s ease 1.4s forwards;font-style:italic;">
+          🍵 &nbsp; your fav matcha enjoyer &nbsp; 🍵
+        </div>
+
+        <!-- Button -->
+        <div style="margin-top:40px;opacity:0;animation:_fadeUp 0.6s ease 1.8s forwards;">
+          <button onclick="document.getElementById('_cr_secret').remove();document.body.style.overflow='';if(window._cleanupSecret)_cleanupSecret();" style="padding:13px 36px;background:linear-gradient(135deg,rgba(255,105,180,0.2),rgba(255,20,147,0.15));border:1.5px solid rgba(255,105,180,0.4);border-radius:999px;color:rgba(255,200,230,0.8);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1.5px;transition:all 0.25s;backdrop-filter:blur(10px);" onmouseover="this.style.background='linear-gradient(135deg,rgba(255,105,180,0.35),rgba(255,20,147,0.25))';this.style.color='#fff'" onmouseout="this.style.background='linear-gradient(135deg,rgba(255,105,180,0.2),rgba(255,20,147,0.15))';this.style.color='rgba(255,200,230,0.8)'">
+            Back to CineRealm 🌸
+          </button>
         </div>
       </div>
     `;
-    const style=document.createElement("style");
-    style.textContent=`@keyframes _heartPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 20px rgba(255,100,150,0.6));}50%{transform:scale(1.2);filter:drop-shadow(0 0 40px rgba(255,100,150,0.9));}} @keyframes _fadeIn{from{opacity:0}to{opacity:1}}`;
-    document.head.appendChild(style);
+
     document.body.style.overflow="hidden";
     document.body.appendChild(o);
 
-    // Animate text in
-    setTimeout(()=>{
-      document.getElementById("_cr_s_msg").style.opacity="1";
-      document.getElementById("_cr_s_msg").style.transform="translateY(0)";
-    },100);
-    setTimeout(()=>{
-      document.getElementById("_cr_s_sub").style.opacity="1";
-      document.getElementById("_cr_s_sub").style.transform="translateY(0)";
-    },500);
-    setTimeout(()=>{
-      document.getElementById("_cr_s_btn_wrap").style.opacity="1";
-    },1200);
-
-    // Heart color pulse background
+    // Animated gradient background
     const bg=document.getElementById("_cr_s_bg");
-    const colors=["#1a0010","#0d0008","#1a0818","#08000d","#110008"];
-    let ci=0;
-    const bgInterval=setInterval(()=>{
-      ci=(ci+1)%colors.length;
-      bg.style.background=colors[ci];
-      bg.style.transition="background 1.2s ease";
-    },1200);
+    const bgs=[
+      "linear-gradient(135deg,#1a0010,#0d0008,#1a0818)",
+      "linear-gradient(135deg,#200015,#0a0005,#1f0a1a)",
+      "linear-gradient(135deg,#180010,#120008,#1c0d18)",
+      "linear-gradient(135deg,#1f0018,#0f0008,#1a0a1f)",
+    ];
+    let bi=0;
+    const bgI=setInterval(()=>{bi=(bi+1)%bgs.length;bg.style.background=bgs[bi];},2000);
 
-    // Particle hearts canvas
+    // Particle canvas
     const canvas=document.getElementById("_cr_s_canvas");
     canvas.width=window.innerWidth;
     canvas.height=window.innerHeight;
     const ctx=canvas.getContext("2d");
+
+    // Rich particles — mix of hearts, flowers, cats, sparkles, matcha
+    const chars=["🩷","💕","🌸","✨","💗","🐾","🌺","💝","🌷","💖","🩷","🌸","💕","✨","🩷"];
     const particles=[];
-    for(let i=0;i<60;i++){
+    for(let i=0;i<80;i++){
       particles.push({
         x:Math.random()*canvas.width,
-        y:canvas.height+Math.random()*200,
-        size:Math.random()*20+8,
-        speed:Math.random()*1.5+0.5,
-        opacity:Math.random()*0.6+0.2,
-        drift:(Math.random()-0.5)*0.8,
-        char:Math.random()>0.3?"❤":"✨"
+        y:canvas.height+Math.random()*300,
+        size:Math.random()*24+8,
+        speed:Math.random()*1.2+0.3,
+        opacity:Math.random()*0.7+0.2,
+        drift:(Math.random()-0.5)*0.6,
+        wobble:Math.random()*Math.PI*2,
+        wobbleSpeed:Math.random()*0.03+0.01,
+        char:chars[Math.floor(Math.random()*chars.length)]
       });
     }
-    function drawParticles(){
+
+    let animId;
+    function draw(){
       ctx.clearRect(0,0,canvas.width,canvas.height);
       particles.forEach(p=>{
         p.y-=p.speed;
-        p.x+=p.drift;
-        p.opacity-=0.0015;
-        if(p.y<-50||p.opacity<=0){
+        p.wobble+=p.wobbleSpeed;
+        p.x+=Math.sin(p.wobble)*0.8+p.drift;
+        p.opacity-=0.0008;
+        if(p.y<-60||p.opacity<=0){
           p.y=canvas.height+20;
           p.x=Math.random()*canvas.width;
-          p.opacity=Math.random()*0.5+0.2;
+          p.opacity=Math.random()*0.6+0.2;
+          p.char=chars[Math.floor(Math.random()*chars.length)];
         }
         ctx.globalAlpha=p.opacity;
         ctx.font=p.size+"px serif";
         ctx.fillText(p.char,p.x,p.y);
       });
       ctx.globalAlpha=1;
+      if(document.getElementById("_cr_secret"))animId=requestAnimationFrame(draw);
     }
-    const animFrame=requestAnimationFrame(function loop(){
-      drawParticles();
-      if(document.getElementById("_cr_secret"))requestAnimationFrame(loop);
-    });
-    window._cleanupSecret=function(){clearInterval(bgInterval);cancelAnimationFrame(animFrame);};
+    draw();
+
+    window._cleanupSecret=function(){clearInterval(bgI);cancelAnimationFrame(animId);};
   }
 })();
 
