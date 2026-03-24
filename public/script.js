@@ -303,6 +303,140 @@ function isInWatchlist(id, type) {
   return watchlistData.some(m => m.id === id && m.type === type);
 }
 
+// Remove from watchlist directly from card
+function removeFromWatchlist(id, type, btn) {
+  const idx = watchlistData.findIndex(m => m.id === id && m.type === type);
+  if (idx > -1) {
+    watchlistData.splice(idx, 1);
+    saveWatchlist();
+    updateWatchlistBadge();
+    showToast("Removed from Watchlist", "info");
+    // Hide the remove button
+    if (btn) btn.style.display = "none";
+  }
+}
+
+// ── Person Filmography Panel ──────────────────────────────────────────────
+let _personPanelOpen = false;
+
+async function showPersonPanel(personId, personName) {
+  // Create or reuse person panel
+  let panel = document.getElementById("personPanel");
+  let overlay = document.getElementById("personOverlay");
+
+  if (!panel) {
+    overlay = document.createElement("div");
+    overlay.id = "personOverlay";
+    overlay.className = "person-overlay";
+    overlay.onclick = closePersonPanel;
+    document.body.appendChild(overlay);
+
+    panel = document.createElement("div");
+    panel.id = "personPanel";
+    panel.className = "person-panel";
+    document.body.appendChild(panel);
+  }
+
+  // Show loading state
+  overlay.classList.add("open");
+  panel.classList.add("open");
+  _personPanelOpen = true;
+
+  panel.innerHTML = `
+    <div class="person-panel-header">
+      <button class="person-panel-close" onclick="closePersonPanel()">✕</button>
+      <h3 class="person-panel-name">${personName}</h3>
+    </div>
+    <div class="person-panel-body">
+      <div class="person-panel-loading">
+        <div class="games-loading-spinner"></div>
+        <p>Loading filmography…</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    const [details, credits] = await Promise.all([
+      apiCall("/person/" + personId),
+      apiCall("/person/" + personId + "/combined_credits")
+    ]);
+
+    const bio = details?.biography || "";
+    const photo = details?.profile_path ? IMG_BASE + details.profile_path : "";
+    const known = details?.known_for_department || "Acting";
+    const bday  = details?.birthday ? new Date(details.birthday).getFullYear() : "";
+
+    // Sort credits by popularity
+    const allCredits = [
+      ...(credits?.cast || []),
+      ...(credits?.crew?.filter(c => ["Director","Creator","Writer"].includes(c.job)) || [])
+    ]
+      .filter(c => c.poster_path)
+      .sort((a,b) => (b.popularity||0) - (a.popularity||0));
+
+    // Deduplicate by id
+    const seen = new Set();
+    const unique = allCredits.filter(c => {
+      if (seen.has(c.id)) return false;
+      seen.add(c.id);
+      return true;
+    }).slice(0, 40);
+
+    panel.innerHTML = `
+      <div class="person-panel-header">
+        <button class="person-panel-close" onclick="closePersonPanel()">✕</button>
+        <h3 class="person-panel-name">${personName}</h3>
+      </div>
+      <div class="person-panel-body">
+        <div class="person-panel-info">
+          ${photo ? `<img src="${photo}" class="person-panel-photo" alt="${personName}">` : ""}
+          <div class="person-panel-meta">
+            <div class="person-panel-known">${known}${bday ? ` · Born ${bday}` : ""}</div>
+            ${bio ? `<p class="person-panel-bio">${bio.slice(0, 300)}${bio.length > 300 ? "…" : ""}</p>` : ""}
+          </div>
+        </div>
+
+        <div class="person-panel-section-title">Known For (${unique.length})</div>
+        <div class="person-filmography">
+          ${unique.map(c => {
+            const t = c.title || c.name || "";
+            const mediaType = c.media_type || (c.title ? "movie" : "tv");
+            const score = c.vote_average ? c.vote_average.toFixed(1) : null;
+            return `
+              <div class="person-film-card" onclick="closePersonPanel();setTimeout(()=>showMovieDetails({id:${c.id},poster_path:'${c.poster_path}',title:'${t.replace(/'/g,"\\'")}'},'${mediaType}'),200)">
+                <div style="position:relative;">
+                  <img src="${IMG_BASE + c.poster_path}" alt="${t}" loading="lazy">
+                  ${score ? `<span class="card-score-badge ${parseFloat(score)>=7.5?'gold':parseFloat(score)>=6?'silver':'dim'}" style="font-size:9px;padding:2px 5px;">★${score}</span>` : ""}
+                </div>
+                <div class="person-film-title">${t}</div>
+                ${c.character ? `<div class="person-film-char">${c.character}</div>` : ""}
+                ${c.job ? `<div class="person-film-char">${c.job}</div>` : ""}
+              </div>
+            `;
+          }).join("")}
+        </div>
+
+        ${ unique.length === 0 ? '<p style="color:rgba(255,255,255,0.3);padding:20px;">No credits found</p>' : "" }
+      </div>
+    `;
+  } catch(e) {
+    panel.querySelector(".person-panel-body").innerHTML = `<p style="color:rgba(255,255,255,0.4);padding:24px;">Failed to load filmography</p>`;
+  }
+}
+
+function closePersonPanel() {
+  const panel   = document.getElementById("personPanel");
+  const overlay = document.getElementById("personOverlay");
+  if (panel)   panel.classList.remove("open");
+  if (overlay) overlay.classList.remove("open");
+  _personPanelOpen = false;
+}
+
+// Close person panel on Escape
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && _personPanelOpen) closePersonPanel();
+});
+
 // ---- Movie/TV Card Creation ----
 function createMovieCard(movie, type = "movie") {
   const card = document.createElement("div");
@@ -326,6 +460,13 @@ function createMovieCard(movie, type = "movie") {
   const typeBadge = type === "tv" ? "TV" : (type === "anime" ? "Anime" : "Movie");
   const inWL = isInWatchlist(movie.id, type);
 
+  // Rating badge — show if score exists
+  const score = movie.vote_average ? movie.vote_average.toFixed(1) : null;
+  const scoreBadge = score && parseFloat(score) > 0 ? `
+    <span class="card-score-badge ${parseFloat(score) >= 7.5 ? 'gold' : parseFloat(score) >= 6 ? 'silver' : 'dim'}">
+      ★ ${score}
+    </span>` : "";
+
   // Blur-up: use w92 thumbnail as placeholder, swap to w500 on load
   const thumbSrc = "https://image.tmdb.org/t/p/w92" + movie.poster_path;
   const fullSrc  = IMG_BASE + movie.poster_path;
@@ -339,6 +480,8 @@ function createMovieCard(movie, type = "movie") {
         class="card-img-blur"
         loading="lazy">
       <span class="card-type-badge">${typeBadge}</span>
+      ${scoreBadge}
+      ${inWL ? `<button class="card-remove-wl" title="Remove from Watchlist" onclick="event.stopPropagation();removeFromWatchlist(${movie.id},'${type}',this)">✕</button>` : ""}
       ${percent > 0 ? '<div class="progress-bar" style="width:' + percent + '%"></div>' : ""}
       <div class="card-hover-shine"></div>
       <p>
@@ -507,7 +650,7 @@ async function showMovieDetails(movie, type) {
     <div class="panel-section-title">Cast</div>
     <div class="panel-cast-row">
       ${castItems.map(c => `
-        <div class="panel-cast-card" onclick="searchCast('${c.name.replace(/'/g, "\\'")}')">
+        <div class="panel-cast-card" onclick="showPersonPanel(${c.id},'${c.name.replace(/'/g, "\\'")}')">
           <img src="${c.profile_path ? IMG_BASE + c.profile_path : ""}"
                alt="${c.name}"
                class="panel-cast-img"
@@ -554,6 +697,17 @@ async function showMovieDetails(movie, type) {
     }
   }
 
+  // Director
+  const director = credits?.crew?.find(c => c.job === "Director") ||
+                   credits?.crew?.find(c => c.job === "Creator");
+  const directorHTML = director ? `
+    <div class="panel-director" onclick="showPersonPanel(${director.id},'${director.name.replace(/'/g,"\\'")}')">
+      <span class="panel-director-label">${director.job}</span>
+      <span class="panel-director-name">${director.name}</span>
+      <span class="panel-director-arrow">→</span>
+    </div>
+  ` : "";
+
   panelBody.innerHTML = `
     ${backdrop ? `<div class="panel-backdrop" style="background-image:url(${backdrop})"></div>` : ""}
 
@@ -572,6 +726,7 @@ async function showMovieDetails(movie, type) {
           <div class="panel-genres">
             ${(data.genres||[]).map(g => `<span class="genre-tag">${g.name}</span>`).join("")}
           </div>
+          ${directorHTML}
           <p class="panel-overview">${overview}</p>
           <div class="panel-actions">
             <a href="${watchUrl}" class="details-play-btn">▶ Play Now</a>
@@ -582,6 +737,7 @@ async function showMovieDetails(movie, type) {
               ${isWatched ? "✓" : "○"}
             </button>
             <button class="panel-share-btn" id="panelShareBtn" title="Share">⬆</button>
+            <button class="panel-similar-btn" id="panelSimilarBtn" title="Find Similar">≈ Similar</button>
           </div>
           ${trailerBtn}
         </div>
@@ -606,6 +762,42 @@ async function showMovieDetails(movie, type) {
     toggleWatchlist(movie.id, type, movie);
     const btn = document.getElementById("panelWatchlistBtn");
     if (btn) btn.textContent = isInWatchlist(movie.id, type) ? "★ In Watchlist" : "☆ Watchlist";
+  };
+
+  // Find Similar — fetch recommendations and show in panel
+  document.getElementById("panelSimilarBtn").onclick = async () => {
+    const btn = document.getElementById("panelSimilarBtn");
+    btn.textContent = "Loading…";
+    btn.disabled = true;
+    try {
+      const recs = await apiCall("/" + type + "/" + movie.id + "/recommendations");
+      const results = (recs?.results || []).filter(i => i.poster_path).slice(0, 20);
+      if (!results.length) { showToast("No recommendations found", "info"); btn.textContent = "≈ Similar"; btn.disabled = false; return; }
+
+      // Scroll to similar section or add one
+      let simSection = panelBody.querySelector(".panel-similar-row");
+      if (simSection) {
+        simSection.scrollIntoView({ behavior: "smooth" });
+      } else {
+        const div = document.createElement("div");
+        div.innerHTML = `
+          <div class="panel-section-title">Recommended For You</div>
+          <div class="panel-similar-row">
+            ${results.map(s => `
+              <div class="panel-similar-card" onclick="showMovieDetails({id:${s.id},poster_path:'${s.poster_path}',title:'${(s.title||s.name||"").replace(/'/g,"\\'")}'},'${type}')">
+                <img src="${IMG_BASE + s.poster_path}" alt="${s.title||s.name}" loading="lazy">
+                <div class="panel-similar-title">${s.title||s.name||""}</div>
+              </div>
+            `).join("")}
+          </div>`;
+        panelBody.querySelector(".panel-main").appendChild(div);
+        div.scrollIntoView({ behavior: "smooth" });
+      }
+    } catch(e) {
+      showToast("Failed to load recommendations", "error");
+    }
+    btn.textContent = "≈ Similar";
+    btn.disabled = false;
   };
 
   document.getElementById("panelWatchedBtn").onclick = () => {
@@ -1433,6 +1625,30 @@ async function renderContinueWatching() {
 
       const card = createMovieCard(data, type);
       if (!card) continue;
+
+      // Add remove button to continue watching cards
+      const imgWrapper = card.querySelector(".card-image-wrapper");
+      if (imgWrapper) {
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "card-cw-remove";
+        removeBtn.title = "Remove from Continue Watching";
+        removeBtn.innerHTML = "✕";
+        removeBtn.onclick = (e) => {
+          e.stopPropagation();
+          // Remove from history
+          historyData = historyData.filter(h => {
+            const hid = h.tmdbId || h.id;
+            return !(hid == tmdbId && h.type === type);
+          });
+          saveHistory();
+          card.style.transition = "opacity 0.3s, transform 0.3s";
+          card.style.opacity = "0";
+          card.style.transform = "scale(0.9)";
+          setTimeout(() => { card.remove(); }, 300);
+          showToast("Removed from Continue Watching", "info");
+        };
+        imgWrapper.appendChild(removeBtn);
+      }
 
       const label = card.querySelector("p");
       if (label && entry.progress) {
