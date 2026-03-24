@@ -3862,15 +3862,7 @@ function _showChangelogPopup(version, items, dismissKey) {
   bell.style.cssText = "background:none;border:none;color:rgba(255,255,255,0.5);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:8px;transition:color 0.15s;position:relative;display:flex;align-items:center;flex-shrink:0;";
   bell.innerHTML = `<span>🔔</span><span id="crNotifDot" style="position:absolute;top:2px;right:4px;width:7px;height:7px;border-radius:50%;background:#ff2c2c;display:none;"></span>`;
   bell.title = "Notifications";
-
-  // On mobile, put bell inside header-left so it's always in the top row
-  // On desktop, append to header normally
-  const headerLeft = header.querySelector(".header-left");
-  if (headerLeft) {
-    headerLeft.appendChild(bell);
-  } else {
-    header.appendChild(bell);
-  }
+  header.appendChild(bell);
 
   // Dropdown
   const dropdown = document.createElement("div");
@@ -4561,13 +4553,7 @@ function _updateProfileUI() {
     `;
   }
 
-  // Put in header-left so it's visible on mobile in the top row
-  const headerLeft = header.querySelector(".header-left");
-  if (headerLeft) {
-    headerLeft.appendChild(btn);
-  } else {
-    header.appendChild(btn);
-  }
+  header.appendChild(btn);
 }
 
 // ── Profile dropdown ──────────────────────────────────────────────────────
