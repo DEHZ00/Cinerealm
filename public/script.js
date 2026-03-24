@@ -3331,7 +3331,8 @@ window.deleteReview = async function(id, type) {
   try {
     const { getDatabase, ref, remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
     const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-    const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
+    const _cfg = typeof FB_CONFIG !== "undefined" ? FB_CONFIG : { apiKey:"AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM", databaseURL:"https://cinerealm-8b7b9-default-rtdb.firebaseio.com", projectId:"cinerealm-8b7b9" };
+    const app = getApps().length ? getApps()[0] : initializeApp(_cfg);
     const db = getDatabase(app);
     await remove(ref(db, "reviews/" + type + "_" + id + "/" + _getDeviceId()));
   } catch(e) {}
@@ -3854,8 +3855,11 @@ const CR_CHANGELOG = [
           .sort((a,b) => (b.timestamp||0) - (a.timestamp||0))
           .slice(0, 5);
         alerts.forEach(a => notifs.push({
-          icon: "⚠️", title: "Broken Source", body: a.message,
-          time: a.timestamp ? new Date(a.timestamp).toLocaleDateString() : "", highlight: false
+          icon: a.isRelease ? "🚀" : a.type === "success" ? "✅" : a.type === "warning" ? "⚠️" : "📢",
+          title: a.title || "CineRealm Alert",
+          body: a.message,
+          time: a.timestamp ? new Date(a.timestamp).toLocaleDateString() : "",
+          highlight: !!a.isRelease
         }));
       }
     } catch(e) {}
