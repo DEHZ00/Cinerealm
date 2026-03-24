@@ -262,6 +262,8 @@ const routes = {
   "/games-proxy": "games-proxy.html",
 };
 
+app.get("/user/:username", (req, res) => sendHTML(res, path.join(__dirname, "public", "profile.html")));
+
 app.get("/watch/:type/:id", (req, res) => sendHTML(res, path.join(__dirname, "public", "watch", "watch.html")));
 app.get("/watch/:type/:id/season/:season/episode/:episode", (req, res) => sendHTML(res, path.join(__dirname, "public", "watch", "watch.html")));
 
