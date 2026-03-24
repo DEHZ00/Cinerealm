@@ -294,43 +294,108 @@
 
     <!-- ── NOTIFICATIONS ── -->
     <div class="adm-panel" id="tab-notifications">
-      <!-- Site banner -->
-      <div class="adm-section">
-        <div class="adm-section-header"><div class="adm-section-title">Site Banner (notification.json)</div></div>
-        <p style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:16px;">This shows as a banner at the top of all pages. Edit notification.json in your repo to update it. Current status shown below.</p>
-        <div id="admNotifStatus"><div class="adm-loading">Checking…</div></div>
+
+      <!-- 🚀 Release Announcement -->
+      <div class="adm-section" style="border-color:rgba(255,44,44,0.2);background:rgba(255,44,44,0.04);">
+        <div class="adm-section-header">
+          <div class="adm-section-title" style="color:#ff6b6b;">🚀 Release Announcement</div>
+          <span style="font-size:11px;color:rgba(255,255,255,0.25);">Sends to bell + shows on-screen popup for all users</span>
+        </div>
+        <div class="adm-notif-form">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:160px;">
+              <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;">Version Tag</div>
+              <input class="adm-input" id="relVersion" placeholder="e.g. v2.0, v2.1" value="v2.0">
+            </div>
+            <div style="flex:2;min-width:200px;">
+              <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;">Headline</div>
+              <input class="adm-input" id="relTitle" placeholder="e.g. CineRealm v2 is Live 🎬" value="CineRealm v2 is Live 🎬">
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;">What's New — add one item per line</div>
+            <textarea class="adm-input adm-textarea" id="relChangelog" style="min-height:140px;font-size:12px;line-height:1.6;">🔐 Profiles & Login — sign in with Google or email
+👑 Role Badges — Owner, Developer, Verified, Moderator
+🔍 Search V2 — fullscreen overlay, voice search, filters
+⭐ Reviews & Ratings — rate and review any title
+📋 Watchlist Lists — custom folders, status tracking
+👥 Watch Party Sync — host pushes episodes to guests
+👻 Tab Cloak — disguise CineRealm as other sites
+⚡ Anime Page — powered by AniList
+🏆 Achievements — 11 badges to unlock
+📱 Mobile Upgrades — pull to refresh, swipe cards
+🔔 Notification Center — alerts in header bell
+🎨 OLED Mode — pure black theme
+♥ Donations — support the site
+🛠 Admin Dashboard — manage everything at /admin</textarea>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <button class="adm-btn adm-btn-primary" onclick="admSendRelease()">🚀 Send Release Announcement</button>
+            <span style="font-size:11px;color:rgba(255,255,255,0.25);">Posts to 🔔 bell + shows popup for users who haven't seen this version</span>
+          </div>
+          <div id="relMsg" style="font-size:12px;min-height:18px;"></div>
+        </div>
       </div>
 
-      <!-- Admin alert composer -->
+      <!-- Site banner status -->
       <div class="adm-section">
-        <div class="adm-section-header"><div class="adm-section-title">Send Admin Alert (appears in 🔔 bell)</div></div>
+        <div class="adm-section-header">
+          <div class="adm-section-title">Site Banner (notification.json)</div>
+          <span style="font-size:11px;color:rgba(255,255,255,0.25);">Top-of-page banner on all pages</span>
+        </div>
+        <div id="admNotifStatus"><div class="adm-loading">Checking…</div></div>
+        <div style="margin-top:14px;padding:12px;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.07);">
+          <div style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:8px;">To control the banner</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.45);line-height:1.7;">
+            Edit <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:4px;">notification.json</code> in your repo root:
+            <pre style="background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;margin:8px 0;font-size:11px;overflow-x:auto;color:rgba(255,255,255,0.7);">{
+  "active": true,
+  "type": "info",
+  "title": "CineRealm v2 is Live!",
+  "message": "Profiles, reviews, achievements and more.",
+  "updated": "2026"
+}</pre>
+            Set <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:4px;">"active": false</code> to hide it. Push to deploy.
+          </div>
+        </div>
+      </div>
+
+      <!-- Bell alert composer -->
+      <div class="adm-section">
+        <div class="adm-section-header"><div class="adm-section-title">Send Custom Bell Alert 🔔</div></div>
         <div class="adm-notif-form">
           <input class="adm-input" id="admAlertTitle" placeholder="Alert title e.g. Maintenance Tonight">
-          <textarea class="adm-input adm-textarea" id="admAlertMsg" placeholder="Message…"></textarea>
-          <select class="adm-input adm-select" id="admAlertType">
+          <textarea class="adm-input adm-textarea" id="admAlertMsg" placeholder="Message…" style="min-height:60px;"></textarea>
+          <select class="adm-input adm-select" id="admAlertType" style="max-width:200px;">
             <option value="info">ℹ️ Info</option>
             <option value="warning">⚠️ Warning</option>
-            <option value="success">✅ Success</option>
+            <option value="success">✅ Success / Resolved</option>
           </select>
-          <button class="adm-btn adm-btn-primary" style="width:fit-content;" onclick="admSendAlert()">Send Alert</button>
+          <button class="adm-btn adm-btn-primary" style="width:fit-content;" onclick="admSendAlert()">Send to Bell</button>
         </div>
+      </div>
+
+      <!-- All sent alerts -->
+      <div class="adm-section">
+        <div class="adm-section-header">
+          <div class="adm-section-title">Sent Alerts History</div>
+          <button class="adm-btn adm-btn-red" onclick="admClearAllAlerts()">Clear All</button>
+        </div>
+        <div id="admAllAlerts"><div class="adm-loading">Loading…</div></div>
       </div>
 
       <!-- Push notification guide -->
       <div class="adm-section">
         <div class="adm-section-header"><div class="adm-section-title">📲 Push Notifications (FCM)</div></div>
         <div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.7;">
-          <p style="margin:0 0 10px;">To send push notifications to all subscribed users:</p>
           <ol style="margin:0 0 10px;padding-left:20px;">
-            <li>Go to <a href="https://console.firebase.google.com" target="_blank" style="color:#ff6b6b;">Firebase Console</a></li>
-            <li>Select <strong style="color:#fff;">cinerealm-8b7b9</strong></li>
+            <li>Go to <a href="https://console.firebase.google.com" target="_blank" style="color:#ff6b6b;">Firebase Console</a> → your project</li>
             <li>Click <strong style="color:#fff;">Messaging</strong> → <strong style="color:#fff;">New Campaign</strong></li>
             <li>Choose <strong style="color:#fff;">Firebase Notification messages</strong></li>
-            <li>Set title, body, and optionally a link</li>
-            <li>Under <strong style="color:#fff;">Target</strong> → select your app</li>
-            <li>Schedule or send immediately</li>
+            <li>Set title, body, optionally a click URL</li>
+            <li>Target → select your web app → Send</li>
           </ol>
-          <p style="margin:0;color:rgba(255,255,255,0.3);">Users who clicked "Allow" on the notification prompt will receive them. iOS Safari requires the user to add the site to their home screen first.</p>
+          <p style="margin:0;color:rgba(255,255,255,0.3);">Users who clicked Allow on the notification prompt receive push notifs. iOS requires adding site to home screen first.</p>
         </div>
       </div>
     </div>
@@ -418,7 +483,7 @@ function switchTab(name) {
   if (name === "overview")      loadOverview();
   if (name === "reports")       loadReports();
   if (name === "reviews")       loadReviews();
-  if (name === "notifications") loadNotifStatus();
+  if (name === "notifications") { loadNotifStatus(); loadAllAlerts(); }
   if (name === "maintenance")   checkMaintStatus();
 }
 
@@ -789,13 +854,86 @@ async function admSendAlert() {
   try {
     const { push } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
     await push(window._admRef(_db, "admin_alerts"), {
-      title, message: msg, type, timestamp: Date.now(),
-      sentBy: _admUser.uid,
+      title, message: msg, type, timestamp: Date.now(), sentBy: _admUser.uid,
     });
     showToast("Alert sent ✓", "success");
     document.getElementById("admAlertTitle").value = "";
     document.getElementById("admAlertMsg").value   = "";
+    loadAllAlerts();
   } catch(e) { showToast("Failed: " + e.message, "error"); }
+}
+
+async function admSendRelease() {
+  const version  = document.getElementById("relVersion").value.trim();
+  const title    = document.getElementById("relTitle").value.trim();
+  const changelog= document.getElementById("relChangelog").value.trim();
+  const msgEl    = document.getElementById("relMsg");
+  if (!version || !title) { msgEl.textContent = "Fill in version and headline"; msgEl.style.color = "#ff6b6b"; return; }
+
+  try {
+    const { push } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+
+    // 1. Post to bell as a release alert
+    await push(window._admRef(_db, "admin_alerts"), {
+      title: `🚀 ${title}`,
+      message: changelog.split("\n").filter(Boolean).slice(0,3).join(" · ") + (changelog.split("\n").length > 3 ? " · and more" : ""),
+      type: "success",
+      isRelease: true,
+      version,
+      fullChangelog: changelog,
+      timestamp: Date.now(),
+      sentBy: _admUser.uid,
+    });
+
+    // 2. Store as active release announcement in Firebase
+    // Users who haven't dismissed this version will see the popup
+    await push(window._admRef(_db, "release_announcements"), {
+      version, title, changelog, timestamp: Date.now(), sentBy: _admUser.uid, active: true,
+    });
+
+    msgEl.textContent = `✓ Release announcement sent for ${version}! Users will see it in their 🔔 bell.`;
+    msgEl.style.color = "#34d399";
+    loadAllAlerts();
+  } catch(e) { msgEl.textContent = "Error: " + e.message; msgEl.style.color = "#ff6b6b"; }
+}
+
+async function loadAllAlerts() {
+  const el = document.getElementById("admAllAlerts");
+  if (!el) return;
+  try {
+    const snap = await window._admGet(window._admRef(_db, "admin_alerts"));
+    if (!snap.exists()) { el.innerHTML = `<div class="adm-empty">No alerts sent yet</div>`; return; }
+    const alerts = Object.entries(snap.val()).reverse().slice(0, 30);
+    el.innerHTML = `
+      <table class="adm-table">
+        <thead><tr><th>Title</th><th>Message</th><th>Type</th><th>Sent</th><th>Action</th></tr></thead>
+        <tbody>
+          ${alerts.map(([key, a]) => `
+            <tr>
+              <td style="font-weight:700;color:#fff;font-size:12px;">${a.title||"—"}</td>
+              <td style="font-size:11px;color:rgba(255,255,255,0.4);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.message||"—"}</td>
+              <td><span class="adm-badge ${a.type==="success"?"adm-badge-resolved":a.type==="warning"?"adm-badge-pending":"adm-badge-open"}">${a.type||"info"}</span></td>
+              <td style="font-size:10px;color:rgba(255,255,255,0.3);">${a.timestamp?new Date(a.timestamp).toLocaleString():""}</td>
+              <td><button class="adm-btn adm-btn-red" onclick="admDeleteAlert('${key}')">✕</button></td>
+            </tr>`).join("")}
+        </tbody>
+      </table>`;
+    window.admDeleteAlert = async key => {
+      const { remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+      await remove(window._admRef(_db, "admin_alerts/" + key));
+      loadAllAlerts();
+    };
+  } catch(e) { el.innerHTML = `<div class="adm-empty">Error loading alerts</div>`; }
+}
+
+async function admClearAllAlerts() {
+  if (!confirm("Delete all bell alerts? This cannot be undone.")) return;
+  try {
+    const { remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    await remove(window._admRef(_db, "admin_alerts"));
+    showToast("All alerts cleared ✓", "success");
+    loadAllAlerts();
+  } catch(e) { showToast("Error: " + e.message, "error"); }
 }
 
 // ── Maintenance ───────────────────────────────────────────────────────────
