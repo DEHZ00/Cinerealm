@@ -263,14 +263,17 @@ const _ACH_DEFS = [
     }
 
     // ── Role pills (next to name) ──
-    const rolePills = roles.map(r => {
+    const rolePriority = ["owner","developer","verified","moderator"];
+    const rolesSorted = rolePriority.filter(r => roles.includes(r));
+
+    const rolePills = rolesSorted.map(r => {
       const d = _ROLE_DEFS[r];
       if (!d) return "";
       return `<span class="crp-role-pill ${d.pill}">${d.icon} ${d.name}</span>`;
     }).join("");
 
     // ── Role badge cards (descriptive section) ──
-    const roleBadgeCards = roles.map(r => {
+    const roleBadgeCards = rolesSorted.map(r => {
       const d = _ROLE_DEFS[r];
       if (!d) return "";
       return `
@@ -283,9 +286,8 @@ const _ACH_DEFS = [
         </div>`;
     }).join("");
 
-    // Avatar glow — use highest priority role (owner > developer > verified > moderator)
-    const rolePriority = ["owner","developer","verified","moderator"];
-    const topRole = rolePriority.find(r => roles.includes(r)) || null;
+    // Avatar glow — use highest priority role
+    const topRole = rolesSorted[0] || null;
 
     // ── Achievement chips ──
     const achChips = _ACH_DEFS.map(a => {
