@@ -105,6 +105,27 @@ window.CR_CLOAK_PRESETS = [
     icon:  "https://www.onelogin.com/favicon.ico"
   },
 
+   {
+    id:    "1LoginUportalL",
+    name:  "One Login Portal light",
+    title: "User Portal - Home",
+    icon:  "https://www.sjusd.onelogin.com/favicon.ico"
+  },
+  {
+    id:    "wghsWeb",
+    name:  "WGHS website",
+    title: "Home - Willow Glen High",
+    icon:  "https://resources.finalsite.net/images/f_auto,q_auto/v1687313857/sjusdorg/praubpyo9n4tmyzhbmss/favicon9.ico"
+  },
+  {
+    id:    "collegeboard",
+    name:  "College Board",
+    title: "College Board - SAT, AP, College Search and Admission Tools",
+    icon:  "https://www.collegeboard.org/themes/custom/apricot_theme/favicon.ico"
+  },
+  
+  
+
   // ── Microsoft / Work ─────────────────────────────────────────────────────
   {
     id:    "outlook",
