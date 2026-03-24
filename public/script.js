@@ -2103,31 +2103,74 @@ function startVoiceSearch() {
 
   const voiceBtn = document.getElementById("searchVoiceBtn");
   const input    = document.getElementById("searchOverlayInput");
-  const rec      = new SR();
+
+  // Check mic permission first
+  if (navigator.permissions) {
+    navigator.permissions.query({ name: "microphone" }).then(result => {
+      if (result.state === "denied") {
+        showToast("Microphone permission denied — check browser settings", "error");
+        return;
+      }
+      _doVoiceSearch(voiceBtn, input);
+    }).catch(() => _doVoiceSearch(voiceBtn, input));
+  } else {
+    _doVoiceSearch(voiceBtn, input);
+  }
+}
+
+function _doVoiceSearch(voiceBtn, input) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const rec = new SR();
   rec.lang = "en-US";
+  rec.continuous = false;
   rec.interimResults = false;
   rec.maxAlternatives = 1;
 
+  let started = false;
+  let errorShown = false;
+
   rec.onstart = () => {
+    started = true;
     if (voiceBtn) { voiceBtn.textContent = "🔴"; voiceBtn.style.color = "#ff2c2c"; }
-    showToast("Listening…", "info");
+    showToast("Listening… speak now", "info");
   };
 
   rec.onresult = e => {
-    const transcript = e.results[0][0].transcript;
+    const transcript = e.results[0][0].transcript.trim();
+    if (!transcript) return;
     if (input) {
       input.value = transcript;
       runOverlaySearch(transcript);
     }
+    if (voiceBtn) { voiceBtn.textContent = "🎤"; voiceBtn.style.color = ""; }
   };
 
-  rec.onerror = () => { showToast("Couldn't hear that, try again", "error"); };
+  rec.onerror = e => {
+    if (errorShown) return;
+    errorShown = true;
+    if (voiceBtn) { voiceBtn.textContent = "🎤"; voiceBtn.style.color = ""; }
+    // "no-speech" is common and not a real error — just nothing was said
+    if (e.error === "no-speech") {
+      showToast("No speech detected, try again", "info");
+    } else if (e.error === "not-allowed" || e.error === "permission-denied") {
+      showToast("Mic permission denied — allow it in browser settings", "error");
+    } else if (e.error === "network") {
+      showToast("Voice search needs internet connection", "error");
+    } else {
+      showToast("Voice search failed: " + e.error, "error");
+    }
+  };
 
   rec.onend = () => {
     if (voiceBtn) { voiceBtn.textContent = "🎤"; voiceBtn.style.color = ""; }
   };
 
-  rec.start();
+  try {
+    rec.start();
+  } catch(e) {
+    showToast("Couldn't start voice search", "error");
+    if (voiceBtn) { voiceBtn.textContent = "🎤"; voiceBtn.style.color = ""; }
+  }
 }
 
 // ── Wire search bar to open overlay ──────────────────────────────────────

@@ -4,26 +4,71 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Your personal watchlist - Save movies and TV shows to watch later">
-  <title>My Watchlist - Cine Realm</title>
+  <title>My Watchlist - CineRealm</title>
   <link rel="stylesheet" href="/style.css">
-  <link rel="icon" type="image/png" href="https://i.postimg.cc/yNK6ySqX/17b32ddf-5bb4-4d2b-999c-689ffbaeac8a.png">
-  <meta property="og:type" content="website">
-<meta property="og:url" content="https://cinerealm.online">
-<meta property="og:title" content="CineRealm - Stream Movies, TV & Anime">
-<meta property="og:description" content="Watch the latest movies, TV shows, and anime online.">
-<meta property="og:image" content="https://cinerealm.online/android-chrome-512x512.png">
-
-<meta property="twitter:card" content="summary_large_image">
-<meta property="twitter:image" content="https://cinerealm.online/android-chrome-512x512.png">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <meta property="og:title" content="CineRealm - My Watchlist">
+  <meta property="og:image" content="https://cinerealm.online/android-chrome-512x512.png">
+  <style>
+    .wl-page { max-width: 1400px; margin: 0 auto; padding: 20px 20px 100px; }
+    .wl-stats-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+    .wl-stat { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 16px; display: flex; flex-direction: column; gap: 2px; }
+    .wl-stat-val { font-size: 20px; font-weight: 900; color: #fff; }
+    .wl-stat-label { font-size: 11px; color: rgba(255,255,255,0.4); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .wl-folders-bar { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; scrollbar-width: none; flex-wrap: nowrap; }
+    .wl-folders-bar::-webkit-scrollbar { display: none; }
+    .wl-folder-tab { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; border: 1.5px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.6); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
+    .wl-folder-tab.active { background: rgba(255,44,44,0.15); border-color: rgba(255,44,44,0.4); color: #ff6b6b; }
+    .wl-folder-tab:hover:not(.active) { border-color: rgba(255,255,255,0.2); color: #fff; }
+    .wl-folder-count { background: rgba(255,255,255,0.12); border-radius: 999px; padding: 1px 6px; font-size: 10px; font-weight: 800; }
+    .wl-folder-tab.active .wl-folder-count { background: rgba(255,44,44,0.3); }
+    .wl-new-folder-btn { display: flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: 999px; border: 1.5px dashed rgba(255,255,255,0.15); background: none; color: rgba(255,255,255,0.4); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
+    .wl-new-folder-btn:hover { border-color: rgba(255,44,44,0.35); color: #ff6b6b; }
+    .wl-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .wl-toolbar-left { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; }
+    .wl-filter-chip { padding: 6px 14px; border-radius: 999px; border: 1.5px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.55); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .wl-filter-chip.active { background: rgba(255,44,44,0.15); border-color: rgba(255,44,44,0.4); color: #ff6b6b; }
+    .wl-filter-chip:hover:not(.active) { border-color: rgba(255,255,255,0.2); color: #fff; }
+    .wl-sort-select { padding: 7px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.7); font-size: 12px; font-weight: 600; cursor: pointer; outline: none; }
+    .wl-sort-select option { background: #0f0606; }
+    .wl-folder-modal { position: fixed; inset: 0; z-index: 9000; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; }
+    .wl-folder-modal.open { display: flex; }
+    .wl-folder-modal-box { background: linear-gradient(160deg, #160202, #0a0606); border: 1px solid rgba(255,44,44,0.2); border-radius: 16px; padding: 24px; width: 340px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+    .wl-folder-modal-title { font-size: 16px; font-weight: 800; color: #fff; margin: 0 0 16px; }
+    .wl-folder-modal-input { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: #fff; font-size: 14px; outline: none; margin-bottom: 8px; box-sizing: border-box; }
+    .wl-folder-modal-input:focus { border-color: rgba(255,44,44,0.4); }
+    .wl-emoji-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+    .wl-emoji-btn { width: 36px; height: 36px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+    .wl-emoji-btn.selected { border-color: rgba(255,44,44,0.5); background: rgba(255,44,44,0.12); }
+    .wl-folder-modal-btns { display: flex; gap: 8px; }
+    .wl-folder-modal-create { flex: 1; padding: 10px; background: #ff2c2c; border: none; border-radius: 8px; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; }
+    .wl-folder-modal-cancel { padding: 10px 16px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: rgba(255,255,255,0.6); font-size: 13px; cursor: pointer; }
+    .wl-status-dot { position: absolute; bottom: 28px; right: 6px; width: 8px; height: 8px; border-radius: 50%; z-index: 3; border: 1.5px solid rgba(0,0,0,0.5); }
+    .wl-status-dot.want    { background: #94a3b8; }
+    .wl-status-dot.watching { background: #3b82f6; }
+    .wl-status-dot.finished { background: #22c55e; }
+    .wl-status-dot.dropped  { background: #ef4444; }
+    .wl-status-menu { position: fixed; z-index: 9999; background: #160202; border: 1px solid rgba(255,44,44,0.2); border-radius: 10px; padding: 6px; box-shadow: 0 12px 40px rgba(0,0,0,0.6); min-width: 180px; }
+    .wl-status-menu-label { font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.7px; padding: 4px 8px 8px; }
+    .wl-status-menu-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 7px; cursor: pointer; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.7); transition: background 0.12s; }
+    .wl-status-menu-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .wl-status-menu-item .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .wl-status-menu-sep { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 4px 0; }
+    .wl-empty { text-align: center; padding: 60px 20px; color: rgba(255,255,255,0.3); }
+    .wl-empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .wl-empty-title { font-size: 18px; font-weight: 800; color: rgba(255,255,255,0.5); margin-bottom: 8px; }
+    .wl-tip { font-size: 12px; color: rgba(255,255,255,0.25); margin-top: 12px; }
+  </style>
 </head>
 <body>
-<div id="appIntro">
+
+<div id="appIntro" class="intro hidden">
   <div class="intro-logo"></div>
   <p class="intro-tagline">Stream Movies, TV &amp; Anime</p>
   <div class="intro-bar-wrap"><div class="intro-bar"></div></div>
 </div>
-</div>
-
+<div id="site-notification"></div>
 
 <header>
   <div class="header-left">
@@ -41,73 +86,300 @@
     <a href="/stats" class="nav-btn">Stats</a>
     <a href="/legal" class="nav-btn">Legal</a>
   </nav>
-
 </header>
 
 <main>
-  <section>
-    <h2>My Watchlist</h2>
-    <div id="watchlistContent" class="movie-row">
-      <p class="placeholder">Your watchlist is empty. Add movies or shows to watch later!</p>
+  <div class="wl-page">
+    <div class="wl-stats-bar" id="wlStatsBar"></div>
+    <div class="wl-folders-bar" id="wlFoldersBar">
+      <button class="wl-folder-tab active" data-folder="all">All <span class="wl-folder-count" id="wlAllCount">0</span></button>
+      <button class="wl-new-folder-btn" id="wlNewFolderBtn">+ New List</button>
     </div>
-  </section>
+    <div class="wl-toolbar">
+      <div class="wl-toolbar-left">
+        <button class="wl-filter-chip active" data-filter="all">All</button>
+        <button class="wl-filter-chip" data-filter="movie">🎬 Movies</button>
+        <button class="wl-filter-chip" data-filter="tv">📺 TV</button>
+        <button class="wl-filter-chip" data-filter="want">● Want</button>
+        <button class="wl-filter-chip" data-filter="watching">● Watching</button>
+        <button class="wl-filter-chip" data-filter="finished">● Finished</button>
+        <button class="wl-filter-chip" data-filter="dropped">● Dropped</button>
+      </div>
+      <div>
+        <select class="wl-sort-select" id="wlSortSelect">
+          <option value="added">Date Added</option>
+          <option value="title">Title A–Z</option>
+          <option value="rating">Rating</option>
+          <option value="year">Release Year</option>
+        </select>
+      </div>
+    </div>
+    <p class="wl-tip">💡 Right-click any card to set status or move to a list</p>
+    <div id="watchlistContent" class="movie-row" style="flex-wrap:wrap;"></div>
+  </div>
 </main>
 
-<!-- Details Side Panel -->
+<div class="wl-folder-modal" id="wlFolderModal">
+  <div class="wl-folder-modal-box">
+    <p class="wl-folder-modal-title">Create New List</p>
+    <div class="wl-emoji-row" id="wlEmojiRow"></div>
+    <input class="wl-folder-modal-input" id="wlFolderNameInput" placeholder="e.g. Horror Night, Date Night, Watch with Friends…" maxlength="30">
+    <div class="wl-folder-modal-btns">
+      <button class="wl-folder-modal-cancel" id="wlFolderCancel">Cancel</button>
+      <button class="wl-folder-modal-create" id="wlFolderCreate">Create List</button>
+    </div>
+  </div>
+</div>
+
+<div class="wl-status-menu" id="wlStatusMenu" style="display:none;"></div>
+
 <div id="detailsOverlay" class="details-overlay" onclick="closeDetailsPanel()"></div>
 <div id="detailsPanel" class="details-panel" style="display:none;">
   <button class="details-panel-close" onclick="closeDetailsPanel()">✕</button>
   <div id="detailsPanelBody" class="details-panel-body"></div>
 </div>
 <div id="detailsModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <span class="close-btn">&times;</span>
-    <div id="detailsBody"></div>
-  </div>
+  <div class="modal-content"><span class="close-btn">&times;</span><div id="detailsBody"></div></div>
 </div>
+
+<nav class="mobile-bottom-nav">
+  <a href="/" class="mobile-nav-item"><span class="mobile-nav-icon">🏠</span><span class="mobile-nav-label">Home</span></a>
+  <a href="/search" class="mobile-nav-item"><span class="mobile-nav-icon">🔍</span><span class="mobile-nav-label">Search</span></a>
+  <a href="/anime" class="mobile-nav-item"><span class="mobile-nav-icon">⛩️</span><span class="mobile-nav-label">Anime</span></a>
+  <a href="/watchlist" class="mobile-nav-item active"><span class="mobile-nav-icon">★</span><span class="mobile-nav-label">Watchlist</span></a>
+  <a href="/stats" class="mobile-nav-item"><span class="mobile-nav-icon">📊</span><span class="mobile-nav-label">Stats</span></a>
+</nav>
 
 <script src="/cloak-config.js"></script>
 <script src="/script.js"></script>
 <script>
-// Load and render watchlist on page load
-async function renderWatchlistPage() {
-  loadWatchlist();
-  const container = document.getElementById("watchlistContent");
-  container.innerHTML = "";
+const FOLDER_KEY       = "cr_wl_folders";
+const STATUS_KEY       = "cr_wl_status";
+const FOLDER_ITEMS_KEY = "cr_wl_folder_items";
+const FOLDER_EMOJIS    = ["📁","🎬","📺","👻","💕","🚀","⚔️","😂","🌙","🔥","🎭","🧠","🎃","🏆","🌟","🎵","🐉","🌊"];
+const STATUS_CONFIG    = {
+  want:     { label: "Want to Watch", color: "#94a3b8" },
+  watching: { label: "Watching",      color: "#3b82f6" },
+  finished: { label: "Finished",      color: "#22c55e" },
+  dropped:  { label: "Dropped",       color: "#ef4444" },
+};
 
-  if (watchlistData.length === 0) {
-    container.innerHTML = `<p class="placeholder">Your watchlist is empty. Add movies or shows to watch later!</p>`;
-    return;
-  }
+let _wlFolders     = JSON.parse(localStorage.getItem(FOLDER_KEY)        || "[]");
+let _wlStatuses    = JSON.parse(localStorage.getItem(STATUS_KEY)        || "{}");
+let _wlFolderItems = JSON.parse(localStorage.getItem(FOLDER_ITEMS_KEY)  || "{}");
+let _activeFolder  = "all";
+let _activeFilter  = "all";
+let _activeSort    = "added";
+let _selectedEmoji = "📁";
+let _allCards      = [];
 
-  for (const item of watchlistData) {
-    try {
-      const data = await apiCall(`/${item.type}/${item.id}`);
-      if (data) {
-        const card = createMovieCard(data, item.type);
-        if (card) container.appendChild(card);
-      }
-    } catch (err) {
-      console.error("Failed to fetch watchlist item:", err);
-    }
-  }
+function saveWLData() {
+  localStorage.setItem(FOLDER_KEY,        JSON.stringify(_wlFolders));
+  localStorage.setItem(STATUS_KEY,        JSON.stringify(_wlStatuses));
+  localStorage.setItem(FOLDER_ITEMS_KEY,  JSON.stringify(_wlFolderItems));
 }
 
-document.addEventListener('DOMContentLoaded', renderWatchlistPage);
+function itemKey(id, type) { return `${type}_${id}`; }
+function getItemStatus(id, type) { return _wlStatuses[itemKey(id, type)] || "want"; }
+function setItemStatus(id, type, status) { _wlStatuses[itemKey(id, type)] = status; saveWLData(); }
+
+// Stats
+function renderWLStats() {
+  const bar = document.getElementById("wlStatsBar");
+  if (!bar) return;
+  loadWatchlist();
+  const total  = watchlistData.length;
+  const movies = watchlistData.filter(i => i.type === "movie").length;
+  const tv     = watchlistData.filter(i => i.type === "tv").length;
+  const runtimeHrs = Math.round((movies * 110 + tv * 8 * 45) / 60);
+  const watching = Object.values(_wlStatuses).filter(s => s === "watching").length;
+  const finished = Object.values(_wlStatuses).filter(s => s === "finished").length;
+  bar.innerHTML = `
+    <div class="wl-stat"><div class="wl-stat-val">${total}</div><div class="wl-stat-label">Total</div></div>
+    <div class="wl-stat"><div class="wl-stat-val">${movies}</div><div class="wl-stat-label">Movies</div></div>
+    <div class="wl-stat"><div class="wl-stat-val">${tv}</div><div class="wl-stat-label">TV Shows</div></div>
+    <div class="wl-stat"><div class="wl-stat-val">${runtimeHrs}h</div><div class="wl-stat-label">Est. Runtime</div></div>
+    <div class="wl-stat"><div class="wl-stat-val">${watching}</div><div class="wl-stat-label">Watching</div></div>
+    <div class="wl-stat"><div class="wl-stat-val">${finished}</div><div class="wl-stat-label">Finished</div></div>
+  `;
+}
+
+// Folder tabs
+function renderFolderTabs() {
+  const bar = document.getElementById("wlFoldersBar");
+  if (!bar) return;
+  bar.querySelectorAll(".wl-folder-tab:not([data-folder='all'])").forEach(el => el.remove());
+  const newBtn = document.getElementById("wlNewFolderBtn");
+  _wlFolders.forEach(folder => {
+    const items = _wlFolderItems[folder.id] || [];
+    const tab = document.createElement("button");
+    tab.className = "wl-folder-tab" + (_activeFolder === folder.id ? " active" : "");
+    tab.dataset.folder = folder.id;
+    tab.innerHTML = `${folder.emoji || "📁"} ${folder.name} <span class="wl-folder-count">${items.length}</span> <span style="margin-left:4px;font-size:10px;opacity:0.4;" class="wl-del-folder" data-id="${folder.id}">✕</span>`;
+    tab.onclick = e => {
+      if (e.target.classList.contains("wl-del-folder")) {
+        e.stopPropagation();
+        if (!confirm(`Delete list "${folder.name}"?`)) return;
+        _wlFolders = _wlFolders.filter(f => f.id !== folder.id);
+        delete _wlFolderItems[folder.id];
+        saveWLData();
+        if (_activeFolder === folder.id) _activeFolder = "all";
+        renderFolderTabs(); applyFiltersAndSort(); return;
+      }
+      _activeFolder = folder.id;
+      renderFolderTabs(); applyFiltersAndSort();
+    };
+    bar.insertBefore(tab, newBtn);
+  });
+  document.getElementById("wlAllCount").textContent = watchlistData.length;
+  bar.querySelectorAll(".wl-folder-tab").forEach(t => t.classList.toggle("active", t.dataset.folder === _activeFolder));
+}
+
+// Folder modal
+document.getElementById("wlNewFolderBtn").onclick = () => {
+  const emojiRow = document.getElementById("wlEmojiRow");
+  _selectedEmoji = "📁";
+  emojiRow.innerHTML = FOLDER_EMOJIS.map(e => `<button class="wl-emoji-btn${e===_selectedEmoji?" selected":""}" data-emoji="${e}">${e}</button>`).join("");
+  emojiRow.querySelectorAll(".wl-emoji-btn").forEach(btn => {
+    btn.onclick = () => { emojiRow.querySelectorAll(".wl-emoji-btn").forEach(b=>b.classList.remove("selected")); btn.classList.add("selected"); _selectedEmoji = btn.dataset.emoji; };
+  });
+  document.getElementById("wlFolderNameInput").value = "";
+  document.getElementById("wlFolderModal").classList.add("open");
+  setTimeout(() => document.getElementById("wlFolderNameInput").focus(), 80);
+};
+document.getElementById("wlFolderCancel").onclick = () => document.getElementById("wlFolderModal").classList.remove("open");
+document.getElementById("wlFolderCreate").onclick = () => {
+  const name = document.getElementById("wlFolderNameInput").value.trim();
+  if (!name) return;
+  const folder = { id: "folder_" + Date.now(), name, emoji: _selectedEmoji };
+  _wlFolders.push(folder); _wlFolderItems[folder.id] = []; saveWLData();
+  document.getElementById("wlFolderModal").classList.remove("open");
+  _activeFolder = folder.id; renderFolderTabs(); applyFiltersAndSort();
+};
+document.getElementById("wlFolderNameInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("wlFolderCreate").click();
+  if (e.key === "Escape") document.getElementById("wlFolderModal").classList.remove("open");
+});
+
+// Filter/sort
+document.querySelectorAll(".wl-filter-chip").forEach(chip => {
+  chip.onclick = () => {
+    document.querySelectorAll(".wl-filter-chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active"); _activeFilter = chip.dataset.filter; applyFiltersAndSort();
+  };
+});
+document.getElementById("wlSortSelect").onchange = e => { _activeSort = e.target.value; applyFiltersAndSort(); };
+
+// Status dot
+function updateStatusDot(card, id, type) {
+  const status = getItemStatus(id, type);
+  let dot = card.querySelector(".wl-status-dot");
+  if (!dot) { dot = document.createElement("span"); dot.className = "wl-status-dot"; card.querySelector(".card-image-wrapper")?.appendChild(dot); }
+  dot.className = "wl-status-dot " + status;
+}
+
+// Status menu
+function showStatusMenu(e, id, type, card) {
+  e.preventDefault(); e.stopPropagation();
+  const menu = document.getElementById("wlStatusMenu");
+  const cur  = getItemStatus(id, type);
+  const ikey = itemKey(id, type);
+  menu.innerHTML = `
+    <div class="wl-status-menu-label">Set Status</div>
+    ${Object.entries(STATUS_CONFIG).map(([k,cfg]) => `
+      <div class="wl-status-menu-item" data-status="${k}">
+        <span class="dot" style="background:${cfg.color}"></span>${cfg.label}${cur===k?" ✓":""}
+      </div>`).join("")}
+    ${_wlFolders.length ? `<hr class="wl-status-menu-sep"><div class="wl-status-menu-label">Add to List</div>
+      ${_wlFolders.map(f => {
+        const inF = (_wlFolderItems[f.id]||[]).includes(ikey);
+        return `<div class="wl-status-menu-item" data-folder-id="${f.id}">${f.emoji} ${f.name}${inF?" ✓":""}</div>`;
+      }).join("")}` : ""}
+    <hr class="wl-status-menu-sep">
+    <div class="wl-status-menu-item" data-remove="1" style="color:#ff6b6b;">🗑 Remove from Watchlist</div>
+  `;
+  const x = Math.min(e.clientX||e.pageX, window.innerWidth-200);
+  const y = Math.min(e.clientY||e.pageY, window.innerHeight-300);
+  menu.style.cssText = `display:block;left:${x}px;top:${y}px;`;
+
+  menu.querySelectorAll("[data-status]").forEach(item => item.onclick = () => {
+    setItemStatus(id, type, item.dataset.status); updateStatusDot(card,id,type); closeStatusMenu(); renderWLStats();
+  });
+  menu.querySelectorAll("[data-folder-id]").forEach(item => item.onclick = () => {
+    const fid = item.dataset.folderId;
+    if (!_wlFolderItems[fid]) _wlFolderItems[fid] = [];
+    const idx = _wlFolderItems[fid].indexOf(ikey);
+    idx > -1 ? _wlFolderItems[fid].splice(idx,1) : _wlFolderItems[fid].push(ikey);
+    saveWLData(); renderFolderTabs(); closeStatusMenu();
+  });
+  menu.querySelector("[data-remove]")?.addEventListener("click", () => {
+    removeFromWatchlist(id, type, null);
+    card.style.cssText = "opacity:0;transform:scale(0.9);transition:all 0.3s;";
+    setTimeout(() => { card.remove(); renderWLStats(); renderFolderTabs(); }, 300);
+    closeStatusMenu();
+  });
+}
+function closeStatusMenu() { document.getElementById("wlStatusMenu").style.display = "none"; }
+document.addEventListener("click", e => { if (!document.getElementById("wlStatusMenu")?.contains(e.target)) closeStatusMenu(); });
+
+// Apply filters + sort
+function applyFiltersAndSort() {
+  let cards = [..._allCards];
+  if (_activeFolder !== "all") {
+    const fi = _wlFolderItems[_activeFolder] || [];
+    cards = cards.filter(c => fi.includes(itemKey(c.item.id, c.item.type)));
+  }
+  if (_activeFilter === "movie")    cards = cards.filter(c => c.item.type === "movie");
+  else if (_activeFilter === "tv")  cards = cards.filter(c => c.item.type === "tv");
+  else if (["want","watching","finished","dropped"].includes(_activeFilter))
+    cards = cards.filter(c => getItemStatus(c.item.id, c.item.type) === _activeFilter);
+  if (_activeSort === "title")   cards.sort((a,b) => (a.data?.title||a.data?.name||"").localeCompare(b.data?.title||b.data?.name||""));
+  else if (_activeSort === "rating") cards.sort((a,b) => (b.data?.vote_average||0)-(a.data?.vote_average||0));
+  else if (_activeSort === "year")   cards.sort((a,b) => ((b.data?.release_date||b.data?.first_air_date||"")-0) - ((a.data?.release_date||a.data?.first_air_date||"")-0));
+  const container = document.getElementById("watchlistContent");
+  container.innerHTML = "";
+  if (!cards.length) {
+    container.innerHTML = `<div class="wl-empty"><div class="wl-empty-icon">${_activeFolder!=="all"?"📂":"⭐"}</div><div class="wl-empty-title">Nothing here yet</div><div class="wl-empty-sub">${_activeFilter!=="all"?"No items match this filter":"Add movies and shows to your watchlist"}</div></div>`;
+    return;
+  }
+  cards.forEach(c => container.appendChild(c.card));
+}
+
+// Main render
+async function renderWatchlistPage() {
+  loadWatchlist(); renderWLStats(); renderFolderTabs();
+  const container = document.getElementById("watchlistContent");
+  container.innerHTML = `<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.3);"><div class="games-loading-spinner" style="margin:0 auto 12px;"></div>Loading…</div>`;
+  _allCards = [];
+  if (!watchlistData.length) {
+    container.innerHTML = `<div class="wl-empty"><div class="wl-empty-icon">⭐</div><div class="wl-empty-title">Your watchlist is empty</div><div class="wl-empty-sub">Browse movies and shows and hit ☆ Watchlist to save them here</div></div>`;
+    return;
+  }
+  const fetched = await Promise.all(watchlistData.map(async item => {
+    try { return { item, data: await apiCall(`/${item.type}/${item.id}`) }; }
+    catch { return { item, data: null }; }
+  }));
+  for (const { item, data } of fetched) {
+    if (!data) continue;
+    const card = createMovieCard(data, item.type);
+    if (!card) continue;
+    updateStatusDot(card, item.id, item.type);
+    card.addEventListener("contextmenu", e => showStatusMenu(e, item.id, item.type, card));
+    let lpt;
+    card.addEventListener("touchstart", e => { lpt = setTimeout(() => showStatusMenu(e.touches[0], item.id, item.type, card), 500); });
+    card.addEventListener("touchend",  () => clearTimeout(lpt));
+    card.addEventListener("touchmove", () => clearTimeout(lpt));
+    _allCards.push({ item, data, card });
+  }
+  applyFiltersAndSort();
+}
+
+document.addEventListener("DOMContentLoaded", renderWatchlistPage);
 </script>
 
-<!-- Vercel Web Analytics -->
-<script>
-  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-</script>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
 <script defer src="/_vercel/insights/script.js"></script>
-
-<!-- Vercel Speed Insights -->
-<script>
-  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
-</script>
+<script>window.si=window.si||function(){(window.siq=window.siq||[]).push(arguments);};</script>
 <script defer src="/_vercel/speed-insights/script.js"></script>
-
 </body>
-
 </html>
