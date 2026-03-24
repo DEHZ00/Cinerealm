@@ -471,10 +471,16 @@ function createMovieCard(movie, type = "movie") {
       ★ ${score}
     </span>` : "";
 
-  // HD badge — check digital release date
-  const digitalDate = movie._digitalDate || null;
-  const isDigital   = digitalDate && new Date(digitalDate) <= new Date();
-  const hdBadge     = isDigital ? `<span class="card-hd-badge">HD</span>` : "";
+  // HD badge — 70+ days since release = likely available in HD digitally
+  // Also check user-confirmed HD votes from Firebase
+  const releaseDate = movie.release_date || movie.first_air_date || "";
+  const daysOld = releaseDate
+    ? (Date.now() - new Date(releaseDate).getTime()) / (1000 * 60 * 60 * 24)
+    : 0;
+  const autoHD = type === "movie" && daysOld >= 70;
+  const userHD = _hdVotes[movie.id] >= 3; // 3+ community confirmations
+  const hdBadge = (autoHD || userHD)
+    ? `<span class="card-hd-badge" title="${userHD && !autoHD ? 'Community confirmed HD' : 'Available in HD'}">HD</span>` : "";
 
   // TV progress ring — % of total episodes watched
   let progressRing = "";
@@ -484,21 +490,21 @@ function createMovieCard(movie, type = "movie") {
     ).length;
     const ringPercent = Math.min(100, Math.round((watchedEps / movie.number_of_episodes) * 100));
     if (ringPercent > 0) {
-      const r = 16, circ = 2 * Math.PI * r;
+      const r = 14, circ = 2 * Math.PI * r;
       const dash = (ringPercent / 100) * circ;
       progressRing = `
-        <svg class="card-progress-ring" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="20" cy="20" r="${r}" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="3"/>
-          <circle cx="20" cy="20" r="${r}" fill="none" stroke="#ff2c2c" stroke-width="3"
+        <svg class="card-progress-ring" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="18" cy="18" r="${r}" fill="rgba(0,0,0,0.6)" stroke="rgba(255,255,255,0.15)" stroke-width="2.5"/>
+          <circle cx="18" cy="18" r="${r}" fill="none" stroke="#ff2c2c" stroke-width="2.5"
             stroke-dasharray="${dash} ${circ}"
             stroke-dashoffset="${circ * 0.25}"
             stroke-linecap="round"/>
-          <text x="20" y="24" text-anchor="middle" fill="#fff" font-size="9" font-weight="800">${ringPercent}%</text>
+          <text x="18" y="21" text-anchor="middle" fill="#fff" font-size="8" font-weight="800">${ringPercent}%</text>
         </svg>`;
     }
   }
 
-  // Hover info — runtime and year
+  // Hover info — runtime and year, shown mid-card not overlapping title
   const year = (movie.release_date || movie.first_air_date || "").split("-")[0];
   const runtime = movie.runtime ? Math.floor(movie.runtime/60) + "h " + (movie.runtime%60) + "m" : "";
   const hoverInfo = (year || runtime) ? `
@@ -549,27 +555,6 @@ function createMovieCard(movie, type = "movie") {
   let hoverTimer = null;
   card.addEventListener("mouseenter", () => {
     hoverTimer = setTimeout(() => {
-      // Also fetch digital release date for HD badge if not already set
-      if (type === "movie" && !movie._digitalDate && !movie._digitalChecked) {
-        movie._digitalChecked = true;
-        apiCall("/movie/" + movie.id + "/release_dates").then(data => {
-          const usRelease = data?.results?.find(r => r.iso_3166_1 === "US");
-          const digital = usRelease?.release_dates?.find(r => r.type === 4 || r.type === 5);
-          if (digital?.release_date) {
-            movie._digitalDate = digital.release_date;
-            if (new Date(digital.release_date) <= new Date()) {
-              // Add HD badge dynamically
-              const wrapper = card.querySelector(".card-image-wrapper");
-              if (wrapper && !wrapper.querySelector(".card-hd-badge")) {
-                const badge = document.createElement("span");
-                badge.className = "card-hd-badge";
-                badge.textContent = "HD";
-                wrapper.appendChild(badge);
-              }
-            }
-          }
-        }).catch(() => {});
-      }
       apiCall("/" + type + "/" + movie.id);
     }, 300);
   });
@@ -3280,7 +3265,62 @@ function initHomePage() {
   loadTrendingTicker();
 }
 
-// ── Section 16 — Hero & Home Upgrades ────────────────────────────────────
+// ── Section 17 — HD Vote System ──────────────────────────────────────────
+let _hdVotes = {}; // cache: movieId -> vote count
+let _myHdVotes = JSON.parse(localStorage.getItem("cr_hd_votes") || "{}"); // movies I've voted on
+
+// Load HD votes from Firebase on startup
+(async function loadHDVotes() {
+  try {
+    const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const app = getApps().length ? getApps()[0] : initializeApp({
+      apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
+      authDomain: "cinerealm-8b7b9.firebaseapp.com",
+      databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
+      projectId: "cinerealm-8b7b9",
+    });
+    const db = getDatabase(app);
+    const snap = await get(ref(db, "hd_votes"));
+    if (snap.exists()) _hdVotes = snap.val();
+  } catch(e) {}
+})();
+
+async function voteHD(movieId, movieTitle) {
+  if (_myHdVotes[movieId]) {
+    showToast("You already confirmed this as HD", "info");
+    return;
+  }
+
+  try {
+    const { getDatabase, ref, runTransaction } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const app = getApps().length ? getApps()[0] : initializeApp({
+      apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
+      authDomain: "cinerealm-8b7b9.firebaseapp.com",
+      databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
+      projectId: "cinerealm-8b7b9",
+    });
+    const db = getDatabase(app);
+
+    await runTransaction(ref(db, "hd_votes/" + movieId), current => (current || 0) + 1);
+
+    _myHdVotes[movieId] = true;
+    localStorage.setItem("cr_hd_votes", JSON.stringify(_myHdVotes));
+    _hdVotes[movieId] = (_hdVotes[movieId] || 0) + 1;
+
+    const count = _hdVotes[movieId];
+    if (count >= 3) {
+      showToast("HD confirmed! Badge added.", "success");
+    } else {
+      showToast(`HD vote recorded (${count}/3 needed)`, "info");
+    }
+  } catch(e) {
+    showToast("Failed to record vote", "error");
+  }
+}
+
+// ── Section 18 — Watch Page Upgrades ─────────────────────────────────────
 
 // ── Up Next row — next episodes for in-progress TV shows ─────────────────
 async function loadUpNext() {
