@@ -2251,20 +2251,15 @@ if (!window.location.pathname.startsWith("/watch")) {
 
 // ── Global Tab Cloak System ───────────────────────────────────────────────
 (function() {
-  const BUILT_IN_PRESETS = [
-    { id: "gdocs",     name: "Google Docs",    title: "Document - Google Docs",             icon: "https://ssl.gstatic.com/docs/doclist/images/mediatype/icon_1_document_x32.png" },
-    { id: "gdrive",    name: "Google Drive",   title: "My Drive - Google Drive",            icon: "https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png" },
-    { id: "gslides",   name: "Google Slides",  title: "Presentation - Google Slides",       icon: "https://ssl.gstatic.com/docs/presentations/images/favicon5.ico" },
-    { id: "gsheets",   name: "Google Sheets",  title: "Spreadsheet - Google Sheets",        icon: "https://ssl.gstatic.com/docs/spreadsheets/favicon3.ico" },
-    { id: "classroom", name: "Classroom",      title: "Google Classroom",                   icon: "https://www.gstatic.com/images/branding/product/1x/classroom_2020q4_32dp.png" },
-    { id: "khan",      name: "Khan Academy",   title: "Khan Academy | Free Online Courses", icon: "https://cdn.kastatic.org/images/favicon.ico" },
-    { id: "quizlet",   name: "Quizlet",        title: "Quizlet",                            icon: "https://quizlet.com/favicon.ico" },
-    { id: "wiki",      name: "Wikipedia",      title: "Wikipedia, the free encyclopedia",   icon: "https://en.wikipedia.org/favicon.ico" },
-    { id: "canvas",    name: "Canvas",         title: "Dashboard - Canvas LMS",             icon: "https://du11hjcvx0uqb.cloudfront.net/dist/images/favicon-e10d657a73.ico" },
-    { id: "desmos",    name: "Desmos",         title: "Desmos | Graphing Calculator",       icon: "https://www.desmos.com/favicon.ico" },
-    { id: "outlook",   name: "Outlook",        title: "Mail - Outlook",                     icon: "https://res.cdn.office.net/assets/mail/pwa/v1/images/favicon.png" },
-    { id: "word",      name: "Word Online",    title: "Word - Microsoft 365",               icon: "https://res.cdn.office.net/assets/framework/v3/images/favicon.ico" },
-  ];
+  // Presets loaded from /cloak-config.js — edit that file to add/remove presets
+  function getPresets() {
+    return window.CR_CLOAK_PRESETS || [
+      { id: "gdocs",     name: "Google Docs",   title: "Document",          icon: "https://ssl.gstatic.com/docs/doclist/images/mediatype/icon_1_document_x32.png" },
+      { id: "classroom", name: "Classroom",     title: "Google Classroom",  icon: "https://www.gstatic.com/images/branding/product/1x/classroom_2020q4_32dp.png" },
+      { id: "khan",      name: "Khan Academy",  title: "Khan Academy",      icon: "https://cdn.kastatic.org/images/favicon.ico" },
+      { id: "canvas",    name: "Canvas",        title: "Dashboard",         icon: "https://du11hjcvx0uqb.cloudfront.net/dist/images/favicon-e10d657a73.ico" },
+    ];
+  }
 
   // Keys that are unreliable on Chromebook
   const RISKY_KEYS = ["Escape","Tab","Enter"," ","Control","Alt","Meta","Shift","CapsLock","Backspace"];
@@ -2357,7 +2352,7 @@ if (!window.location.pathname.startsWith("/watch")) {
     const allPresets = _panel.querySelectorAll(".cr-cloak-preset");
 
     if (_activePresetId || _savedTitle) {
-      const p = BUILT_IN_PRESETS.find(x => x.id === _activePresetId)
+      const p = getPresets().find(x => x.id === _activePresetId)
              || _customPresets.find(x => x.id === _activePresetId);
       badge.classList.add("visible");
       badgeName.textContent = p ? p.name : (document.title || "Custom");
@@ -2504,7 +2499,7 @@ if (!window.location.pathname.startsWith("/watch")) {
 
     // Build preset buttons
     const presetsEl = _panel.querySelector("#crCloakPresets");
-    BUILT_IN_PRESETS.forEach(p => {
+    getPresets().forEach(p => {
       const btn = document.createElement("button");
       btn.className = "cr-cloak-preset" + (_activePresetId === p.id ? " selected" : "");
       btn.dataset.id = p.id;

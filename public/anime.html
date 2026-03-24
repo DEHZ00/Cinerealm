@@ -185,24 +185,32 @@
   <a href="/stats" class="mobile-nav-item"><span class="mobile-nav-icon">📊</span><span class="mobile-nav-label">Stats</span></a>
 </nav>
 
+<script src="/cloak-config.js"></script>
 <script src="/script.js" defer></script>
 <script>
 // ── AniList GraphQL API ───────────────────────────────────────────────────
-const ANILIST_API = "/api/anilist";
 
 async function anilistQuery(query, variables = {}) {
-  try {
-    const res = await fetch(ANILIST_API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify({ query, variables })
-    });
-    const json = await res.json();
-    return json.data;
-  } catch(e) {
-    console.warn("AniList error:", e);
-    return null;
+  const body = JSON.stringify({ query, variables });
+
+  // Try proxy first, fall back to direct if proxy fails
+  const endpoints = ["/api/anilist", "https://graphql.anilist.co"];
+
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body
+      });
+      if (!res.ok) continue;
+      const json = await res.json();
+      if (json.data) return json.data;
+    } catch(e) {
+      console.warn("AniList endpoint failed:", endpoint, e.message);
+    }
   }
+  return null;
 }
 
 // ── Dub/Sub state ─────────────────────────────────────────────────────────

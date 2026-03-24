@@ -134,6 +134,62 @@ function sendHTML(res, filePath) {
   });
 }
 
+// ── Cloak config ──────────────────────────────────────────────────────────
+app.get("/cloak-config.js", (req, res) => {
+  res.setHeader("Content-Type", "application/javascript");
+  res.setHeader("Cache-Control", "no-cache");
+  res.sendFile(path.join(__dirname, "cloak-config.js"), err => {
+    if (err) res.status(404).send("// cloak-config.js not found");
+  });
+});
+
+// ── AniList GraphQL Proxy ─────────────────────────────────────────────────
+app.post("/api/anilist", async (req, res) => {
+  try {
+    const https = require("https");
+    const body  = JSON.stringify(req.body);
+
+    const options = {
+      hostname: "graphql.anilist.co",
+      path:     "/",
+      method:   "POST",
+      headers:  {
+        "Content-Type":   "application/json",
+        "Accept":         "application/json",
+        "Content-Length": Buffer.byteLength(body),
+      }
+    };
+
+    const proxyReq = https.request(options, proxyRes => {
+      let data = "";
+      proxyRes.on("data", chunk => data += chunk);
+      proxyRes.on("end", () => {
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.status(proxyRes.statusCode).send(data);
+      });
+    });
+
+    proxyReq.on("error", err => {
+      console.error("AniList proxy error:", err);
+      res.status(502).json({ error: "AniList proxy failed" });
+    });
+
+    proxyReq.write(body);
+    proxyReq.end();
+  } catch(err) {
+    console.error("AniList proxy error:", err);
+    res.status(500).json({ error: "Internal proxy error" });
+  }
+});
+
+app.options("/api/anilist", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.sendStatus(200);
+});
+
 // ── SPA / Pretty URL Routing ───────────────────────────────────────────────
 const routes = {
   "/":          "index.html",
