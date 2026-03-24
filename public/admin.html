@@ -175,6 +175,33 @@
 
   <!-- Dashboard -->
   <div id="admDashboard" style="display:none;">
+    <!-- Firebase rules warning banner -->
+    <div id="admRulesWarning" style="display:none;margin-bottom:16px;padding:12px 16px;background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.3);border-radius:12px;">
+      <div style="font-size:13px;font-weight:700;color:rgba(255,200,100,0.9);margin-bottom:6px;">⚠️ Firebase Rules need updating — some data is permission denied</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:10px;">Go to <a href="https://console.firebase.google.com/project/cinerealm-8b7b9/database/cinerealm-8b7b9-default-rtdb/rules" target="_blank" style="color:#ffd700;">Firebase Console → Realtime Database → Rules</a> and paste these rules:</div>
+      <pre id="admRulesPre" style="background:rgba(0,0,0,0.4);padding:12px;border-radius:8px;font-size:11px;color:rgba(255,255,255,0.7);overflow-x:auto;white-space:pre-wrap;margin:0 0 10px;">{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": true,
+        ".write": "$uid === auth.uid",
+        "roles": { ".write": false }
+      }
+    },
+    "usernames":          { ".read": true,            ".write": "auth != null" },
+    "reviews":            { ".read": true,            ".write": "auth != null" },
+    "supporters":         { ".read": true,            ".write": "auth != null" },
+    "hd_votes":           { ".read": true,            ".write": "auth != null" },
+    "hd_override":        { ".read": true,            ".write": false },
+    "broken_sources":     { ".read": "auth != null",  ".write": "auth != null" },
+    "broken_source_counts":{ ".read": "auth != null", ".write": "auth != null" },
+    "admin_alerts":       { ".read": "auth != null",  ".write": "auth != null" },
+    "release_announcements":{ ".read": "auth != null",".write": "auth != null" },
+    "rooms":              { ".read": "auth != null",  ".write": "auth != null" }
+  }
+}</pre>
+      <button class="adm-btn adm-btn-blue" onclick="navigator.clipboard.writeText(document.getElementById('admRulesPre').textContent).then(()=>showToast('Copied!','success'))">📋 Copy Rules</button>
+    </div>
     <div class="adm-header">
       <div>
         <div class="adm-title">👑 <span>CineRealm</span> Admin</div>
@@ -539,84 +566,96 @@ window.addEventListener("load", async () => {
 async function loadOverview() {
   const { ref, get } = { ref: window._admRef, get: window._admGet };
   const db = _db;
-  try {
-    const [usersSnap, reviewsSnap, reportsSnap, suppSnap, hdSnap, roomsSnap] = await Promise.all([
-      get(ref(db, "usernames")),
-      get(ref(db, "reviews")),
-      get(ref(db, "broken_sources")),
-      get(ref(db, "supporters")),
-      get(ref(db, "hd_votes")),
-      get(ref(db, "rooms")),
-    ]);
 
-    document.getElementById("stat-users").textContent     = usersSnap.exists()   ? Object.keys(usersSnap.val()).length   : 0;
-    document.getElementById("stat-reviews").textContent   = reviewsSnap.exists() ? Object.keys(reviewsSnap.val()).length : 0;
-    document.getElementById("stat-supporters").textContent= suppSnap.exists()    ? Object.keys(suppSnap.val()).length    : 0;
-    document.getElementById("stat-hd").textContent        = hdSnap.exists()      ? Object.keys(hdSnap.val()).length      : 0;
-    document.getElementById("stat-rooms").textContent     = roomsSnap.exists()   ? Object.keys(roomsSnap.val()).length   : 0;
+  // Fetch each stat individually so one permission error doesn't kill everything
+  const safeGet = async (path) => { try { return await get(ref(db, path)); } catch(e) { return null; } };
 
-    // Count open reports
-    let openCount = 0;
-    if (reportsSnap.exists()) {
-      Object.values(reportsSnap.val()).forEach(r => { if (r.status !== "resolved") openCount++; });
-    }
-    document.getElementById("stat-reports").textContent = openCount;
+  const [usersSnap, reviewsSnap, reportsSnap, suppSnap, hdSnap, roomsSnap] = await Promise.all([
+    safeGet("usernames"),
+    safeGet("reviews"),
+    safeGet("broken_sources"),
+    safeGet("supporters"),
+    safeGet("hd_votes"),
+    safeGet("rooms"),
+  ]);
 
-    // Recent users
-    const recentUsersEl = document.getElementById("admRecentUsers");
-    if (usersSnap.exists()) {
-      const usernames = Object.entries(usersSnap.val()).slice(-5).reverse();
-      recentUsersEl.innerHTML = usernames.map(([u, uid]) => `
-        <div class="adm-user-row">
-          <div class="adm-user-avatar">${u[0].toUpperCase()}</div>
-          <div>
-            <div style="font-size:13px;font-weight:700;color:#fff;">@${u}</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.3);">${uid.slice(0,12)}…</div>
-          </div>
-          <a href="/user/${u}" target="_blank" class="adm-btn adm-btn-blue" style="margin-left:auto;">View</a>
-        </div>`).join("");
-    } else { recentUsersEl.innerHTML = `<div class="adm-empty">No users yet</div>`; }
+  // Show rules warning if any reads failed
+  const anyFailed = [usersSnap, reviewsSnap, reportsSnap, suppSnap, hdSnap, roomsSnap].some(s => s === null);
+  document.getElementById("admRulesWarning").style.display = anyFailed ? "block" : "none";
 
-    // Recent reports
-    const recentReportsEl = document.getElementById("admRecentReports");
-    if (reportsSnap.exists()) {
-      const reports = Object.entries(reportsSnap.val()).slice(-4).reverse();
-      recentReportsEl.innerHTML = reports.map(([key, r]) => `
-        <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-          <div style="font-size:12px;font-weight:700;color:#fff;">${r.title || "Unknown"}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.35);">${r.source || ""} · ${r.ts ? new Date(r.ts).toLocaleDateString() : ""}</div>
-          <span class="adm-badge ${r.status === 'resolved' ? 'adm-badge-resolved' : 'adm-badge-open'}">${r.status || "open"}</span>
-        </div>`).join("");
-    } else { recentReportsEl.innerHTML = `<div class="adm-empty">No reports</div>`; }
+  document.getElementById("stat-users").textContent      = usersSnap?.exists()   ? Object.keys(usersSnap.val()).length   : "—";
+  document.getElementById("stat-reviews").textContent    = reviewsSnap?.exists() ? Object.keys(reviewsSnap.val()).length : "—";
+  document.getElementById("stat-supporters").textContent = suppSnap?.exists()    ? Object.keys(suppSnap.val()).length    : "—";
+  document.getElementById("stat-hd").textContent         = hdSnap?.exists()      ? Object.keys(hdSnap.val()).length      : "—";
+  document.getElementById("stat-rooms").textContent      = roomsSnap?.exists()   ? Object.keys(roomsSnap.val()).length   : "—";
 
-    // Achievement chart
-    loadAchChart();
-  } catch(e) { console.error(e); }
+  let openCount = 0;
+  if (reportsSnap?.exists()) {
+    Object.values(reportsSnap.val()).forEach(r => { if (r.status !== "resolved") openCount++; });
+  }
+  document.getElementById("stat-reports").textContent = openCount;
+
+  // Recent users
+  const recentUsersEl = document.getElementById("admRecentUsers");
+  if (usersSnap?.exists()) {
+    const usernames = Object.entries(usersSnap.val()).slice(-5).reverse();
+    recentUsersEl.innerHTML = usernames.map(([u, uid]) => `
+      <div class="adm-user-row">
+        <div class="adm-user-avatar">${u[0].toUpperCase()}</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#fff;">@${u}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.3);">${uid.slice(0,12)}…</div>
+        </div>
+        <a href="/user/${u}" target="_blank" class="adm-btn adm-btn-blue" style="margin-left:auto;">View</a>
+      </div>`).join("");
+  } else {
+    recentUsersEl.innerHTML = `<div class="adm-empty">No users yet${!usersSnap ? " · <span style='color:#ff6b6b;font-size:11px;'>Check Firebase rules</span>" : ""}</div>`;
+  }
+
+  // Recent reports
+  const recentReportsEl = document.getElementById("admRecentReports");
+  if (reportsSnap?.exists()) {
+    const reports = Object.entries(reportsSnap.val()).slice(-4).reverse();
+    recentReportsEl.innerHTML = reports.map(([key, r]) => `
+      <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+        <div style="font-size:12px;font-weight:700;color:#fff;">${r.title || "Unknown"}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);">${r.source || ""} · ${r.ts ? new Date(r.ts).toLocaleDateString() : ""}</div>
+        <span class="adm-badge ${r.status === 'resolved' ? 'adm-badge-resolved' : 'adm-badge-open'}">${r.status || "open"}</span>
+      </div>`).join("");
+  } else {
+    recentReportsEl.innerHTML = `<div class="adm-empty">${!reportsSnap ? "<span style='color:#ff6b6b;font-size:11px;'>Permission denied — update Firebase rules</span>" : "No reports 🎉"}</div>`;
+  }
+
+  loadAchChart();
 }
 
 async function loadAchChart() {
   const { ref, get } = { ref: window._admRef, get: window._admGet };
-  const snap = await get(ref(_db, "users"));
   const chartEl = document.getElementById("admAchChart");
-  if (!snap.exists()) { chartEl.innerHTML = `<div class="adm-empty">No data</div>`; return; }
+  try {
+    const snap = await get(ref(_db, "users"));
+    if (!snap.exists()) { chartEl.innerHTML = `<div class="adm-empty">No data yet</div>`; return; }
 
-  const achCounts = {};
-  const achNames  = { member:"CineRealm User", first_watch:"First Watch", ten_movies:"Movie Buff", fifty_movies:"Film Freak", binge_watcher:"Binge Watcher", ten_watchlist:"Collector", reviewer:"Critic", watchparty:"Party Host", top_reviewer:"Top Reviewer", active:"Active" };
-  let total = 0;
+    const achCounts = {};
+    const achNames  = { member:"CineRealm User", first_watch:"First Watch", ten_movies:"Movie Buff", fifty_movies:"Film Freak", binge_watcher:"Binge Watcher", ten_watchlist:"Collector", reviewer:"Critic", watchparty:"Party Host", top_reviewer:"Top Reviewer", active:"Active" };
+    let total = 0;
 
-  Object.values(snap.val()).forEach(u => {
-    if (!u.achievements) return;
-    total++;
-    Object.keys(u.achievements).forEach(a => { achCounts[a] = (achCounts[a] || 0) + 1; });
-  });
+    Object.values(snap.val()).forEach(u => {
+      if (!u.achievements) return;
+      total++;
+      Object.keys(u.achievements).forEach(a => { achCounts[a] = (achCounts[a] || 0) + 1; });
+    });
 
-  const sorted = Object.entries(achCounts).sort((a,b) => b[1]-a[1]);
-  chartEl.innerHTML = sorted.map(([id, count]) => `
-    <div class="adm-chart-bar">
-      <div class="adm-chart-label">${achNames[id] || id}</div>
-      <div class="adm-chart-track"><div class="adm-chart-fill" style="width:${total ? (count/total*100).toFixed(0) : 0}%"></div></div>
-      <div class="adm-chart-val">${count}</div>
-    </div>`).join("") || `<div class="adm-empty">No achievement data</div>`;
+    const sorted = Object.entries(achCounts).sort((a,b) => b[1]-a[1]);
+    chartEl.innerHTML = sorted.map(([id, count]) => `
+      <div class="adm-chart-bar">
+        <div class="adm-chart-label">${achNames[id] || id}</div>
+        <div class="adm-chart-track"><div class="adm-chart-fill" style="width:${total ? (count/total*100).toFixed(0) : 0}%"></div></div>
+        <div class="adm-chart-val">${count}</div>
+      </div>`).join("") || `<div class="adm-empty">No achievement data yet</div>`;
+  } catch(e) {
+    chartEl.innerHTML = `<div class="adm-empty" style="color:#ff6b6b;">Permission denied — update Firebase rules to allow admin reads</div>`;
+  }
 }
 
 // ── Reports ───────────────────────────────────────────────────────────────
