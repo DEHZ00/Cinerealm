@@ -3992,14 +3992,15 @@ window.addEventListener("load", () => {
       e.preventDefault();
       _tapCount++;
       clearTimeout(_tapTimer);
-      if (_tapCount === 5) { if(typeof showToast==="function") showToast("Keep going...", "info"); }
+      if (_tapCount === 4) { if(typeof showToast==="function") showToast("✨ Keep tapping...", "info"); }
+      if (_tapCount === 6) { if(typeof showToast==="function") showToast("One more!", "info"); }
       if (_tapCount >= 7) {
         _tapCount = 0;
         clearTimeout(_tapTimer);
-        _askName();
+        setTimeout(_askName, 600); // delay so last toast is readable
         return;
       }
-      _tapTimer = setTimeout(() => { _tapCount = 0; }, 700);
+      _tapTimer = setTimeout(() => { _tapCount = 0; }, 1800); // 1.8s window — plenty of time to read toast
     });
   });
 
@@ -4093,7 +4094,7 @@ window.addEventListener("load", () => {
 
         <!-- Secondary message -->
         <div style="margin-top:16px;font-size:13px;color:rgba(255,182,193,0.5);opacity:0;animation:_fadeUp 0.8s ease 1.4s forwards;font-style:italic;">
-          🍵 &nbsp; your fav matcha enjoyer &nbsp; 🍵
+          🍵 &nbsp; My fav matcha enjoyer. &nbsp; 🍵
         </div>
 
         <!-- Button -->
