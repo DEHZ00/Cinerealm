@@ -7467,3 +7467,169 @@ body.theater-mode #watch-content {
   .search-overlay-filters { gap: 5px; }
   .search-filter-chip { font-size: 10px; padding: 4px 10px; }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SECTION 24 — WATCH PARTY IMPROVEMENTS + REVIEWS & RATINGS
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Watch Party — new elements ──────────────────────────────────────────── */
+.wp-now-watching {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; margin-bottom: 10px;
+  background: rgba(255,44,44,0.08);
+  border: 1px solid rgba(255,44,44,0.15);
+  border-radius: 8px;
+}
+.wp-now-label {
+  font-size: 10px; font-weight: 800;
+  color: rgba(255,44,44,0.7);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+.wp-now-title {
+  font-size: 12px; font-weight: 600;
+  color: rgba(255,255,255,0.7);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.wp-sync-bar { margin-bottom: 10px; }
+.wp-sync-btn {
+  width: 100%; padding: 8px; border-radius: 8px;
+  background: rgba(255,44,44,0.12);
+  border: 1px solid rgba(255,44,44,0.25);
+  color: #ff6b6b; font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+}
+.wp-sync-btn:hover { background: rgba(255,44,44,0.2); }
+
+.wp-emoji-bar {
+  display: flex; gap: 6px; margin-bottom: 8px;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+}
+.wp-emoji-btn {
+  background: none; border: none; font-size: 20px;
+  cursor: pointer; padding: 4px; border-radius: 6px;
+  transition: transform 0.15s;
+  flex: 1; text-align: center;
+}
+.wp-emoji-btn:hover { transform: scale(1.3); }
+.wp-emoji-btn:active { transform: scale(0.9); }
+
+.wp-reaction-msg {
+  text-align: center; padding: 4px 0;
+  font-size: 22px; opacity: 0.85;
+  animation: popIn 0.3s cubic-bezier(0.22,0.68,0,1.1);
+}
+@keyframes popIn {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* ── Review button ───────────────────────────────────────────────────────── */
+.panel-review-btn {
+  padding: 8px 14px;
+  background: rgba(255,200,0,0.08);
+  border: 1.5px solid rgba(255,200,0,0.2);
+  border-radius: 999px;
+  color: rgba(255,200,0,0.8);
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+  white-space: nowrap;
+}
+.panel-review-btn:hover {
+  background: rgba(255,200,0,0.15);
+  border-color: rgba(255,200,0,0.4);
+  color: #ffd700;
+}
+
+/* ── User rating badge on cards ──────────────────────────────────────────── */
+.card-user-rating {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.75);
+  color: #ffd700;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
+  z-index: 3;
+  white-space: nowrap;
+  pointer-events: none;
+  letter-spacing: 1px;
+  backdrop-filter: blur(4px);
+}
+
+/* ── Community Reviews Section ───────────────────────────────────────────── */
+.cr-review-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px; padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.cr-review-card.cr-review-yours {
+  background: rgba(255,200,0,0.05);
+  border-color: rgba(255,200,0,0.15);
+}
+.cr-review-header {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.cr-review-stars {
+  color: #ffd700; font-size: 13px; letter-spacing: 1px;
+  flex-shrink: 0;
+}
+.cr-review-author {
+  font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.7);
+}
+.cr-review-date {
+  font-size: 11px; color: rgba(255,255,255,0.25);
+  margin-left: auto;
+}
+.cr-review-text {
+  font-size: 12px; color: rgba(255,255,255,0.5);
+  line-height: 1.6; margin: 0; font-style: italic;
+}
+
+.cr-review-empty-yours {
+  padding: 14px; text-align: center;
+  background: rgba(255,255,255,0.02);
+  border: 1px dashed rgba(255,255,255,0.08);
+  border-radius: 10px; margin-bottom: 12px;
+}
+.cr-review-empty-yours p {
+  font-size: 12px; color: rgba(255,255,255,0.3);
+  margin: 0 0 10px;
+}
+
+/* Average score + bar chart */
+.cr-community-header {
+  display: flex; gap: 16px; align-items: flex-start;
+  padding: 14px; margin-bottom: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+}
+.cr-avg-score {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+  flex-shrink: 0; min-width: 60px;
+}
+.cr-avg-num {
+  font-size: 28px; font-weight: 900; color: #ffd700;
+  line-height: 1;
+}
+.cr-avg-stars { color: #ffd700; font-size: 12px; letter-spacing: 1px; }
+.cr-avg-count { font-size: 10px; color: rgba(255,255,255,0.3); font-weight: 600; }
+
+.cr-rating-bars { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+.cr-bar-row { display: flex; align-items: center; gap: 6px; }
+.cr-bar-label { font-size: 10px; color: rgba(255,255,255,0.4); font-weight: 700; width: 18px; text-align: right; flex-shrink: 0; }
+.cr-bar-track { flex: 1; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+.cr-bar-fill { height: 100%; background: #ffd700; border-radius: 3px; transition: width 0.5s ease; }
+.cr-bar-count { font-size: 10px; color: rgba(255,255,255,0.3); width: 16px; flex-shrink: 0; }
+
+.cr-reviews-list { display: flex; flex-direction: column; gap: 0; }

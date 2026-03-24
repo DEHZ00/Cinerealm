@@ -516,8 +516,12 @@ function createMovieCard(movie, type = "movie") {
       ${runtime ? `<span>${runtime}</span>` : ""}
     </div>` : "";
 
-  // Blur-up sources
-  const thumbSrc = "https://image.tmdb.org/t/p/w92" + movie.poster_path;
+  // User's own rating overlay if they've reviewed it
+  const userReview = getReview(movie.id, type);
+  const userRatingBadge = userReview ? `
+    <span class="card-user-rating" title="Your rating: ${"★".repeat(userReview.stars)}">
+      ${"★".repeat(userReview.stars)}
+    </span>` : "";
   const fullSrc  = IMG_BASE + movie.poster_path;
 
   card.innerHTML = `
@@ -531,6 +535,7 @@ function createMovieCard(movie, type = "movie") {
       <span class="card-type-badge">${typeBadge}</span>
       ${scoreBadge}
       ${hdBadge}
+      ${userRatingBadge}
       ${isWatched ? '<span class="card-watched-overlay">✓</span>' : ""}
       ${progressRing}
       ${inWL ? `<button class="card-remove-wl" title="Remove from Watchlist" onclick="event.stopPropagation();removeFromWatchlist(${movie.id},'${type}',this)">✕</button>` : ""}
@@ -807,6 +812,10 @@ async function showMovieDetails(movie, type) {
       </div>
 
       ${castHTML}
+
+      <!-- Reviews section — loaded async below -->
+      <div id="panelReviewsSection"></div>
+
       ${similarHTML}
       ${collectionHTML}
     </div>
@@ -818,6 +827,14 @@ async function showMovieDetails(movie, type) {
     const btn = document.getElementById("panelWatchlistBtn");
     if (btn) btn.textContent = isInWatchlist(movie.id, type) ? "★ In Watchlist" : "☆ Watchlist";
   };
+
+  // Rate & Review button
+  document.getElementById("crReviewBtn").onclick = () => {
+    openReviewModal(movie.id, type, title, getReview(movie.id, type));
+  };
+
+  // Load reviews section async
+  loadPanelReviews(movie.id, type, title);
 
   // Find Similar — fetch recommendations and show in panel
   document.getElementById("panelSimilarBtn").onclick = async () => {
@@ -3152,6 +3169,329 @@ if (!window.location.pathname.startsWith("/watch")) {
     updateUI();
   });
 })();
+
+// ── Section 24 — Reviews & Ratings ───────────────────────────────────────
+const CR_REVIEWS_KEY = "cr_reviews"; // { "movie_123": { stars, text, ts } }
+
+function getReviews() {
+  try { return JSON.parse(localStorage.getItem(CR_REVIEWS_KEY) || "{}"); } catch { return {}; }
+}
+function saveReview(id, type, stars, text) {
+  const reviews = getReviews();
+  reviews[type + "_" + id] = { stars, text: text || "", ts: Date.now() };
+  localStorage.setItem(CR_REVIEWS_KEY, JSON.stringify(reviews));
+}
+function getReview(id, type) {
+  return getReviews()[type + "_" + id] || null;
+}
+function deleteReview(id, type) {
+  const reviews = getReviews();
+  delete reviews[type + "_" + id];
+  localStorage.setItem(CR_REVIEWS_KEY, JSON.stringify(reviews));
+}
+
+// ── Reviews Panel (community + yours) ────────────────────────────────────
+async function loadPanelReviews(id, type, title) {
+  const section = document.getElementById("panelReviewsSection");
+  if (!section) return;
+
+  const userReview = getReview(id, type);
+  const reviewKey  = type + "_" + id;
+
+  // Build initial HTML with your review + loading state for community
+  section.innerHTML = `
+    <div class="panel-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>Reviews</span>
+      <button class="panel-review-btn" id="crReviewBtn" style="font-size:11px;padding:5px 12px;">
+        ${userReview ? "✎ Edit Your Review" : "★ Rate & Review"}
+      </button>
+    </div>
+
+    ${userReview ? `
+      <div class="cr-review-card cr-review-yours">
+        <div class="cr-review-header">
+          <span class="cr-review-stars">${"★".repeat(userReview.stars)}${"☆".repeat(5-userReview.stars)}</span>
+          <span class="cr-review-author">You</span>
+          <span class="cr-review-date">${new Date(userReview.ts).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>
+        </div>
+        ${userReview.text ? `<p class="cr-review-text">"${userReview.text}"</p>` : ""}
+      </div>
+    ` : `
+      <div class="cr-review-empty-yours">
+        <p>You haven't reviewed this yet.</p>
+        <button class="panel-review-btn" style="font-size:12px;" onclick="openReviewModal(${id},'${type}','${title.replace(/'/g,"\'")}',null)">★ Be the first to review</button>
+      </div>
+    `}
+
+    <div id="crCommunityReviews" style="margin-top:12px;">
+      <div style="font-size:12px;color:rgba(255,255,255,0.25);padding:10px 0;">Loading community reviews…</div>
+    </div>
+  `;
+
+  // Wire review button
+  section.querySelector("#crReviewBtn")?.addEventListener("click", () => {
+    openReviewModal(id, type, title, getReview(id, type));
+  });
+
+  // Load community reviews from Firebase
+  try {
+    const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const app = getApps().length ? getApps()[0] : initializeApp({
+      apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
+      authDomain: "cinerealm-8b7b9.firebaseapp.com",
+      databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
+      projectId: "cinerealm-8b7b9",
+    });
+    const db = getDatabase(app);
+    const snap = await get(ref(db, "reviews/" + reviewKey));
+    const communityEl = document.getElementById("crCommunityReviews");
+    if (!communityEl) return;
+
+    if (!snap.exists()) {
+      communityEl.innerHTML = `<div style="font-size:12px;color:rgba(255,255,255,0.2);padding:8px 0;">No community reviews yet.</div>`;
+      return;
+    }
+
+    const allReviews = Object.values(snap.val())
+      .filter(r => r.stars && r.deviceId !== _getDeviceId()) // exclude own review from community list
+      .sort((a,b) => (b.ts||0) - (a.ts||0))
+      .slice(0, 20);
+
+    if (!allReviews.length) {
+      communityEl.innerHTML = `<div style="font-size:12px;color:rgba(255,255,255,0.2);padding:8px 0;">No community reviews yet.</div>`;
+      return;
+    }
+
+    // Average rating
+    const avg = (allReviews.reduce((s,r) => s + r.stars, 0) / allReviews.length).toFixed(1);
+    const dist = [5,4,3,2,1].map(s => ({
+      s, count: allReviews.filter(r => r.stars === s).length,
+      pct: Math.round((allReviews.filter(r => r.stars === s).length / allReviews.length) * 100)
+    }));
+
+    communityEl.innerHTML = `
+      <div class="cr-community-header">
+        <div class="cr-avg-score">
+          <span class="cr-avg-num">${avg}</span>
+          <span class="cr-avg-stars">${"★".repeat(Math.round(parseFloat(avg)))}${"☆".repeat(5-Math.round(parseFloat(avg)))}</span>
+          <span class="cr-avg-count">${allReviews.length} review${allReviews.length !== 1 ? "s" : ""}</span>
+        </div>
+        <div class="cr-rating-bars">
+          ${dist.map(d => `
+            <div class="cr-bar-row">
+              <span class="cr-bar-label">${d.s}★</span>
+              <div class="cr-bar-track"><div class="cr-bar-fill" style="width:${d.pct}%"></div></div>
+              <span class="cr-bar-count">${d.count}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+      <div class="cr-reviews-list">
+        ${allReviews.map(r => `
+          <div class="cr-review-card">
+            <div class="cr-review-header">
+              <span class="cr-review-stars">${"★".repeat(r.stars)}${"☆".repeat(5-r.stars)}</span>
+              <span class="cr-review-author">${r.name || "Anonymous"}</span>
+              <span class="cr-review-date">${r.ts ? new Date(r.ts).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : ""}</span>
+            </div>
+            ${r.text ? `<p class="cr-review-text">"${r.text.replace(/</g,"&lt;").replace(/>/g,"&gt;")}"</p>` : ""}
+          </div>
+        `).join("")}
+      </div>
+    `;
+
+  } catch(e) {
+    const communityEl = document.getElementById("crCommunityReviews");
+    if (communityEl) communityEl.innerHTML = `<div style="font-size:12px;color:rgba(255,255,255,0.2);padding:8px 0;">Couldn't load community reviews.</div>`;
+  }
+}
+
+// Device fingerprint for deduplication (not tied to account)
+function _getDeviceId() {
+  let id = localStorage.getItem("cr_device_id");
+  if (!id) { id = "d_" + Math.random().toString(36).slice(2, 12); localStorage.setItem("cr_device_id", id); }
+  return id;
+}
+
+// ── Save review also to Firebase ─────────────────────────────────────────
+const _origSaveReview = saveReview;
+window.saveReview = async function(id, type, stars, text) {
+  _origSaveReview(id, type, stars, text); // save locally first
+  try {
+    const { getDatabase, ref, set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const app = getApps().length ? getApps()[0] : initializeApp({
+      apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
+      authDomain: "cinerealm-8b7b9.firebaseapp.com",
+      databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
+      projectId: "cinerealm-8b7b9",
+    });
+    const db = getDatabase(app);
+    const deviceId = _getDeviceId();
+    await set(ref(db, "reviews/" + type + "_" + id + "/" + deviceId), {
+      stars, text: text || "", ts: Date.now(),
+      deviceId,
+      name: localStorage.getItem("cr_display_name") || "Anonymous",
+    });
+  } catch(e) {} // Firebase failure doesn't break local save
+};
+
+// ── Delete review also from Firebase ─────────────────────────────────────
+const _origDeleteReview = deleteReview;
+window.deleteReview = async function(id, type) {
+  _origDeleteReview(id, type);
+  try {
+    const { getDatabase, ref, remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const app = getApps().length ? getApps()[0] : initializeApp({
+      apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
+      authDomain: "cinerealm-8b7b9.firebaseapp.com",
+      databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
+      projectId: "cinerealm-8b7b9",
+    });
+    const db = getDatabase(app);
+    await remove(ref(db, "reviews/" + type + "_" + id + "/" + _getDeviceId()));
+  } catch(e) {}
+};
+
+// Open review modal
+function openReviewModal(id, type, title, existingReview) {
+
+  // Remove any existing modal
+  document.getElementById("crReviewModal")?.remove();
+
+  const stars = existingReview?.stars || 0;
+  const text  = existingReview?.text  || "";
+
+  const modal = document.createElement("div");
+  modal.id = "crReviewModal";
+  modal.style.cssText = "position:fixed;inset:0;z-index:9800;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;";
+  modal.innerHTML = `
+    <div style="background:linear-gradient(160deg,#160202,#0a0606);border:1px solid rgba(255,44,44,0.2);border-radius:18px;padding:28px;width:100%;max-width:440px;box-shadow:0 24px 60px rgba(0,0,0,0.6);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <h3 style="margin:0;font-size:17px;font-weight:900;color:#fff;">Rate & Review</h3>
+        <button id="crReviewClose" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;">✕</button>
+      </div>
+      <p style="margin:0 0 20px;font-size:13px;color:rgba(255,255,255,0.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${title}</p>
+
+      <div style="margin-bottom:20px;">
+        <div style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Your Rating</div>
+        <div id="crStarRow" style="display:flex;gap:8px;">
+          ${[1,2,3,4,5].map(i => `
+            <button class="cr-star-btn" data-star="${i}" style="
+              background:none;border:none;font-size:30px;cursor:pointer;
+              color:${i <= stars ? '#ffd700' : 'rgba(255,255,255,0.15)'};
+              transition:all 0.1s;padding:2px;line-height:1;
+            ">★</button>
+          `).join("")}
+        </div>
+        <div id="crStarLabel" style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:6px;height:16px;">
+          ${stars ? ["","Terrible","Bad","OK","Good","Amazing!"][stars] : "Tap to rate"}
+        </div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <div style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Review <span style="font-weight:400;opacity:0.6;">(optional)</span></div>
+        <textarea id="crReviewText" maxlength="500" placeholder="What did you think? (optional)"
+          style="width:100%;height:90px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#fff;font-size:13px;padding:10px 12px;resize:none;outline:none;box-sizing:border-box;font-family:inherit;line-height:1.5;"
+        >${text}</textarea>
+        <div style="text-align:right;font-size:11px;color:rgba(255,255,255,0.25);margin-top:4px;"><span id="crCharCount">${text.length}</span>/500</div>
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button id="crReviewSave" style="flex:1;padding:11px;background:#ff2c2c;border:none;border-radius:10px;color:#fff;font-weight:800;font-size:14px;cursor:pointer;">
+          ${existingReview ? "Update Review" : "Save Review"}
+        </button>
+        ${existingReview ? `<button id="crReviewDelete" style="padding:11px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:rgba(255,100,100,0.7);font-size:13px;cursor:pointer;">Delete</button>` : ""}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  let selectedStars = stars;
+  const labels = ["","Terrible","Bad","OK","Good","Amazing!"];
+
+  // Star interaction
+  const starBtns = modal.querySelectorAll(".cr-star-btn");
+  starBtns.forEach(btn => {
+    btn.onmouseover = () => {
+      const n = parseInt(btn.dataset.star);
+      starBtns.forEach(b => b.style.color = parseInt(b.dataset.star) <= n ? "#ffd700" : "rgba(255,255,255,0.15)");
+      modal.querySelector("#crStarLabel").textContent = labels[n];
+    };
+    btn.onmouseout = () => {
+      starBtns.forEach(b => b.style.color = parseInt(b.dataset.star) <= selectedStars ? "#ffd700" : "rgba(255,255,255,0.15)");
+      modal.querySelector("#crStarLabel").textContent = selectedStars ? labels[selectedStars] : "Tap to rate";
+    };
+    btn.onclick = () => {
+      selectedStars = parseInt(btn.dataset.star);
+      starBtns.forEach(b => b.style.color = parseInt(b.dataset.star) <= selectedStars ? "#ffd700" : "rgba(255,255,255,0.15)");
+      modal.querySelector("#crStarLabel").textContent = labels[selectedStars];
+      if (window.haptic) window.haptic("light");
+    };
+  });
+
+  // Touch support for stars
+  starBtns.forEach(btn => {
+    btn.addEventListener("touchend", e => {
+      e.preventDefault();
+      selectedStars = parseInt(btn.dataset.star);
+      starBtns.forEach(b => b.style.color = parseInt(b.dataset.star) <= selectedStars ? "#ffd700" : "rgba(255,255,255,0.15)");
+      modal.querySelector("#crStarLabel").textContent = labels[selectedStars];
+    });
+  });
+
+  // Char counter
+  const textarea = modal.querySelector("#crReviewText");
+  textarea.oninput = () => {
+    modal.querySelector("#crCharCount").textContent = textarea.value.length;
+  };
+  textarea.onfocus = () => textarea.style.borderColor = "rgba(255,44,44,0.4)";
+  textarea.onblur  = () => textarea.style.borderColor = "rgba(255,255,255,0.1)";
+
+  // Save
+  modal.querySelector("#crReviewSave").onclick = () => {
+    if (!selectedStars) { showToast("Select a star rating first", "error"); return; }
+    saveReview(id, type, selectedStars, textarea.value.trim());
+    showToast(existingReview ? "Review updated ✓" : "Review saved ✓", "success");
+    modal.remove();
+    // Update details panel if open
+    updateReviewBadgeInPanel(id, type);
+  };
+
+  // Delete
+  modal.querySelector("#crReviewDelete")?.addEventListener("click", () => {
+    deleteReview(id, type);
+    showToast("Review deleted", "info");
+    modal.remove();
+    updateReviewBadgeInPanel(id, type);
+  });
+
+  // Close
+  modal.querySelector("#crReviewClose").onclick = () => modal.remove();
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+  document.addEventListener("keydown", function esc(e) {
+    if (e.key === "Escape") { modal.remove(); document.removeEventListener("keydown", esc); }
+  });
+}
+
+// Update the "Your Rating" badge in the details panel without full reload
+function updateReviewBadgeInPanel(id, type) {
+  const badge = document.getElementById("crYourRatingBadge");
+  if (!badge) return;
+  const review = getReview(id, type);
+  if (review) {
+    badge.textContent = "★".repeat(review.stars) + " Your Rating";
+    badge.style.display = "inline-flex";
+  } else {
+    badge.style.display = "none";
+  }
+  const reviewBtn = document.getElementById("crReviewBtn");
+  if (reviewBtn) reviewBtn.textContent = review ? "✎ Edit Review" : "★ Rate & Review";
+}
+
 
 // ── Section 23 — Mobile Upgrades ─────────────────────────────────────────
 (function initMobileUpgrades() {
