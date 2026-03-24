@@ -6,13 +6,119 @@
   <title>Profile — CineRealm</title>
   <link rel="stylesheet" href="/style.css">
   <link rel="icon" href="/favicon.ico">
-  <meta property="og:title" content="CineRealm Profile">
-  <meta property="og:image" content="https://cinerealm.online/android-chrome-512x512.png">
+  <style>
+    .crp-page { max-width: 860px; margin: 0 auto; padding: 28px 20px 120px; }
+
+    .crp-hero {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px; padding: 28px;
+      margin-bottom: 16px;
+      display: flex; gap: 22px; align-items: flex-start;
+    }
+    .crp-avatar {
+      width: 88px; height: 88px; border-radius: 50%;
+      flex-shrink: 0; overflow: hidden;
+      border: 3px solid rgba(255,44,44,0.3);
+      background: linear-gradient(135deg,#ff2c2c,#800000);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 34px; font-weight: 900; color: #fff;
+    }
+    .crp-avatar.role-owner     { border-color:#ffd700; box-shadow:0 0 18px rgba(255,215,0,0.35); }
+    .crp-avatar.role-developer { border-color:#a78bfa; box-shadow:0 0 18px rgba(167,139,250,0.3); }
+    .crp-avatar.role-verified  { border-color:#60a5fa; box-shadow:0 0 14px rgba(96,165,250,0.25); }
+    .crp-avatar.role-moderator { border-color:#34d399; box-shadow:0 0 14px rgba(52,211,153,0.2); }
+
+    .crp-info { flex:1; min-width:0; }
+    .crp-name-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:3px; }
+    .crp-name { font-size:24px; font-weight:900; color:#fff; }
+
+    .crp-role-pill {
+      display:inline-flex; align-items:center; gap:5px;
+      padding:3px 10px; border-radius:999px;
+      font-size:12px; font-weight:800; border:1.5px solid;
+    }
+    .rp-owner    { color:#ffd700; background:rgba(255,215,0,0.1);   border-color:rgba(255,215,0,0.35); }
+    .rp-developer{ color:#a78bfa; background:rgba(167,139,250,0.1); border-color:rgba(167,139,250,0.35); }
+    .rp-verified { color:#60a5fa; background:rgba(96,165,250,0.1);  border-color:rgba(96,165,250,0.35); }
+    .rp-moderator{ color:#34d399; background:rgba(52,211,153,0.1);  border-color:rgba(52,211,153,0.35); }
+
+    .crp-username { font-size:13px; color:rgba(255,255,255,0.35); margin-bottom:10px; }
+    .crp-bio { font-size:13px; color:rgba(255,255,255,0.55); line-height:1.6; margin-bottom:16px; max-width:500px; }
+
+    .crp-stats { display:flex; gap:24px; flex-wrap:wrap; }
+    .crp-stat-val   { font-size:20px; font-weight:900; color:#fff; line-height:1; }
+    .crp-stat-label { font-size:10px; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.6px; font-weight:700; }
+
+    .crp-actions { display:flex; flex-direction:column; gap:8px; flex-shrink:0; }
+    .crp-btn {
+      padding:9px 22px; border-radius:999px; font-size:13px; font-weight:800;
+      cursor:pointer; transition:all 0.15s; white-space:nowrap; text-align:center; text-decoration:none;
+    }
+    .crp-btn-follow   { background:#ff2c2c; border:none; color:#fff; }
+    .crp-btn-follow:hover { background:#e01f1f; transform:translateY(-1px); }
+    .crp-btn-unfollow { background:rgba(255,255,255,0.07); border:1.5px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.7); }
+    .crp-btn-unfollow:hover { border-color:rgba(255,44,44,0.4); color:#ff6b6b; }
+    .crp-btn-edit { background:rgba(255,255,255,0.07); border:1.5px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); }
+    .crp-btn-edit:hover { background:rgba(255,255,255,0.12); color:#fff; }
+
+    .crp-section {
+      background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+      border-radius:16px; padding:20px 22px; margin-bottom:14px;
+    }
+    .crp-section-title {
+      font-size:11px; font-weight:800; color:rgba(255,255,255,0.35);
+      text-transform:uppercase; letter-spacing:0.9px; margin-bottom:14px;
+    }
+
+    /* Role badge cards — descriptive, like Twitter verified info */
+    .crp-badge-cards { display:flex; flex-wrap:wrap; gap:10px; }
+    .crp-badge-card {
+      display:flex; align-items:center; gap:12px;
+      padding:12px 16px; border-radius:12px; border:1.5px solid; flex:1; min-width:180px;
+    }
+    .crp-badge-card-icon { font-size:22px; flex-shrink:0; }
+    .crp-badge-card-name { font-size:13px; font-weight:900; }
+    .crp-badge-card-desc { font-size:11px; opacity:0.55; margin-top:2px; }
+    .bc-owner    { background:rgba(255,215,0,0.07);   border-color:rgba(255,215,0,0.25);   color:#ffd700; }
+    .bc-developer{ background:rgba(167,139,250,0.07); border-color:rgba(167,139,250,0.25); color:#a78bfa; }
+    .bc-verified { background:rgba(96,165,250,0.07);  border-color:rgba(96,165,250,0.25);  color:#60a5fa; }
+    .bc-moderator{ background:rgba(52,211,153,0.07);  border-color:rgba(52,211,153,0.25);  color:#34d399; }
+
+    /* Achievement chips */
+    .crp-ach-grid { display:flex; flex-wrap:wrap; gap:8px; }
+    .crp-ach {
+      display:flex; align-items:center; gap:8px;
+      padding:8px 12px; border-radius:10px;
+      border:1px solid rgba(255,200,0,0.2);
+      background:rgba(255,200,0,0.06); cursor:default;
+      transition: transform 0.15s;
+    }
+    .crp-ach:hover { transform:translateY(-2px); }
+    .crp-ach.locked {
+      border-color:rgba(255,255,255,0.06);
+      background:rgba(255,255,255,0.02);
+      filter:grayscale(1); opacity:0.4;
+    }
+    .crp-ach-icon { font-size:18px; line-height:1; }
+    .crp-ach-name { font-size:12px; font-weight:800; color:rgba(255,200,0,0.9); }
+    .crp-ach-desc { font-size:10px; color:rgba(255,255,255,0.35); margin-top:1px; }
+    .crp-ach.locked .crp-ach-name { color:rgba(255,255,255,0.3); }
+
+    .crp-since { font-size:12px; color:rgba(255,255,255,0.2); margin-top:6px; }
+
+    @media (max-width:600px) {
+      .crp-hero { flex-direction:column; align-items:center; text-align:center; }
+      .crp-stats { justify-content:center; }
+      .crp-actions { flex-direction:row; flex-wrap:wrap; justify-content:center; }
+      .crp-bio { max-width:100%; }
+      .crp-badge-card { min-width:140px; }
+    }
+  </style>
 </head>
 <body>
 
 <div id="site-notification"></div>
-
 <header>
   <div class="header-left">
     <h1><a href="/" style="color:#ff2c2c;text-decoration:none;">CineRealm</a></h1>
@@ -33,7 +139,7 @@
 </header>
 
 <main>
-  <div class="cr-profile-page" id="profilePageContent">
+  <div class="crp-page" id="profilePageContent">
     <div style="text-align:center;padding:60px;color:rgba(255,255,255,0.3);">
       <div class="games-loading-spinner" style="margin:0 auto 16px;"></div>
       Loading profile…
@@ -58,8 +164,29 @@
 <script src="/cloak-config.js"></script>
 <script src="/script.js"></script>
 <script>
+// Role + achievement definitions (fallback if script.js hasn't loaded them)
+const _ROLE_DEFS = {
+  owner:     { icon:"👑", name:"Owner",     desc:"Creator of CineRealm",                  cls:"bc-owner",     pill:"rp-owner" },
+  developer: { icon:"🛠", name:"Developer", desc:"Builds & maintains CineRealm",           cls:"bc-developer", pill:"rp-developer" },
+  verified:  { icon:"✓",  name:"Verified",  desc:"Verified member of the community",       cls:"bc-verified",  pill:"rp-verified" },
+  moderator: { icon:"🛡", name:"Moderator", desc:"Keeps the community safe",               cls:"bc-moderator", pill:"rp-moderator" },
+};
+const _ACH_DEFS = [
+  { id:"member",         icon:"🎬", name:"CineRealm User", desc:"Welcome to CineRealm!" },
+  { id:"first_watch",   icon:"▶️",  name:"First Watch",    desc:"Watch your first title" },
+  { id:"ten_movies",    icon:"🎞",  name:"Movie Buff",     desc:"Watch 10 movies" },
+  { id:"fifty_movies",  icon:"🎭",  name:"Film Freak",     desc:"Watch 50 movies" },
+  { id:"binge_watcher", icon:"📺",  name:"Binge Watcher",  desc:"5 TV episodes in one day" },
+  { id:"ten_watchlist", icon:"📋",  name:"Collector",      desc:"Add 10 items to watchlist" },
+  { id:"genre_explorer",icon:"🌍",  name:"Genre Explorer", desc:"Watch 5 different genres" },
+  { id:"reviewer",      icon:"⭐",  name:"Critic",         desc:"Write your first review" },
+  { id:"watchparty",    icon:"👥",  name:"Party Host",     desc:"Host a watch party" },
+  { id:"top_reviewer",  icon:"🏅",  name:"Top Reviewer",   desc:"Write 10 reviews" },
+  { id:"active",        icon:"🔥",  name:"Active",         desc:"Watched something this week" },
+];
+
 (async function loadProfilePage() {
-  const username = window.location.pathname.split("/user/")[1]?.split("/")[0];
+  const username  = window.location.pathname.split("/user/")[1]?.split("/")[0];
   const container = document.getElementById("profilePageContent");
   if (!username) {
     container.innerHTML = `<div style="text-align:center;padding:60px;color:rgba(255,255,255,0.3);">Invalid profile URL</div>`;
@@ -70,32 +197,48 @@
     const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
     const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
     const app = getApps().length ? getApps()[0] : initializeApp({
-      apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
-      authDomain: "cinerealm-8b7b9.firebaseapp.com",
-      databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
-      projectId: "cinerealm-8b7b9",
+      apiKey:"AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
+      authDomain:"cinerealm-8b7b9.firebaseapp.com",
+      databaseURL:"https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
+      projectId:"cinerealm-8b7b9",
     });
     const db = getDatabase(app);
 
-    // Get UID from username
+    // Resolve username → UID
     const uidSnap = await get(ref(db, "usernames/" + username));
     if (!uidSnap.exists()) {
-      container.innerHTML = `<div style="text-align:center;padding:60px;"><div style="font-size:48px;margin-bottom:16px;">👤</div><div style="font-size:18px;font-weight:800;color:rgba(255,255,255,0.5);">User not found</div><p style="color:rgba(255,255,255,0.3);">@${username} doesn't exist</p></div>`;
+      container.innerHTML = `
+        <div style="text-align:center;padding:60px;">
+          <div style="font-size:48px;margin-bottom:16px;">👤</div>
+          <div style="font-size:18px;font-weight:800;color:rgba(255,255,255,0.5);">User not found</div>
+          <p style="color:rgba(255,255,255,0.3);">@${username} doesn't exist on CineRealm</p>
+        </div>`;
       return;
     }
 
     const uid = uidSnap.val();
-    const [profileSnap, achSnap, historySnap, roleSnap] = await Promise.all([
+    const [profileSnap, achSnap, historySnap, rolesSnap, roleOldSnap, wlSnap] = await Promise.all([
       get(ref(db, "users/" + uid + "/profile")),
       get(ref(db, "users/" + uid + "/achievements")),
       get(ref(db, "users/" + uid + "/history")),
+      get(ref(db, "users/" + uid + "/roles")),
       get(ref(db, "users/" + uid + "/role")),
+      get(ref(db, "users/" + uid + "/watchlist")),
     ]);
 
-    const profile = profileSnap.val();
-    const achievements = achSnap.exists() ? achSnap.val() : {};
-    const role = roleSnap.exists() ? roleSnap.val() : null;
+    const profile      = profileSnap.val();
+    const achievements = achSnap.exists()    ? achSnap.val()    : {};
+    // Support both new multi-role object and old single role string
+    let roles = [];
+    if (rolesSnap.exists()) {
+      const rolesObj = rolesSnap.val();
+      roles = Object.keys(rolesObj).filter(r => rolesObj[r] === true);
+    } else if (roleOldSnap.exists()) {
+      roles = [roleOldSnap.val()];
+    }
     const historyCount = historySnap.exists() ? Object.keys(historySnap.val()).length : 0;
+    const wlCount      = wlSnap.exists()     ? Object.keys(wlSnap.val()).length : 0;
+    const achCount     = Object.keys(achievements).length;
 
     if (!profile) {
       container.innerHTML = `<div style="text-align:center;padding:60px;color:rgba(255,255,255,0.3);">Profile not available</div>`;
@@ -104,99 +247,146 @@
 
     document.title = `${profile.displayName || profile.username} — CineRealm`;
 
-    const avatar = profile.avatarUrl || "";
-    const initial = (profile.displayName || profile.username || "?")[0].toUpperCase();
-    const isOwnProfile = typeof _crUser !== "undefined" && _crUser?.uid === uid;
+    const avatar    = profile.avatarUrl || "";
+    const initial   = (profile.displayName || profile.username || "?")[0].toUpperCase();
 
-    // Check if current user follows this profile
+    // Wait for auth to be ready before checking own profile
+    const isOwnProfile = await new Promise(resolve => {
+      if (typeof onAuthReady === "function") {
+        onAuthReady((user) => resolve(user?.uid === uid));
+      } else { resolve(false); }
+    });
+
     let following = false;
-    if (typeof isFollowing === "function" && !isOwnProfile) {
+    if (!isOwnProfile && typeof isFollowing === "function") {
       following = await isFollowing(uid);
     }
 
-    // Build achievement badges
-    const ACHIEVEMENT_LIST = typeof ACHIEVEMENTS !== "undefined" ? ACHIEVEMENTS : [];
-    const achHTML = ACHIEVEMENT_LIST.map(a => {
-      const earned = achievements[a.id];
+    // ── Role pills (next to name) ──
+    const rolePills = roles.map(r => {
+      const d = _ROLE_DEFS[r];
+      if (!d) return "";
+      return `<span class="crp-role-pill ${d.pill}">${d.icon} ${d.name}</span>`;
+    }).join("");
+
+    // ── Role badge cards (descriptive section) ──
+    const roleBadgeCards = roles.map(r => {
+      const d = _ROLE_DEFS[r];
+      if (!d) return "";
       return `
-        <div class="cr-achievement-badge ${earned ? "" : "locked"}" title="${a.desc}${earned ? "\nEarned: "+new Date(earned.earnedAt).toLocaleDateString() : ""}">
-          ${a.icon} ${a.name}
+        <div class="crp-badge-card ${d.cls}">
+          <span class="crp-badge-card-icon">${d.icon}</span>
+          <div>
+            <div class="crp-badge-card-name">${d.name}</div>
+            <div class="crp-badge-card-desc">${d.desc}</div>
+          </div>
+        </div>`;
+    }).join("");
+
+    // Avatar glow — use highest priority role (owner > developer > verified > moderator)
+    const rolePriority = ["owner","developer","verified","moderator"];
+    const topRole = rolePriority.find(r => roles.includes(r)) || null;
+
+    // ── Achievement chips ──
+    const achChips = _ACH_DEFS.map(a => {
+      const earned = achievements[a.id];
+      const earnedDate = earned ? new Date(earned.earnedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : null;
+      return `
+        <div class="crp-ach ${earned ? "" : "locked"}" title="${earned ? "Earned "+earnedDate : "Locked — "+a.desc}">
+          <span class="crp-ach-icon">${a.icon}</span>
+          <div>
+            <div class="crp-ach-name">${a.name}</div>
+            <div class="crp-ach-desc">${earned ? "Earned "+earnedDate : a.desc}</div>
+          </div>
         </div>`;
     }).join("");
 
     container.innerHTML = `
       <!-- Hero -->
-      <div class="cr-profile-hero">
-        <div class="cr-profile-avatar-lg">
-          ${avatar ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;">` : initial}
+      <div class="crp-hero">
+        <div class="crp-avatar${topRole ? " role-"+topRole : ""}">
+          ${avatar
+            ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.parentElement.textContent='${initial}'">`
+            : initial}
         </div>
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><div class="cr-profile-name">${profile.displayName || profile.username}</div>${role && typeof ROLE_BADGES !== 'undefined' && ROLE_BADGES[role] ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:${ROLE_BADGES[role].bg};border:1px solid ${ROLE_BADGES[role].border};border-radius:999px;font-size:11px;font-weight:800;color:${ROLE_BADGES[role].color};">${ROLE_BADGES[role].icon} ${ROLE_BADGES[role].name}</span>` : ""}</div>
-          <div class="cr-profile-username">@${profile.username}</div>
-          ${profile.bio ? `<p class="cr-profile-bio">${profile.bio}</p>` : ""}
-          <div class="cr-profile-stats">
-            <div class="cr-profile-stat">
-              <div class="cr-profile-stat-val">${historyCount}</div>
-              <div class="cr-profile-stat-label">Watched</div>
+        <div class="crp-info">
+          <div class="crp-name-row">
+            <span class="crp-name">${profile.displayName || profile.username}</span>
+            ${rolePills}
+          </div>
+          <div class="crp-username">@${profile.username}</div>
+          ${profile.bio ? `<p class="crp-bio">${profile.bio}</p>` : ""}
+          <div class="crp-stats">
+            <div>
+              <div class="crp-stat-val">${historyCount}</div>
+              <div class="crp-stat-label">Watched</div>
             </div>
-            <div class="cr-profile-stat">
-              <div class="cr-profile-stat-val">${profile.followers || 0}</div>
-              <div class="cr-profile-stat-label">Followers</div>
+            <div>
+              <div class="crp-stat-val">${wlCount}</div>
+              <div class="crp-stat-label">Watchlist</div>
             </div>
-            <div class="cr-profile-stat">
-              <div class="cr-profile-stat-val">${profile.following || 0}</div>
-              <div class="cr-profile-stat-label">Following</div>
+            <div>
+              <div class="crp-stat-val">${profile.followers || 0}</div>
+              <div class="crp-stat-label">Followers</div>
             </div>
-            <div class="cr-profile-stat">
-              <div class="cr-profile-stat-val">${Object.keys(achievements).length}</div>
-              <div class="cr-profile-stat-label">Badges</div>
+            <div>
+              <div class="crp-stat-val">${profile.following || 0}</div>
+              <div class="crp-stat-label">Following</div>
+            </div>
+            <div>
+              <div class="crp-stat-val">${achCount}</div>
+              <div class="crp-stat-label">Badges</div>
             </div>
           </div>
+          <div class="crp-since">Member since ${new Date(profile.createdAt).toLocaleDateString("en-US",{month:"long",year:"numeric"})}</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0;">
-          ${isOwnProfile
-            ? `<button class="cr-follow-btn unfollow" onclick="openEditProfileModal()">✏ Edit Profile</button>`
-            : `<button id="followBtn" class="cr-follow-btn ${following ? "unfollow" : "follow"}" onclick="handleFollowClick('${uid}')">
-                ${following ? "Following" : "Follow"}
-               </button>`
-          }
-          ${isOwnProfile ? `<a href="/stats" class="cr-follow-btn unfollow" style="text-decoration:none;text-align:center;">📊 My Stats</a>` : ""}
+        <div class="crp-actions">
+          ${isOwnProfile ? `
+            <button class="crp-btn crp-btn-edit" onclick="openEditProfileModal()">✏ Edit Profile</button>
+            <a class="crp-btn crp-btn-edit" href="/stats" style="text-decoration:none;">📊 My Stats</a>
+          ` : `
+            <button id="crpFollowBtn" class="crp-btn ${following ? "crp-btn-unfollow" : "crp-btn-follow"}"
+              onclick="handleFollowBtn('${uid}')">
+              ${following ? "Following" : "Follow"}
+            </button>
+          `}
         </div>
       </div>
 
-      <!-- Achievements -->
-      ${achHTML ? `
-        <div style="margin-bottom:24px;">
-          <div class="panel-section-title">Achievements</div>
-          <div class="cr-achievements-grid">${achHTML}</div>
+      <!-- Role / special badges section -->
+      ${roleBadgeCards ? `
+        <div class="crp-section">
+          <div class="crp-section-title">Roles</div>
+          <div class="crp-badge-cards">${roleBadgeCards}</div>
         </div>
       ` : ""}
 
-      <!-- Member since -->
-      <div style="font-size:12px;color:rgba(255,255,255,0.25);margin-top:16px;">
-        Member since ${new Date(profile.createdAt).toLocaleDateString("en-US",{month:"long",year:"numeric"})}
+      <!-- Achievements -->
+      <div class="crp-section">
+        <div class="crp-section-title">Achievements — ${achCount} / ${_ACH_DEFS.length} earned</div>
+        <div class="crp-ach-grid">${achChips}</div>
       </div>
     `;
 
-    window.handleFollowClick = async function(targetUid) {
-      const btn = document.getElementById("followBtn");
+    window.handleFollowBtn = async function(targetUid) {
+      const btn = document.getElementById("crpFollowBtn");
       if (!btn) return;
       if (following) {
-        await unfollowUser(targetUid);
+        if (typeof unfollowUser === "function") await unfollowUser(targetUid);
         following = false;
         btn.textContent = "Follow";
-        btn.className = "cr-follow-btn follow";
+        btn.className = "crp-btn crp-btn-follow";
       } else {
-        await followUser(targetUid);
+        if (typeof followUser === "function") await followUser(targetUid);
         following = true;
         btn.textContent = "Following";
-        btn.className = "cr-follow-btn unfollow";
+        btn.className = "crp-btn crp-btn-unfollow";
       }
     };
 
   } catch(e) {
-    container.innerHTML = `<div style="text-align:center;padding:60px;color:rgba(255,255,255,0.3);">Failed to load profile</div>`;
     console.error(e);
+    container.innerHTML = `<div style="text-align:center;padding:60px;color:rgba(255,255,255,0.3);">Failed to load profile. <a href="/" style="color:#ff6b6b;">Go home</a></div>`;
   }
 })();
 </script>

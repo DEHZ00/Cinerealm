@@ -46,7 +46,7 @@ function loadHistory() {
 
   // If we cleaned up a lot, save the deduplicated version back
   if (raw.length > historyData.length) {
-    console.log("[History] Deduplicated", raw.length, "→", historyData.length, "entries");
+
     saveHistory();
   }
 }
@@ -2803,7 +2803,7 @@ async function registerFCMToken() {
     const token = await getToken(fcmMessaging, { vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: reg });
     if (token) {
       localStorage.setItem("cr_fcm_token", token);
-      console.log("FCM token registered");
+
     }
     onMessage(fcmMessaging, payload => {
       const { title, body } = payload.notification || {};
@@ -2985,7 +2985,7 @@ if (!window.location.pathname.startsWith("/watch")) {
     el.id = "crCloakPanel";
     el.innerHTML = `
       <div class="cr-cloak-panel-header">
-        <h4>🎭 Tab Cloak</h4>
+        <h4>👻 Tab Cloak</h4>
         <button class="cr-cloak-panel-close" id="crCloakClose">✕</button>
       </div>
 
@@ -3051,7 +3051,7 @@ if (!window.location.pathname.startsWith("/watch")) {
     const el = document.createElement("button");
     el.className = "cr-cloak-btn";
     el.id = "crCloakBtn";
-    el.innerHTML = `<span>🎭</span><span>Cloak</span>`;
+    el.innerHTML = `<span>👻</span><span>Cloak</span>`;
     document.body.appendChild(el);
     return el;
   }
@@ -3060,6 +3060,7 @@ if (!window.location.pathname.startsWith("/watch")) {
   window.addEventListener("load", () => {
     _panel = buildPanel();
     _btn   = buildBtn();
+    _addOledToCloak();
 
     // Toggle panel
     _btn.onclick = () => {
@@ -3732,7 +3733,7 @@ const CR_VERSION = "2.0";
 const CR_CHANGELOG = [
   { icon: "🔍", title: "Fullscreen Search", desc: "New overlay with filters, voice search, and person results" },
   { icon: "⭐", title: "Reviews & Ratings", desc: "Rate and review anything — see what the community thinks" },
-  { icon: "🎭", title: "Tab Cloak", desc: "Make CineRealm look like Google Docs, Canvas, Khan Academy" },
+  { icon: "👻", title: "Tab Cloak", desc: "Make CineRealm look like Google Docs, Canvas, Khan Academy" },
   { icon: "👥", title: "Watch Party Sync", desc: "Host can now push episodes to all guests instantly" },
   { icon: "📋", title: "Watchlist Lists", desc: "Create custom lists like Horror Night or Date Night" },
   { icon: "📱", title: "Mobile Upgrades", desc: "Pull to refresh, swipe cards, haptic feedback" },
@@ -3948,25 +3949,21 @@ const CR_CHANGELOG = [
   });
 })();
 
-// ── 5. OLED mode toggle in cloak settings ─────────────────────────────────
-// Patch settings panel to include OLED toggle
-window.addEventListener("load", () => {
-  const origSettings = document.getElementById("crCloakPanel");
-  if (!origSettings) return;
-  // Add OLED button to settings section if not already there
-  const settingsSection = origSettings.querySelector(".cr-cloak-section:last-child");
-  if (settingsSection && !document.getElementById("oledToggleBtn")) {
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <hr style="border:none;border-top:1px solid rgba(255,255,255,0.07);margin:8px 0;">
-      <div class="cr-cloak-section-label">Display</div>
-      <button id="oledToggleBtn" class="cr-cloak-action-btn secondary" style="width:100%;" onclick="toggleOledMode()">
-        🖤 Toggle OLED Mode
-      </button>
-    `;
-    settingsSection.appendChild(div);
-  }
-});
+// ── 5. OLED mode toggle — added to cloak panel ───────────────────────────
+// Injected into cloak panel after it's built
+function _addOledToCloak() {
+  const panel = document.getElementById("crCloakPanel");
+  if (!panel || document.getElementById("oledToggleBtn")) return;
+  const div = document.createElement("div");
+  div.className = "cr-cloak-section";
+  div.innerHTML = `
+    <div class="cr-cloak-section-label">Display</div>
+    <button id="oledToggleBtn" class="cr-cloak-action-btn secondary" style="width:100%;" onclick="toggleOledMode()">
+      🖤 OLED Mode ${localStorage.getItem('cr_oled_mode')==='1' ? '(On)' : '(Off)'}
+    </button>
+  `;
+  panel.appendChild(div);
+}
 
 
 // ── Hidden ───────────────────────────────────────────────────────────────
@@ -4553,11 +4550,11 @@ function openProfileDropdown(anchor) {
 
   document.getElementById("crEditProfileBtn").onclick = () => { dd.remove(); openEditProfileModal(); };
 
-  // Load role badge async
+  // Load role badges async (supports multiple)
   if (_crUser) {
-    getUserRole(_crUser.uid).then(role => {
+    getUserRole(_crUser.uid).then(roles => {
       const badgeEl = document.getElementById("crDdRoleBadge");
-      if (badgeEl && role) badgeEl.innerHTML = getRoleBadgeHTML(role);
+      if (badgeEl && roles.length) badgeEl.innerHTML = getRolesPillsHTML(roles);
     });
   }
 
@@ -4744,9 +4741,36 @@ function getRoleBadgeHTML(role) {
 async function getUserRole(uid) {
   try {
     const { ref, get } = window._fbHelpers;
-    const snap = await get(ref(_fbDb, "users/" + uid + "/role"));
-    return snap.exists() ? snap.val() : null;
-  } catch(e) { return null; }
+    // Support both old single role string and new multi-role object
+    const snap = await get(ref(_fbDb, "users/" + uid + "/roles"));
+    if (snap.exists()) {
+      const rolesObj = snap.val();
+      // Return array of active roles
+      return Object.keys(rolesObj).filter(r => rolesObj[r] === true);
+    }
+    // Fallback: check old single role field
+    const oldSnap = await get(ref(_fbDb, "users/" + uid + "/role"));
+    if (oldSnap.exists()) return [oldSnap.val()];
+    return [];
+  } catch(e) { return []; }
+}
+
+// Helper — checks if user has a specific role
+function hasRole(roles, role) {
+  if (!roles) return false;
+  if (Array.isArray(roles)) return roles.includes(role);
+  if (typeof roles === "string") return roles === role;
+  return false;
+}
+
+// Helper — returns HTML for all role pills
+function getRolesPillsHTML(roles) {
+  if (!roles || !roles.length) return "";
+  return roles.map(r => {
+    if (!ROLE_BADGES[r]) return "";
+    const b = ROLE_BADGES[r];
+    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:${b.bg};border:1px solid ${b.border};border-radius:999px;font-size:11px;font-weight:800;color:${b.color};">${b.icon} ${b.name}</span>`;
+  }).join("");
 }
 
 async function checkAndAwardAchievements() {
@@ -4793,7 +4817,7 @@ async function followUser(targetUid) {
 async function unfollowUser(targetUid) {
   if (!_crUser) return;
   try {
-    const { ref, remove } = window._fbHelpers;
+    const { ref, remove, set } = window._fbHelpers;
     const uid = _crUser.uid;
     await remove(ref(_fbDb, "users/" + uid + "/following/" + targetUid));
     await remove(ref(_fbDb, "users/" + targetUid + "/followers/" + uid));
@@ -4819,21 +4843,54 @@ function showSessionGreeting() {
   if (window.location.pathname !== "/") return;
   sessionStorage.setItem("cr_greeted", "1");
 
-  const name = _crProfile.displayName || _crProfile.username || "there";
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const name     = _crProfile.displayName || _crProfile.username || "there";
+  const hour     = new Date().getHours();
+  const greeting = hour >= 5 && hour < 12 ? "Good morning"
+    : hour >= 12 && hour < 17 ? "Good afternoon"
+    : hour >= 17 && hour < 21 ? "Good evening"
+    : "Welcome back";
+  const sub = hour >= 5 && hour < 12 ? "Ready to watch something great?"
+    : hour >= 12 && hour < 17 ? "What are we watching today?"
+    : hour >= 17 && hour < 21 ? "Perfect time for a movie 🎬"
+    : "Still up? Let's find something to watch.";
 
   const el = document.createElement("div");
   el.id = "crGreeting";
-  el.style.cssText = "position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:8000;background:linear-gradient(135deg,rgba(255,44,44,0.15),rgba(100,0,0,0.1));border:1px solid rgba(255,44,44,0.25);border-radius:999px;padding:10px 24px;font-size:14px;font-weight:700;color:#fff;backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,0.3);white-space:nowrap;animation:_fadeUp 0.5s ease;pointer-events:none;";
-  el.textContent = `${greeting}, ${name} 👋`;
+  el.style.cssText = `
+    position:fixed;top:72px;left:50%;transform:translateX(-50%) translateY(-8px);
+    z-index:8000;
+    background:linear-gradient(135deg,rgba(20,2,2,0.95),rgba(10,3,3,0.95));
+    border:1px solid rgba(255,44,44,0.25);
+    border-radius:16px;
+    padding:14px 24px 16px;
+    min-width:260px;
+    max-width:360px;
+    text-align:center;
+    backdrop-filter:blur(20px);
+    box-shadow:0 12px 40px rgba(0,0,0,0.5),0 0 0 1px rgba(255,44,44,0.08);
+    opacity:0;
+    transition:opacity 0.4s ease, transform 0.4s cubic-bezier(0.22,0.68,0,1.1);
+    pointer-events:none;
+  `;
+  el.innerHTML = `
+    <div style="font-size:13px;color:rgba(255,255,255,0.45);font-weight:600;margin-bottom:4px;">${greeting} 👋</div>
+    <div style="font-size:18px;font-weight:900;color:#fff;margin-bottom:4px;">${name}</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.4);">${sub}</div>
+  `;
   document.body.appendChild(el);
+
+  // Animate in
+  requestAnimationFrame(() => {
+    el.style.opacity = "1";
+    el.style.transform = "translateX(-50%) translateY(0)";
+  });
+
+  // Dismiss after 5 seconds
   setTimeout(() => {
-    el.style.transition = "opacity 0.8s ease, transform 0.8s ease";
     el.style.opacity = "0";
-    el.style.transform = "translateX(-50%) translateY(-10px)";
-    setTimeout(() => el.remove(), 800);
-  }, 3000);
+    el.style.transform = "translateX(-50%) translateY(-8px)";
+    setTimeout(() => el.remove(), 400);
+  }, 5000);
 }
 
 // ── Reviews — use display name ────────────────────────────────────────────
@@ -4842,8 +4899,6 @@ const _origSaveReview2 = window.saveReview || saveReview;
 window.saveReview = async function(id, type, stars, text) {
   // Update name in Firebase review
   const displayName = _crProfile?.displayName || _crProfile?.username || "Anonymous";
-  // Re-patch the name before calling original
-  const origGetItem = localStorage.getItem.bind(localStorage);
   await _origSaveReview2(id, type, stars, text);
   // Update Firebase entry with proper name
   if (_crUser) {
@@ -4898,8 +4953,12 @@ async function searchUsers(query) {
     const results = await Promise.all(matches.slice(0, 10).map(async m => {
       try {
         const pSnap = await get(ref(db, "users/" + m.uid + "/profile"));
-        const rSnap = await get(ref(db, "users/" + m.uid + "/role"));
-        return pSnap.exists() ? { ...pSnap.val(), role: rSnap.exists() ? rSnap.val() : null } : null;
+        const rSnap = await get(ref(db, "users/" + m.uid + "/roles"));
+        const rOldSnap = !rSnap.exists() ? await get(ref(db, "users/" + m.uid + "/role")) : null;
+        let roles = [];
+        if (rSnap.exists()) roles = Object.keys(rSnap.val()).filter(r => rSnap.val()[r]);
+        else if (rOldSnap?.exists()) roles = [rOldSnap.val()];
+        return pSnap.exists() ? { ...pSnap.val(), roles } : null;
       } catch(e) { return null; }
     }));
 
@@ -4925,7 +4984,7 @@ function renderUserSearchResults(users, container) {
         ${avatar ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;">` : `<span style="font-size:18px;font-weight:800;color:#fff;">${initial}</span>`}
       </div>
       <div style="font-size:11px;font-weight:700;color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;">${u.displayName || u.username}</div>
-      ${u.role ? `<div style="font-size:9px;color:${ROLE_BADGES[u.role]?.color||'#fff'};font-weight:800;">${ROLE_BADGES[u.role]?.icon||""} ${ROLE_BADGES[u.role]?.name||""}</div>` : `<div style="font-size:9px;color:rgba(255,255,255,0.3);">@${u.username}</div>`}
+      ${u.roles?.length ? `<div style="display:flex;gap:2px;flex-wrap:wrap;justify-content:center;">${u.roles.map(r => ROLE_BADGES[r] ? `<div style="font-size:9px;color:${ROLE_BADGES[r].color};font-weight:800;">${ROLE_BADGES[r].icon}</div>` : "").join("")}</div>` : `<div style="font-size:9px;color:rgba(255,255,255,0.3);">@${u.username}</div>`}
     `;
     row.appendChild(card);
   });
@@ -4951,7 +5010,7 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js")
       .then(reg => {
-        console.log("CineRealm SW registered:", reg.scope);
+
 
         // Force new SW to activate immediately without waiting for tabs to close
         if (reg.waiting) {

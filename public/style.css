@@ -5521,7 +5521,7 @@ header.header-hidden {
 /* Scroll-to-top button */
 .scroll-top-btn {
   position: fixed;
-  bottom: 80px;
+  bottom: 130px;
   right: 20px;
   width: 40px;
   height: 40px;
