@@ -942,7 +942,7 @@ async function leaveRoom() {
       reportBtn.textContent = "Reporting…";
       reportBtn.disabled = true;
       try {
-        const { getDatabase, ref, push } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+        const { getDatabase, ref, push, get, query, orderByChild, limitToLast } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
         const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
         const app = getApps().length ? getApps()[0] : initializeApp({
           apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
@@ -952,13 +952,35 @@ async function leaveRoom() {
         });
         const db = getDatabase(app);
         const activeSource = document.querySelector(".source-tab.active")?.dataset?.name || "Unknown";
+        const reportKey = `${tmdbId}_${activeSource}`;
+
+        // Check how many times this source has been reported
+        const countSnap = await get(ref(db, "broken_source_counts/" + reportKey));
+        const currentCount = countSnap.exists() ? countSnap.val() : 0;
+
         await push(ref(db, "broken_sources"), {
           tmdbId, type, title, source: activeSource,
           season: season || null, episode: episode || null,
-          timestamp: Date.now()
+          timestamp: Date.now(), reportKey
         });
+
+        // Increment count
+        const { set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+        await set(ref(db, "broken_source_counts/" + reportKey), currentCount + 1);
+
         showToast("Source reported — thanks!", "success");
         reportBtn.textContent = "✓ Reported";
+
+        // If 3+ reports for same source, write to admin_alerts
+        if (currentCount + 1 >= 3) {
+          await push(ref(db, "admin_alerts"), {
+            type: "broken_source",
+            message: `⚠️ "${activeSource}" broken on "${title}" (${type}) — ${currentCount + 1} reports`,
+            tmdbId, source: activeSource, title,
+            season: season || null, episode: episode || null,
+            timestamp: Date.now()
+          });
+        }
       } catch(e) {
         showToast("Failed to report", "error");
         reportBtn.textContent = "⚠ Report Broken Source";

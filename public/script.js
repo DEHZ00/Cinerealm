@@ -1772,7 +1772,7 @@ async function renderTrending() {
 
 const sb = document.getElementById("searchBar");
 
-// Search history helpers
+// ── Search history helpers ────────────────────────────────────────────────
 const SEARCH_HISTORY_KEY = "cr_search_history";
 function getSearchHistory() {
   try { return JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY) || "[]"); } catch { return []; }
@@ -1789,162 +1789,385 @@ function removeSearchHistory(q) {
   localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(h));
 }
 
-// Create live dropdown container (attached to header)
-function createSearchDropdown() {
-  let d = document.getElementById("searchDropdown");
-  if (d) return d;
-  d = document.createElement("div");
-  d.id = "searchDropdown";
-  d.className = "search-dropdown";
-  // Insert right after the header element
-  const header = document.querySelector("header");
-  if (header) header.parentNode.insertBefore(d, header.nextSibling);
-  else document.body.appendChild(d);
-  return d;
-}
-
-function closeSearchDropdown() {
-  const d = document.getElementById("searchDropdown");
-  if (d) d.style.display = "none";
-}
-
-function showSearchHistory() {
-  const d = createSearchDropdown();
-  const history = getSearchHistory();
-  if (!history.length) { d.style.display = "none"; return; }
-
-  d.innerHTML = `
-    <div class="sdrop-section-label">Recent Searches</div>
-    ${history.map(q => `
-      <div class="sdrop-history-item">
-        <span class="sdrop-history-icon">🕐</span>
-        <span class="sdrop-history-text" data-q="${q}">${q}</span>
-        <button class="sdrop-history-remove" data-q="${q}">✕</button>
-      </div>
-    `).join("")}
-  `;
-
-  d.querySelectorAll(".sdrop-history-text").forEach(el => {
-    el.onclick = () => {
-      sb.value = el.dataset.q;
-      closeSearchDropdown();
-      window.location.href = "/search?q=" + encodeURIComponent(el.dataset.q);
-    };
-  });
-
-  d.querySelectorAll(".sdrop-history-remove").forEach(btn => {
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      removeSearchHistory(btn.dataset.q);
-      showSearchHistory();
-    };
-  });
-
-  // Position dropdown under search bar
-  positionDropdown(d);
-  d.style.display = "block";
-}
-
-function positionDropdown(d) {
-  if (!sb) return;
-  const rect = sb.getBoundingClientRect();
-  d.style.position = "fixed";
-  d.style.top = (rect.bottom + 6) + "px";
-  d.style.left = rect.left + "px";
-  d.style.width = Math.max(rect.width, 320) + "px";
-}
-
-// Debounced live search
+// ── Section 19 — Fullscreen Search Overlay ───────────────────────────────
+let _searchOverlay = null;
 let _searchDebounce = null;
+let _searchResultIndex = -1;
+let _searchResults = [];
 
-function startLiveSearch(query) {
-  clearTimeout(_searchDebounce);
-  if (!query || query.length < 2) {
-    showSearchHistory();
-    return;
-  }
-  _searchDebounce = setTimeout(() => runLiveSearch(query), 400);
-}
+// Filter state
+let _searchFilters = {
+  type: "all",    // all | movie | tv
+  decade: "",     // "" | "2020s" | "2010s" | "2000s" | "1990s" | "classic"
+  minRating: 0,   // 0-9
+  genre: ""       // genre id
+};
 
-async function runLiveSearch(query) {
-  const d = createSearchDropdown();
-  positionDropdown(d);
-  d.style.display = "block";
-  d.innerHTML = '<div class="sdrop-loading">Searching…</div>';
+function buildSearchOverlay() {
+  if (document.getElementById("searchOverlay")) return;
+  const el = document.createElement("div");
+  el.id = "searchOverlay";
+  el.className = "search-overlay";
+  el.innerHTML = `
+    <div class="search-overlay-inner">
+      <div class="search-overlay-bar">
+        <span class="search-overlay-icon">🔍</span>
+        <input class="search-overlay-input" id="searchOverlayInput"
+          placeholder="Search movies, shows, people…" autocomplete="off" spellcheck="false">
+        <button class="search-overlay-voice" id="searchVoiceBtn" title="Voice search">🎤</button>
+        <button class="search-overlay-close" id="searchOverlayClose">✕</button>
+      </div>
 
-  const data = await apiCall("/search/multi", { query, page: 1 });
-  const results = (data?.results || [])
-    .filter(x => (x.media_type === "movie" || x.media_type === "tv") && (x.poster_path || x.backdrop_path))
-    .slice(0, 6);
-
-  if (!results.length) {
-    d.innerHTML = `<div class="sdrop-empty">No results for "<strong>${query}</strong>"</div>`;
-    return;
-  }
-
-  d.innerHTML = `
-    <div class="sdrop-section-label">Results</div>
-    ${results.map(r => {
-      const title = r.title || r.name || "";
-      const year  = (r.release_date || r.first_air_date || "").split("-")[0];
-      const type  = r.media_type === "tv" ? "TV" : "Movie";
-      const img   = r.poster_path ? IMG_BASE + r.poster_path : "";
-      return `
-        <div class="sdrop-result" data-id="${r.id}" data-type="${r.media_type}" data-poster="${r.poster_path || ""}" data-title="${title.replace(/"/g, "&quot;")}">
-          ${img ? `<img src="${img}" alt="${title}" class="sdrop-poster">` : '<div class="sdrop-poster sdrop-poster-empty">🎬</div>'}
-          <div class="sdrop-info">
-            <div class="sdrop-title">${title}</div>
-            <div class="sdrop-meta">${year ? year + " · " : ""}${type}</div>
-          </div>
+      <div class="search-overlay-filters" id="searchOverlayFilters">
+        <div class="search-filter-group">
+          <button class="search-filter-chip active" data-filter="type" data-val="all">All</button>
+          <button class="search-filter-chip" data-filter="type" data-val="movie">🎬 Movies</button>
+          <button class="search-filter-chip" data-filter="type" data-val="tv">📺 TV</button>
         </div>
-      `;
-    }).join("")}
-    <a class="sdrop-see-all" href="/search?q=${encodeURIComponent(query)}">See all results for "${query}" →</a>
-  `;
+        <div class="search-filter-group">
+          <button class="search-filter-chip" data-filter="decade" data-val="">Any Year</button>
+          <button class="search-filter-chip" data-filter="decade" data-val="2020s">2020s</button>
+          <button class="search-filter-chip" data-filter="decade" data-val="2010s">2010s</button>
+          <button class="search-filter-chip" data-filter="decade" data-val="2000s">2000s</button>
+          <button class="search-filter-chip" data-filter="decade" data-val="1990s">90s</button>
+          <button class="search-filter-chip" data-filter="decade" data-val="classic">Classic</button>
+        </div>
+        <div class="search-filter-group">
+          <button class="search-filter-chip active" data-filter="minRating" data-val="0">Any Rating</button>
+          <button class="search-filter-chip" data-filter="minRating" data-val="6">6+</button>
+          <button class="search-filter-chip" data-filter="minRating" data-val="7">7+</button>
+          <button class="search-filter-chip" data-filter="minRating" data-val="8">8+</button>
+        </div>
+      </div>
 
-  d.querySelectorAll(".sdrop-result").forEach(el => {
-    el.onclick = () => {
-      addSearchHistory(query);
-      closeSearchDropdown();
-      const movie = { id: parseInt(el.dataset.id), poster_path: el.dataset.poster, title: el.dataset.title, name: el.dataset.title };
-      showMovieDetails(movie, el.dataset.type);
+      <div class="search-overlay-body" id="searchOverlayBody">
+        <div class="search-overlay-recent" id="searchOverlayRecent"></div>
+        <div class="search-overlay-results" id="searchOverlayResults"></div>
+      </div>
+    </div>
+    <div class="search-overlay-backdrop" id="searchOverlayBackdrop"></div>
+  `;
+  document.body.appendChild(el);
+  _searchOverlay = el;
+
+  // Wire close
+  document.getElementById("searchOverlayClose").onclick = closeSearchOverlay;
+  document.getElementById("searchOverlayBackdrop").onclick = closeSearchOverlay;
+
+  // Wire filters
+  el.querySelectorAll(".search-filter-chip").forEach(chip => {
+    chip.onclick = () => {
+      const filter = chip.dataset.filter;
+      const val    = chip.dataset.val;
+      // Deactivate siblings in same group
+      chip.closest(".search-filter-group").querySelectorAll(".search-filter-chip")
+        .forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      if (filter === "minRating") _searchFilters.minRating = parseFloat(val) || 0;
+      else _searchFilters[filter] = val;
+      // Re-run search if query exists
+      const q = document.getElementById("searchOverlayInput")?.value.trim();
+      if (q && q.length >= 2) runOverlaySearch(q);
     };
   });
+
+  // Wire input
+  const input = document.getElementById("searchOverlayInput");
+  input.addEventListener("input", () => {
+    const q = input.value.trim();
+    clearTimeout(_searchDebounce);
+    if (!q || q.length < 2) { showOverlayRecent(); return; }
+    _searchDebounce = setTimeout(() => runOverlaySearch(q), 300);
+  });
+
+  input.addEventListener("keydown", e => {
+    const results = document.querySelectorAll(".so-result-card");
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      _searchResultIndex = Math.min(_searchResultIndex + 1, results.length - 1);
+      results.forEach((r,i) => r.classList.toggle("focused", i === _searchResultIndex));
+      results[_searchResultIndex]?.scrollIntoView({ block: "nearest" });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      _searchResultIndex = Math.max(_searchResultIndex - 1, -1);
+      results.forEach((r,i) => r.classList.toggle("focused", i === _searchResultIndex));
+    } else if (e.key === "Enter") {
+      if (_searchResultIndex >= 0 && results[_searchResultIndex]) {
+        results[_searchResultIndex].click();
+      } else {
+        const q = input.value.trim();
+        if (q) { addSearchHistory(q); closeSearchOverlay(); window.location.href = "/search?q=" + encodeURIComponent(q); }
+      }
+    } else if (e.key === "Escape") {
+      closeSearchOverlay();
+    }
+  });
+
+  // Voice search
+  document.getElementById("searchVoiceBtn").onclick = startVoiceSearch;
 }
 
+function openSearchOverlay() {
+  buildSearchOverlay();
+  const el = document.getElementById("searchOverlay");
+  if (!el) return;
+  el.classList.add("open");
+  document.body.style.overflow = "hidden";
+  _searchResultIndex = -1;
+  setTimeout(() => {
+    const input = document.getElementById("searchOverlayInput");
+    if (input) {
+      // Copy whatever is in the main search bar
+      if (sb) input.value = sb.value || "";
+      input.focus();
+      const q = input.value.trim();
+      if (q && q.length >= 2) runOverlaySearch(q);
+      else showOverlayRecent();
+    }
+  }, 80);
+}
+
+function closeSearchOverlay() {
+  const el = document.getElementById("searchOverlay");
+  if (el) el.classList.remove("open");
+  document.body.style.overflow = "";
+  _searchResultIndex = -1;
+}
+
+function showOverlayRecent() {
+  const recentEl  = document.getElementById("searchOverlayRecent");
+  const resultsEl = document.getElementById("searchOverlayResults");
+  if (!recentEl) return;
+  if (resultsEl) resultsEl.innerHTML = "";
+
+  const history = getSearchHistory();
+  if (!history.length) { recentEl.innerHTML = ""; return; }
+
+  recentEl.innerHTML = `
+    <div class="so-section-label">Recent Searches</div>
+    <div class="so-recent-list">
+      ${history.map(q => `
+        <div class="so-recent-item">
+          <span class="so-recent-icon">🕐</span>
+          <span class="so-recent-text">${q}</span>
+          <button class="so-recent-remove" data-q="${q}">✕</button>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  recentEl.querySelectorAll(".so-recent-text").forEach(el => {
+    el.onclick = () => {
+      const input = document.getElementById("searchOverlayInput");
+      if (input) { input.value = el.textContent; runOverlaySearch(el.textContent); }
+    };
+  });
+  recentEl.querySelectorAll(".so-recent-remove").forEach(btn => {
+    btn.onclick = e => { e.stopPropagation(); removeSearchHistory(btn.dataset.q); showOverlayRecent(); };
+  });
+}
+
+async function runOverlaySearch(query) {
+  const resultsEl = document.getElementById("searchOverlayResults");
+  const recentEl  = document.getElementById("searchOverlayRecent");
+  if (!resultsEl) return;
+  if (recentEl) recentEl.innerHTML = "";
+  _searchResultIndex = -1;
+
+  resultsEl.innerHTML = `<div class="so-loading"><div class="games-loading-spinner"></div><span>Searching…</span></div>`;
+
+  // Build TMDB params based on filters
+  const decadeRanges = {
+    "2020s": ["2020-01-01","2029-12-31"],
+    "2010s": ["2010-01-01","2019-12-31"],
+    "2000s": ["2000-01-01","2009-12-31"],
+    "1990s": ["1990-01-01","1999-12-31"],
+    "classic": ["1900-01-01","1989-12-31"],
+  };
+
+  try {
+    // Run movie, tv, and person searches in parallel
+    const [multiData, personData] = await Promise.all([
+      apiCall("/search/multi", { query, page: 1 }),
+      apiCall("/search/person", { query, page: 1 }).catch(() => null),
+    ]);
+
+    let results = (multiData?.results || [])
+      .filter(r => (r.media_type === "movie" || r.media_type === "tv") && r.poster_path);
+
+    // Apply type filter
+    if (_searchFilters.type !== "all") {
+      results = results.filter(r => r.media_type === _searchFilters.type);
+    }
+
+    // Apply decade filter
+    if (_searchFilters.decade && decadeRanges[_searchFilters.decade]) {
+      const [from, to] = decadeRanges[_searchFilters.decade];
+      results = results.filter(r => {
+        const d = r.release_date || r.first_air_date || "";
+        return d >= from && d <= to;
+      });
+    }
+
+    // Apply rating filter
+    if (_searchFilters.minRating > 0) {
+      results = results.filter(r => (r.vote_average || 0) >= _searchFilters.minRating);
+    }
+
+    // People results
+    const people = (personData?.results || [])
+      .filter(p => p.profile_path)
+      .slice(0, 4);
+
+    if (!results.length && !people.length) {
+      resultsEl.innerHTML = `<div class="so-empty">No results for "<strong>${query}</strong>"</div>`;
+      return;
+    }
+
+    let html = "";
+
+    // People section
+    if (people.length) {
+      html += `<div class="so-section-label">People</div><div class="so-people-row">`;
+      html += people.map(p => `
+        <div class="so-person-card so-result-card" data-person-id="${p.id}" data-person-name="${p.name.replace(/"/g,"&quot;")}">
+          <img src="https://image.tmdb.org/t/p/w185${p.profile_path}" alt="${p.name}" loading="lazy">
+          <div class="so-person-name">${p.name}</div>
+          <div class="so-person-known">${p.known_for_department || "Acting"}</div>
+        </div>
+      `).join("");
+      html += `</div>`;
+    }
+
+    // Media results
+    if (results.length) {
+      html += `<div class="so-section-label">Results <span style="color:rgba(255,255,255,0.3);font-weight:500;">(${results.length})</span></div>`;
+      html += `<div class="so-results-grid">`;
+      html += results.slice(0, 20).map(r => {
+        const title = r.title || r.name || "";
+        const year  = (r.release_date || r.first_air_date || "").split("-")[0];
+        const score = r.vote_average ? r.vote_average.toFixed(1) : null;
+        const type  = r.media_type === "tv" ? "TV" : "Movie";
+        return `
+          <div class="so-result-card" data-id="${r.id}" data-type="${r.media_type}"
+               data-poster="${r.poster_path || ""}" data-title="${title.replace(/"/g,"&quot;")}">
+            <div class="so-card-img-wrap">
+              <img src="${IMG_BASE + r.poster_path}" alt="${title}" loading="lazy">
+              <span class="so-card-type">${type}</span>
+              ${score ? `<span class="so-card-score ${parseFloat(score)>=7.5?'gold':parseFloat(score)>=6?'silver':'dim'}">★${score}</span>` : ""}
+            </div>
+            <div class="so-card-title">${title}</div>
+            ${year ? `<div class="so-card-year">${year}</div>` : ""}
+          </div>
+        `;
+      }).join("");
+      html += `</div>`;
+      if (results.length > 0) {
+        html += `<a class="so-see-all" href="/search?q=${encodeURIComponent(query)}">See all results for "${query}" →</a>`;
+      }
+    }
+
+    resultsEl.innerHTML = html;
+
+    // Wire media cards
+    resultsEl.querySelectorAll(".so-result-card:not([data-person-id])").forEach(el => {
+      el.onclick = () => {
+        addSearchHistory(query);
+        closeSearchOverlay();
+        if (sb) sb.value = "";
+        showMovieDetails(
+          { id: parseInt(el.dataset.id), poster_path: el.dataset.poster, title: el.dataset.title, name: el.dataset.title },
+          el.dataset.type
+        );
+      };
+    });
+
+    // Wire person cards
+    resultsEl.querySelectorAll(".so-person-card").forEach(el => {
+      el.onclick = () => {
+        addSearchHistory(query);
+        closeSearchOverlay();
+        showPersonPanel(parseInt(el.dataset.personId), el.dataset.personName);
+      };
+    });
+
+  } catch(e) {
+    resultsEl.innerHTML = `<div class="so-empty">Search failed. Try again.</div>`;
+  }
+}
+
+// ── Voice Search ──────────────────────────────────────────────────────────
+function startVoiceSearch() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast("Voice search not supported in this browser", "error"); return; }
+
+  const voiceBtn = document.getElementById("searchVoiceBtn");
+  const input    = document.getElementById("searchOverlayInput");
+  const rec      = new SR();
+  rec.lang = "en-US";
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+
+  rec.onstart = () => {
+    if (voiceBtn) { voiceBtn.textContent = "🔴"; voiceBtn.style.color = "#ff2c2c"; }
+    showToast("Listening…", "info");
+  };
+
+  rec.onresult = e => {
+    const transcript = e.results[0][0].transcript;
+    if (input) {
+      input.value = transcript;
+      runOverlaySearch(transcript);
+    }
+  };
+
+  rec.onerror = () => { showToast("Couldn't hear that, try again", "error"); };
+
+  rec.onend = () => {
+    if (voiceBtn) { voiceBtn.textContent = "🎤"; voiceBtn.style.color = ""; }
+  };
+
+  rec.start();
+}
+
+// ── Wire search bar to open overlay ──────────────────────────────────────
 if (sb) {
-  // Live search on input
-  sb.addEventListener("input", (e) => {
-    const q = sb.value.trim();
-    startLiveSearch(q);
+  sb.addEventListener("focus", openSearchOverlay);
+  sb.addEventListener("click", openSearchOverlay);
+  sb.addEventListener("input", () => {
+    // If overlay is open, mirror input
+    const overlayInput = document.getElementById("searchOverlayInput");
+    if (overlayInput && document.getElementById("searchOverlay")?.classList.contains("open")) {
+      overlayInput.value = sb.value;
+      const q = sb.value.trim();
+      if (q && q.length >= 2) runOverlaySearch(q);
+    } else {
+      openSearchOverlay();
+    }
   });
-
-  // Show history on focus
-  sb.addEventListener("focus", () => {
-    const q = sb.value.trim();
-    if (!q) showSearchHistory();
-    else startLiveSearch(q);
-  });
-
-  // Navigate to search page on Enter
-  sb.addEventListener("keydown", (e) => {
+  sb.addEventListener("keydown", e => {
     if (e.key === "Enter") {
       const q = sb.value.trim();
-      if (!q) return;
-      addSearchHistory(q);
-      closeSearchDropdown();
-      window.location.href = "/search?q=" + encodeURIComponent(q);
-    }
-    if (e.key === "Escape") closeSearchDropdown();
-  });
-
-  // Close dropdown when clicking outside
-  document.addEventListener("click", (e) => {
-    if (!sb.contains(e.target) && !document.getElementById("searchDropdown")?.contains(e.target)) {
-      closeSearchDropdown();
+      if (q) { addSearchHistory(q); window.location.href = "/search?q=" + encodeURIComponent(q); }
     }
   });
 }
+
+// Global / keyboard shortcut to open search
+document.addEventListener("keydown", e => {
+  if (e.key === "/" && !["INPUT","TEXTAREA"].includes(document.activeElement?.tagName)) {
+    e.preventDefault();
+    openSearchOverlay();
+    setTimeout(() => document.getElementById("searchOverlayInput")?.focus(), 80);
+  }
+  if (e.key === "Escape") closeSearchOverlay();
+});
+
+// Legacy dropdown — keep for compatibility but route to overlay
+function createSearchDropdown() { return null; }
+function closeSearchDropdown() { closeSearchOverlay(); }
+function showSearchHistory() { openSearchOverlay(); }
+function startLiveSearch(q) { if (q) runOverlaySearch(q); }
 
 
 function buildHeroDots() {
