@@ -456,18 +456,58 @@ function createMovieCard(movie, type = "movie") {
     }
   }
 
-  const title = movie.title || movie.name || "Unknown";
+  const title    = movie.title || movie.name || "Unknown";
   const typeBadge = type === "tv" ? "TV" : (type === "anime" ? "Anime" : "Movie");
-  const inWL = isInWatchlist(movie.id, type);
+  const inWL     = isInWatchlist(movie.id, type);
 
-  // Rating badge — show if score exists
+  // Watched state
+  const watchedKey = "cr_watched_" + type + "_" + movie.id;
+  const isWatched  = localStorage.getItem(watchedKey) === "1";
+
+  // Rating badge
   const score = movie.vote_average ? movie.vote_average.toFixed(1) : null;
   const scoreBadge = score && parseFloat(score) > 0 ? `
     <span class="card-score-badge ${parseFloat(score) >= 7.5 ? 'gold' : parseFloat(score) >= 6 ? 'silver' : 'dim'}">
       ★ ${score}
     </span>` : "";
 
-  // Blur-up: use w92 thumbnail as placeholder, swap to w500 on load
+  // HD badge — check digital release date
+  const digitalDate = movie._digitalDate || null;
+  const isDigital   = digitalDate && new Date(digitalDate) <= new Date();
+  const hdBadge     = isDigital ? `<span class="card-hd-badge">HD</span>` : "";
+
+  // TV progress ring — % of total episodes watched
+  let progressRing = "";
+  if (type === "tv" && movie.number_of_episodes && movie.number_of_episodes > 0) {
+    const watchedEps = historyData.filter(h =>
+      h.type === "tv" && (h.tmdbId || h.id) == movie.id && h.episode
+    ).length;
+    const ringPercent = Math.min(100, Math.round((watchedEps / movie.number_of_episodes) * 100));
+    if (ringPercent > 0) {
+      const r = 16, circ = 2 * Math.PI * r;
+      const dash = (ringPercent / 100) * circ;
+      progressRing = `
+        <svg class="card-progress-ring" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="20" cy="20" r="${r}" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="3"/>
+          <circle cx="20" cy="20" r="${r}" fill="none" stroke="#ff2c2c" stroke-width="3"
+            stroke-dasharray="${dash} ${circ}"
+            stroke-dashoffset="${circ * 0.25}"
+            stroke-linecap="round"/>
+          <text x="20" y="24" text-anchor="middle" fill="#fff" font-size="9" font-weight="800">${ringPercent}%</text>
+        </svg>`;
+    }
+  }
+
+  // Hover info — runtime and year
+  const year = (movie.release_date || movie.first_air_date || "").split("-")[0];
+  const runtime = movie.runtime ? Math.floor(movie.runtime/60) + "h " + (movie.runtime%60) + "m" : "";
+  const hoverInfo = (year || runtime) ? `
+    <div class="card-hover-info">
+      ${year ? `<span>${year}</span>` : ""}
+      ${runtime ? `<span>${runtime}</span>` : ""}
+    </div>` : "";
+
+  // Blur-up sources
   const thumbSrc = "https://image.tmdb.org/t/p/w92" + movie.poster_path;
   const fullSrc  = IMG_BASE + movie.poster_path;
 
@@ -481,8 +521,12 @@ function createMovieCard(movie, type = "movie") {
         loading="lazy">
       <span class="card-type-badge">${typeBadge}</span>
       ${scoreBadge}
+      ${hdBadge}
+      ${isWatched ? '<span class="card-watched-overlay">✓</span>' : ""}
+      ${progressRing}
       ${inWL ? `<button class="card-remove-wl" title="Remove from Watchlist" onclick="event.stopPropagation();removeFromWatchlist(${movie.id},'${type}',this)">✕</button>` : ""}
       ${percent > 0 ? '<div class="progress-bar" style="width:' + percent + '%"></div>' : ""}
+      ${hoverInfo}
       <div class="card-hover-shine"></div>
       <p>
         ${title}
@@ -491,7 +535,7 @@ function createMovieCard(movie, type = "movie") {
     </div>
   `;
 
-  // Blur-up: swap to full res image once it loads
+  // Blur-up
   const img = card.querySelector("img");
   const fullImg = new Image();
   fullImg.onload = () => {
@@ -501,18 +545,36 @@ function createMovieCard(movie, type = "movie") {
   };
   fullImg.src = fullSrc;
 
-  // Preload on hover — prefetch details after 300ms hover so panel opens instantly
+  // Preload on hover
   let hoverTimer = null;
   card.addEventListener("mouseenter", () => {
     hoverTimer = setTimeout(() => {
-      apiCall("/" + type + "/" + movie.id); // warms the cache
+      // Also fetch digital release date for HD badge if not already set
+      if (type === "movie" && !movie._digitalDate && !movie._digitalChecked) {
+        movie._digitalChecked = true;
+        apiCall("/movie/" + movie.id + "/release_dates").then(data => {
+          const usRelease = data?.results?.find(r => r.iso_3166_1 === "US");
+          const digital = usRelease?.release_dates?.find(r => r.type === 4 || r.type === 5);
+          if (digital?.release_date) {
+            movie._digitalDate = digital.release_date;
+            if (new Date(digital.release_date) <= new Date()) {
+              // Add HD badge dynamically
+              const wrapper = card.querySelector(".card-image-wrapper");
+              if (wrapper && !wrapper.querySelector(".card-hd-badge")) {
+                const badge = document.createElement("span");
+                badge.className = "card-hd-badge";
+                badge.textContent = "HD";
+                wrapper.appendChild(badge);
+              }
+            }
+          }
+        }).catch(() => {});
+      }
+      apiCall("/" + type + "/" + movie.id);
     }, 300);
   });
-  card.addEventListener("mouseleave", () => {
-    clearTimeout(hoverTimer);
-  });
+  card.addEventListener("mouseleave", () => clearTimeout(hoverTimer));
 
-  // Click card → open fullscreen details
   card.addEventListener("click", () => showMovieDetails(movie, type));
 
   return card;
