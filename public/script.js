@@ -3721,48 +3721,110 @@ const CR_CHANGELOG = [
   { icon: "🛠", title: "Admin Dashboard",       desc: "Manage reports, reviews, users, roles, and notifications at /admin." },
 ];
 
-(function showChangelog() {
-  const key = "cr_seen_v" + CR_VERSION;
-  if (localStorage.getItem(key)) return;
-  setTimeout(() => {
-    const el = document.createElement("div");
-    el.id = "crChangelog";
-    el.style.cssText = "position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,0.82);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.3s ease;";
-    el.innerHTML = `
-      <div style="background:linear-gradient(160deg,#160202,#0a0606);border:1px solid rgba(255,44,44,0.2);border-radius:20px;width:100%;max-width:460px;max-height:82vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,0.7);">
-        <div style="padding:22px 22px 0;flex-shrink:0;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <span style="font-size:22px;">🎬</span>
-              <div>
-                <div style="font-size:17px;font-weight:900;color:#fff;">What's New</div>
-                <div style="font-size:11px;color:rgba(255,44,44,0.7);font-weight:700;">CineRealm v${CR_VERSION}</div>
-              </div>
+// ── Changelog popup — shows on new version or when admin sends release ────
+function _showChangelogPopup(version, items, dismissKey) {
+  if (document.getElementById("crChangelog")) return;
+  const el = document.createElement("div");
+  el.id = "crChangelog";
+  el.style.cssText = "position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,0.88);backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.3s ease;";
+  el.innerHTML = `
+    <div style="background:linear-gradient(160deg,#160202,#0a0606);border:1px solid rgba(255,44,44,0.2);border-radius:20px;width:100%;max-width:460px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,0.7);">
+      <div style="padding:22px 22px 0;flex-shrink:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:22px;">🎬</span>
+            <div>
+              <div style="font-size:17px;font-weight:900;color:#fff;">What's New</div>
+              <div style="font-size:11px;color:rgba(255,44,44,0.7);font-weight:700;">CineRealm ${version}</div>
             </div>
-            <button id="crChangelogClose" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;">✕</button>
           </div>
-        </div>
-        <div style="overflow-y:auto;padding:14px 22px 22px;flex:1;scrollbar-width:thin;scrollbar-color:rgba(255,44,44,0.2) transparent;">
-          ${CR_CHANGELOG.map(item => `
-            <div style="display:flex;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-              <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,44,44,0.1);border:1px solid rgba(255,44,44,0.15);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">${item.icon}</div>
-              <div>
-                <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:2px;">${item.title}</div>
-                <div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.4;">${item.desc}</div>
-              </div>
-            </div>
-          `).join("")}
-        </div>
-        <div style="padding:14px 22px;flex-shrink:0;border-top:1px solid rgba(255,255,255,0.06);">
-          <button id="crChangelogOk" style="width:100%;padding:12px;background:#ff2c2c;border:none;border-radius:10px;color:#fff;font-weight:800;font-size:14px;cursor:pointer;">Let's Go 🚀</button>
+          <button id="crChangelogClose" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;">✕</button>
         </div>
       </div>
-    `;
-    document.body.appendChild(el);
-    const dismiss = () => { el.remove(); localStorage.setItem(key, "1"); };
-    el.querySelector("#crChangelogClose").onclick = dismiss;
-    el.querySelector("#crChangelogOk").onclick = dismiss;
-    el.onclick = e => { if (e.target === el) dismiss(); };
+      <div style="overflow-y:auto;padding:14px 22px 22px;flex:1;scrollbar-width:thin;scrollbar-color:rgba(255,44,44,0.2) transparent;">
+        ${items.map(item => `
+          <div style="display:flex;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,44,44,0.1);border:1px solid rgba(255,44,44,0.15);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">${item.icon}</div>
+            <div>
+              <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:2px;">${item.title}</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.4;">${item.desc}</div>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+      <div style="padding:14px 22px;flex-shrink:0;border-top:1px solid rgba(255,255,255,0.06);">
+        <button id="crChangelogOk" style="width:100%;padding:12px;background:#ff2c2c;border:none;border-radius:10px;color:#fff;font-weight:800;font-size:14px;cursor:pointer;">Let's Go 🚀</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(el);
+  const dismiss = () => { el.remove(); if (dismissKey) localStorage.setItem(dismissKey, "1"); };
+  el.querySelector("#crChangelogClose").onclick = dismiss;
+  el.querySelector("#crChangelogOk").onclick = dismiss;
+  el.onclick = e => { if (e.target === el) dismiss(); };
+}
+
+(function initChangelog() {
+  const localKey = "cr_seen_v" + CR_VERSION;
+
+  async function checkFirebaseRelease() {
+    try {
+      const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+      const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+      const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
+      const snap = await get(ref(getDatabase(app), "release_announcements"));
+      if (!snap.exists()) return false;
+
+      const releases = Object.values(snap.val())
+        .filter(r => r.active !== false)
+        .sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+      if (!releases.length) return false;
+
+      const latest = releases[0];
+      const seenKey = "cr_seen_release_" + (latest.version || "").replace(/\s/g,"_") + "_" + (latest.timestamp||"");
+      if (localStorage.getItem(seenKey)) return false;
+
+      // Parse changelog text into items array
+      const items = (latest.changelog || "").split("\n").filter(Boolean).map(line => {
+        // Format: "🔐 Title — description" or "🔐 Title - description"
+        const m = line.match(/^(\S+)\s+(.+?)\s+[—–-]+\s+(.+)$/);
+        if (m) return { icon: m[1], title: m[2].trim(), desc: m[3].trim() };
+        return { icon: "🎬", title: line.slice(0, 40), desc: "" };
+      });
+
+      _showChangelogPopup(latest.version || CR_VERSION, items.length ? items : CR_CHANGELOG, seenKey);
+      return true;
+    } catch(e) { return false; }
+  }
+
+  setTimeout(async () => {
+    // Check if admin forced a reset (clears all seen flags)
+    try {
+      const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+      const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+      const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
+      const resetSnap = await get(ref(getDatabase(app), "popup_force_reset"));
+      if (resetSnap.exists()) {
+        const resetTs = resetSnap.val().ts || 0;
+        const lastReset = parseInt(localStorage.getItem("cr_popup_last_reset") || "0");
+        if (resetTs > lastReset) {
+          // Clear all seen flags so popup shows again
+          Object.keys(localStorage).forEach(k => {
+            if (k.startsWith("cr_seen_v") || k.startsWith("cr_seen_release_")) {
+              localStorage.removeItem(k);
+            }
+          });
+          localStorage.setItem("cr_popup_last_reset", String(resetTs));
+        }
+      }
+    } catch(e) {}
+
+    // Always check Firebase first for admin-pushed releases
+    const shownFromFirebase = await checkFirebaseRelease();
+    // If no Firebase release, fall back to local version check
+    if (!shownFromFirebase && !localStorage.getItem(localKey)) {
+      _showChangelogPopup(CR_VERSION, CR_CHANGELOG, localKey);
+    }
   }, 1800);
 })();
 
@@ -3797,10 +3859,18 @@ const CR_CHANGELOG = [
 
   const bell = document.createElement("button");
   bell.id = "crNotifBell";
-  bell.style.cssText = "background:none;border:none;color:rgba(255,255,255,0.5);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:8px;transition:color 0.15s;position:relative;display:flex;align-items:center;";
+  bell.style.cssText = "background:none;border:none;color:rgba(255,255,255,0.5);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:8px;transition:color 0.15s;position:relative;display:flex;align-items:center;flex-shrink:0;";
   bell.innerHTML = `<span>🔔</span><span id="crNotifDot" style="position:absolute;top:2px;right:4px;width:7px;height:7px;border-radius:50%;background:#ff2c2c;display:none;"></span>`;
   bell.title = "Notifications";
-  header.appendChild(bell);
+
+  // On mobile, put bell inside header-left so it's always in the top row
+  // On desktop, append to header normally
+  const headerLeft = header.querySelector(".header-left");
+  if (headerLeft) {
+    headerLeft.appendChild(bell);
+  } else {
+    header.appendChild(bell);
+  }
 
   // Dropdown
   const dropdown = document.createElement("div");
@@ -4491,7 +4561,13 @@ function _updateProfileUI() {
     `;
   }
 
-  header.appendChild(btn);
+  // Put in header-left so it's visible on mobile in the top row
+  const headerLeft = header.querySelector(".header-left");
+  if (headerLeft) {
+    headerLeft.appendChild(btn);
+  } else {
+    header.appendChild(btn);
+  }
 }
 
 // ── Profile dropdown ──────────────────────────────────────────────────────
