@@ -565,6 +565,11 @@ function createMovieCard(movie, type = "movie") {
 
   card.addEventListener("click", () => showMovieDetails(movie, type));
 
+  // Store data for swipe gestures (Section 23)
+  card._movieData  = movie;
+  card._mediaType  = type;
+  if (window._initCardSwipe) window._initCardSwipe(card, movie, type);
+
   return card;
 }
 
@@ -3148,6 +3153,133 @@ if (!window.location.pathname.startsWith("/watch")) {
   });
 })();
 
+// ── Section 23 — Mobile Upgrades ─────────────────────────────────────────
+(function initMobileUpgrades() {
+
+  // 1. Pull to Refresh
+  if (window.location.pathname === "/" && "ontouchstart" in window) {
+    let _pullStart = 0, _pullDist = 0, _pulling = false, _indicator = null;
+    function getPullIndicator() {
+      if (_indicator) return _indicator;
+      _indicator = document.createElement("div");
+      _indicator.style.cssText = "position:fixed;top:-60px;left:50%;transform:translateX(-50%);width:44px;height:44px;border-radius:50%;background:rgba(255,44,44,0.9);display:flex;align-items:center;justify-content:center;font-size:20px;z-index:9999;transition:top 0.15s ease;box-shadow:0 4px 20px rgba(255,44,44,0.4);";
+      _indicator.textContent = "↓";
+      document.body.appendChild(_indicator);
+      return _indicator;
+    }
+    document.addEventListener("touchstart", e => { if (window.scrollY === 0) { _pullStart = e.touches[0].clientY; _pulling = true; } }, { passive: true });
+    document.addEventListener("touchmove", e => {
+      if (!_pulling) return;
+      _pullDist = Math.max(0, e.touches[0].clientY - _pullStart);
+      if (_pullDist > 10) {
+        const ind = getPullIndicator();
+        ind.style.top = (Math.min(_pullDist, 70) - 50) + "px";
+        ind.textContent = _pullDist > 60 ? "↺" : "↓";
+        ind.style.background = _pullDist > 60 ? "rgba(34,197,94,0.9)" : "rgba(255,44,44,0.9)";
+      }
+    }, { passive: true });
+    document.addEventListener("touchend", () => {
+      if (!_pulling) return;
+      _pulling = false;
+      const ind = getPullIndicator();
+      if (_pullDist > 60) {
+        ind.style.top = "20px";
+        if (window.haptic) window.haptic("medium");
+        setTimeout(() => { ind.style.top = "-60px"; window.location.reload(); }, 400);
+      } else { ind.style.top = "-60px"; }
+      _pullDist = 0;
+    });
+  }
+
+  // 2. Haptic feedback
+  window.haptic = function(style) {
+    if (!navigator.vibrate) return;
+    const p = { light:[10], medium:[20], heavy:[30], success:[10,50,10] };
+    navigator.vibrate(p[style||"light"] || [10]);
+  };
+  document.addEventListener("click", e => {
+    const btn = e.target.closest(".details-play-btn, .source-tab, .cr-cloak-btn");
+    if (!btn) return;
+    window.haptic(btn.classList.contains("details-play-btn") ? "medium" : "light");
+  }, { passive: true });
+
+  // 3. Card swipe gestures
+  window._initCardSwipe = function(card, movie, type) {
+    if (card._swipeInit) return;
+    card._swipeInit = true;
+    let sx = 0, sy = 0, moved = false;
+    card.addEventListener("touchstart", e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; moved = false; }, { passive: true });
+    card.addEventListener("touchmove", e => {
+      const dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy;
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+      moved = true;
+      if (Math.abs(dx) > Math.abs(dy) * 1.5 && Math.abs(dx) > 20) {
+        card.style.transform = "translateX(" + (dx * 0.5) + "px)";
+        card.style.transition = "none";
+        card.style.opacity = String(Math.max(0, 1 - Math.abs(dx) / 200));
+        let hint = card.querySelector(".swipe-hint");
+        if (!hint) {
+          hint = document.createElement("div");
+          hint.className = "swipe-hint";
+          hint.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:#fff;font-size:11px;font-weight:800;padding:4px 10px;border-radius:6px;pointer-events:none;z-index:10;white-space:nowrap;";
+          card.style.position = "relative";
+          card.appendChild(hint);
+        }
+        hint.textContent = dx > 30 ? "☆ Watchlist" : dx < -30 ? "✕ Dismiss" : "";
+        hint.style.color = dx > 30 ? "#ffd700" : "#ff6b6b";
+      }
+    }, { passive: true });
+    card.addEventListener("touchend", e => {
+      const dx = e.changedTouches[0].clientX - sx;
+      card.style.transition = "transform 0.3s, opacity 0.3s";
+      if (Math.abs(dx) >= 60 && moved) {
+        if (dx > 0) {
+          if (typeof isInWatchlist === "function" && !isInWatchlist(movie.id, type)) {
+            if (typeof toggleWatchlist === "function") toggleWatchlist(movie.id, type, movie);
+            window.haptic("success");
+            if (typeof showToast === "function") showToast("Added to Watchlist ✓", "success");
+          } else { if (typeof showToast === "function") showToast("Already in Watchlist", "info"); }
+          card.style.transform = ""; card.style.opacity = "";
+        } else {
+          window.haptic("light");
+          card.style.transform = "translateX(-120%)"; card.style.opacity = "0";
+          setTimeout(() => { card.style.transition = "width 0.2s,margin 0.2s"; card.style.width = "0"; card.style.marginRight = "0"; card.style.overflow = "hidden"; setTimeout(() => card.remove(), 200); }, 300);
+        }
+      } else { card.style.transform = ""; card.style.opacity = ""; }
+      card.querySelector(".swipe-hint")?.remove();
+    });
+  };
+
+  // 4. Media Session API
+  window.updateMediaSession = function(title, poster, type) {
+    if (!("mediaSession" in navigator)) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: title || "CineRealm", artist: type === "tv" ? "TV Show" : "Movie", album: "CineRealm",
+        artwork: poster ? [{ src: poster, sizes: "512x512", type: "image/jpeg" }] : []
+      });
+      navigator.mediaSession.setActionHandler("stop", () => window.history.back());
+    } catch(e) {}
+  };
+
+  // 5. Mobile nav watchlist badge
+  const wlItem = document.querySelector(".mobile-nav-item[href='/watchlist']");
+  if (wlItem && !wlItem.querySelector(".mobile-nav-badge")) {
+    const badge = document.createElement("span");
+    badge.className = "mobile-nav-badge";
+    badge.style.cssText = "position:absolute;top:2px;right:8px;background:#ff2c2c;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:999px;display:none;align-items:center;justify-content:center;padding:0 4px;";
+    wlItem.style.position = "relative";
+    wlItem.appendChild(badge);
+    if (typeof loadWatchlist === "function" && typeof watchlistData !== "undefined") {
+      loadWatchlist();
+      const count = watchlistData.length;
+      if (count > 0) { badge.textContent = count > 99 ? "99+" : String(count); badge.style.display = "flex"; }
+    }
+  }
+
+})();
+
+
 // ── Section 22 — Frontend Performance Optimizations ──────────────────────
 
 // 1. Link prefetching — prefetch likely next pages on idle
@@ -3555,12 +3687,8 @@ async function loadBecauseYouWatched() {
   const container = document.getElementById("becauseYouWatched");
   const titleEl   = document.getElementById("becauseYouWatchedTitle");
 
-  console.log("[BYW] section found:", !!section, "container found:", !!container);
-  if (!section || !container) { console.log("[BYW] elements missing from DOM"); return; }
 
   const history = JSON.parse(localStorage.getItem("history") || "[]");
-  console.log("[BYW] history entries:", history.length, history);
-  if (!history.length) { console.log("[BYW] no history"); return; }
 
   // Deduplicate and sort by most recent
   const seen = new Set();
@@ -3577,7 +3705,6 @@ async function loadBecauseYouWatched() {
 
   // Pick most recent entry that has a valid id
   const recent = deduped.find(h => (h.tmdbId || h.id) && h.type);
-  console.log("[BYW] most recent:", recent);
   if (!recent) return;
 
   const tmdbId = recent.tmdbId || recent.id;
@@ -3610,7 +3737,6 @@ async function loadBecauseYouWatched() {
   section.style.removeProperty("display");
   section.style.display = "block";
   container.innerHTML = "";
-  console.log("[BYW] rendering", filtered.length, "cards, section display:", section.style.display);
 
   let cardCount = 0;
   filtered.forEach((item) => {
@@ -3620,7 +3746,6 @@ async function loadBecauseYouWatched() {
       cardCount++;
     }
   });
-  console.log("[BYW] appended", cardCount, "cards");
 
   // Add scroll arrows after cards are in DOM
   if (!container.dataset.arrowsAdded) {

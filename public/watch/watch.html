@@ -683,6 +683,12 @@ async function leaveRoom() {
   document.getElementById("watchGenres").textContent     = genres;
   document.getElementById("watchOverview").textContent   = overview;
 
+  // Update lock screen / media session
+  if (window.updateMediaSession) {
+    const posterUrl = movie.poster_path ? "https://image.tmdb.org/t/p/w512" + movie.poster_path : "";
+    window.updateMediaSession(title, posterUrl, type);
+  }
+
   // ── Wire up player (reuse script.js infrastructure) ───────────────────
   // Override the player div references to point to watch page elements
   // We do this by temporarily pointing the player IDs script.js expects

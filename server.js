@@ -76,8 +76,10 @@ const MAINTENANCE_MODE     = process.env.MAINTENANCE_MODE === "true";
 const MAINTENANCE_PASSWORD = process.env.MAINTENANCE_PASSWORD || "cinerealm2026";
 const BYPASS_PATHS = [
   "/maintenance-auth", "/style.css", "/script.js", "/sw.js",
+  "/manifest.json", "/cloak-config.js",
   "/favicon.ico", "/favicon-32x32.png", "/favicon-16x16.png",
   "/apple-touch-icon.png", "/offline.html", "/notification.json",
+  "/android-chrome-512x512.png", "/android-chrome-192x192.png",
 ];
 
 function makeToken(password) {

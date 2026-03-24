@@ -9,25 +9,25 @@ window.CR_CLOAK_PRESETS = [
   {
     id:    "gdocs",
     name:  "Google Docs",
-    title: "Google Docs",
+    title: "Document",
     icon:  "https://ssl.gstatic.com/docs/doclist/images/mediatype/icon_1_document_x32.png"
   },
   {
     id:    "gsheets",
     name:  "Google Sheets",
-    title: "Google Sheets",
+    title: "Spreadsheet",
     icon:  "https://ssl.gstatic.com/docs/spreadsheets/favicon3.ico"
   },
   {
     id:    "gslides",
     name:  "Google Slides",
-    title: "Google Slides",
+    title: "Presentation",
     icon:  "https://ssl.gstatic.com/docs/presentations/images/favicon5.ico"
   },
   {
     id:    "gdrive",
     name:  "Google Drive",
-    title: "Home - Google Drive",
+    title: "My Drive",
     icon:  "https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png"
   },
   {
@@ -92,13 +92,6 @@ window.CR_CLOAK_PRESETS = [
     title: "Duolingo",
     icon:  "https://d35aaqx5ub95lt.cloudfront.net/favicon.ico"
   },
-   {
-    id:    "1login",
-    name:  "One Login",
-    title: "User Portal - Home",
-    icon:  "https://www.onelogin.com/favicon.ico"
-  },
-  
 
   // ── Microsoft / Work ─────────────────────────────────────────────────────
   {
@@ -117,7 +110,7 @@ window.CR_CLOAK_PRESETS = [
     id:    "teams",
     name:  "MS Teams",
     title: "Microsoft Teams",
-    icon:  "https://statics.teams.cdn.office.net/evergreen-assets/apps/teams-app-icon.ico"
+    icon:  "https://www.microsoft.com/favicon.ico"
   },
 
   // ── Other ────────────────────────────────────────────────────────────────
