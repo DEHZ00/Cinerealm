@@ -259,6 +259,7 @@ const routes = {
   "/anime":     "anime.html",
   "/stats":     "stats.html",
   "/donate":    "donate.html",
+  "/admin":     "admin.html",
   "/games-proxy": "games-proxy.html",
 };
 

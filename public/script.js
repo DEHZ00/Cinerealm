@@ -3323,28 +3323,6 @@ function _getDeviceId() {
   return id;
 }
 
-// ── Save review also to Firebase ─────────────────────────────────────────
-const _origSaveReview = saveReview;
-window.saveReview = async function(id, type, stars, text) {
-  _origSaveReview(id, type, stars, text); // save locally first
-  try {
-    const { getDatabase, ref, set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-    const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-    const app = getApps().length ? getApps()[0] : initializeApp({
-      apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
-      authDomain: "cinerealm-8b7b9.firebaseapp.com",
-      databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
-      projectId: "cinerealm-8b7b9",
-    });
-    const db = getDatabase(app);
-    const deviceId = _getDeviceId();
-    await set(ref(db, "reviews/" + type + "_" + id + "/" + deviceId), {
-      stars, text: text || "", ts: Date.now(),
-      deviceId,
-      name: localStorage.getItem("cr_display_name") || "Anonymous",
-    });
-  } catch(e) {} // Firebase failure doesn't break local save
-};
 
 // ── Delete review also from Firebase ─────────────────────────────────────
 const _origDeleteReview = deleteReview;
@@ -3353,12 +3331,7 @@ window.deleteReview = async function(id, type) {
   try {
     const { getDatabase, ref, remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
     const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-    const app = getApps().length ? getApps()[0] : initializeApp({
-      apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
-      authDomain: "cinerealm-8b7b9.firebaseapp.com",
-      databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
-      projectId: "cinerealm-8b7b9",
-    });
+    const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
     const db = getDatabase(app);
     await remove(ref(db, "reviews/" + type + "_" + id + "/" + _getDeviceId()));
   } catch(e) {}
@@ -3731,13 +3704,20 @@ setInterval(() => {
 // ── 1. Changelog popup ────────────────────────────────────────────────────
 const CR_VERSION = "2.0";
 const CR_CHANGELOG = [
-  { icon: "🔍", title: "Fullscreen Search", desc: "New overlay with filters, voice search, and person results" },
-  { icon: "⭐", title: "Reviews & Ratings", desc: "Rate and review anything — see what the community thinks" },
-  { icon: "👻", title: "Tab Cloak", desc: "Make CineRealm look like Google Docs, Canvas, Khan Academy" },
-  { icon: "👥", title: "Watch Party Sync", desc: "Host can now push episodes to all guests instantly" },
-  { icon: "📋", title: "Watchlist Lists", desc: "Create custom lists like Horror Night or Date Night" },
-  { icon: "📱", title: "Mobile Upgrades", desc: "Pull to refresh, swipe cards, haptic feedback" },
-  { icon: "⚡", title: "Anime Page", desc: "Powered by AniList — real anime data, genres, seasonal" },
+  { icon: "🔐", title: "Profiles & Login",     desc: "Sign in with Google or email. Your history and watchlist sync across all devices." },
+  { icon: "👑", title: "Role Badges",           desc: "Owner, Developer, Verified, and Moderator badges. Visible on profiles and search." },
+  { icon: "🔍", title: "Search V2",             desc: "Fullscreen overlay with filters, voice search, person results, and user search." },
+  { icon: "⭐", title: "Reviews & Ratings",     desc: "Rate anything 1–5 stars, write a review, and see what the community thinks." },
+  { icon: "📋", title: "Watchlist Lists",        desc: "Create custom lists like Horror Night. Set statuses: Watching, Finished, Dropped." },
+  { icon: "👥", title: "Watch Party Sync",       desc: "Watch together in real-time. Host syncs episodes to all guests instantly." },
+  { icon: "👻", title: "Tab Cloak",             desc: "Make CineRealm look like Google Docs, Canvas, Khan Academy and more." },
+  { icon: "⚡", title: "Anime Page",            desc: "Powered by AniList — seasonal anime, genres, trending, and real data." },
+  { icon: "🏆", title: "Achievements",          desc: "11 badges to earn: Movie Buff, Film Freak, Party Host, Top Reviewer and more." },
+  { icon: "📱", title: "Mobile Upgrades",       desc: "Pull to refresh, swipe cards to watchlist, haptic feedback, lock screen controls." },
+  { icon: "🔔", title: "Notification Center",   desc: "Bell icon in header shows site alerts and broken source reports." },
+  { icon: "🎨", title: "OLED Mode",             desc: "Pure black theme for OLED screens. Toggle in the Cloak panel." },
+  { icon: "♥",  title: "Donations Page",        desc: "Support CineRealm via PayPal, Cash App, or Buy Me a Coffee." },
+  { icon: "🛠", title: "Admin Dashboard",       desc: "Manage reports, reviews, users, roles, and notifications at /admin." },
 ];
 
 (function showChangelog() {
@@ -4537,6 +4517,7 @@ function openProfileDropdown(anchor) {
     <a class="cr-dd-item" href="/user/${username}">👤 My Profile</a>
     <button class="cr-dd-item" id="crEditProfileBtn">✏️ Edit Profile</button>
     <button class="cr-dd-item" onclick="loadFromCloud().then(()=>showToast('Data synced ✓','success'))">☁️ Sync Data</button>
+    <div id="crAdminLink"></div>
     <div class="cr-dd-divider"></div>
     <button class="cr-dd-item" style="color:#ff6b6b;" onclick="signOutUser();document.getElementById('crProfileDropdown')?.remove()">🚪 Sign Out</button>
   `;
@@ -4555,6 +4536,11 @@ function openProfileDropdown(anchor) {
     getUserRole(_crUser.uid).then(roles => {
       const badgeEl = document.getElementById("crDdRoleBadge");
       if (badgeEl && roles.length) badgeEl.innerHTML = getRolesPillsHTML(roles);
+      // Show admin link for owner/developer
+      const adminEl = document.getElementById("crAdminLink");
+      if (adminEl && (roles.includes("owner") || roles.includes("developer"))) {
+        adminEl.innerHTML = `<a class="cr-dd-item" href="/admin" style="color:#ffd700;">⚙️ Admin Dashboard</a>`;
+      }
     });
   }
 
@@ -4893,24 +4879,31 @@ function showSessionGreeting() {
   }, 5000);
 }
 
-// ── Reviews — use display name ────────────────────────────────────────────
-// Patch saveReview to include display name from profile
-const _origSaveReview2 = window.saveReview || saveReview;
+// ── Reviews — use display name from profile when logged in ────────────────
+// This replaces the Firebase-only patch from Section 24 with a combined version
+const _origSaveReviewBase = saveReview; // the original localStorage version
 window.saveReview = async function(id, type, stars, text) {
-  // Update name in Firebase review
-  const displayName = _crProfile?.displayName || _crProfile?.username || "Anonymous";
-  await _origSaveReview2(id, type, stars, text);
-  // Update Firebase entry with proper name
-  if (_crUser) {
-    try {
-      const { ref, set } = window._fbHelpers;
-      const deviceId = localStorage.getItem("cr_device_id");
-      if (deviceId) {
-        await set(ref(_fbDb, "reviews/" + type + "_" + id + "/" + deviceId + "/name"), displayName);
-        await set(ref(_fbDb, "reviews/" + type + "_" + id + "/" + deviceId + "/uid"), _crUser.uid);
-      }
-    } catch(e) {}
-  }
+  // 1. Save locally
+  _origSaveReviewBase(id, type, stars, text);
+  // 2. Save to Firebase with display name
+  try {
+    const { getDatabase, ref, set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
+    const db  = getDatabase(app);
+    const deviceId = localStorage.getItem("cr_device_id") || (() => {
+      const id = "d_" + Math.random().toString(36).slice(2,12);
+      localStorage.setItem("cr_device_id", id); return id;
+    })();
+    const displayName = (typeof _crProfile !== "undefined" && _crProfile)
+      ? (_crProfile.displayName || _crProfile.username || "Anonymous")
+      : "Anonymous";
+    await set(ref(db, "reviews/" + type + "_" + id + "/" + deviceId), {
+      stars, text: text || "", ts: Date.now(), deviceId,
+      name: displayName,
+      uid: (typeof _crUser !== "undefined" && _crUser) ? _crUser.uid : null,
+    });
+  } catch(e) {}
 };
 
 // ── Initialize auth on page load ──────────────────────────────────────────
