@@ -161,6 +161,46 @@
         </div>
       </div>
     </div>
+
+    <!-- Player glow — sits behind the player container -->
+    <div id="watchPlayerGlow" class="watch-player-glow"></div>
+
+    <!-- Up Next persistent card (TV only) -->
+    <div id="watchUpNext" style="display:none;" class="watch-up-next">
+      <div class="watch-up-next-label">Up Next</div>
+      <a id="watchUpNextLink" href="#" class="watch-up-next-card">
+        <img id="watchUpNextThumb" src="" alt="">
+        <div class="watch-up-next-info">
+          <div class="watch-up-next-ep" id="watchUpNextEp"></div>
+          <div class="watch-up-next-title" id="watchUpNextTitle"></div>
+        </div>
+        <span class="watch-up-next-arrow">▶</span>
+      </a>
+    </div>
+
+    <!-- You might also like — right below player -->
+    <div id="watchSimilarSection" style="display:none;">
+      <div class="watch-section-header">
+        <h3 class="watch-section-title">You Might Also Like</h3>
+      </div>
+      <div class="movie-row" id="watchSimilarRow"></div>
+    </div>
+
+    <!-- Cast row -->
+    <div id="watchCastSection" style="display:none;">
+      <div class="watch-section-header">
+        <h3 class="watch-section-title">Cast</h3>
+      </div>
+      <div class="panel-cast-row" id="watchCastRow"></div>
+    </div>
+
+    <!-- Report + HD vote bar -->
+    <div class="watch-report-bar">
+      <button class="watch-report-btn" id="watchReportBtn">⚠ Report Broken Source</button>
+      <button class="watch-report-btn" id="watchHDBtn" style="background:rgba(0,100,220,0.15);border-color:rgba(0,100,220,0.3);color:rgba(100,180,255,0.8);">HD Mark as HD</button>
+      <button class="watch-report-btn" id="watchGlowBtn" style="background:rgba(255,44,44,0.08);border-color:rgba(255,44,44,0.2);color:rgba(255,100,100,0.8);">✦ Player Glow</button>
+    </div>
+
   </div>
 </main>
 
@@ -196,6 +236,20 @@
       <button id="cancelDisclaimer" class="nav-btn" type="button">Cancel</button>
       <button id="acceptDisclaimer" class="nav-btn" type="button">I Understand</button>
     </div>
+  </div>
+</div>
+
+<!-- Miniplayer -->
+<div id="watchMiniPlayer" class="watch-mini-player" style="display:none;">
+  <div class="watch-mini-header">
+    <span id="watchMiniTitle" class="watch-mini-title"></span>
+    <div class="watch-mini-btns">
+      <button id="watchMiniExpand" title="Expand">⤢</button>
+      <button id="watchMiniClose" title="Close">✕</button>
+    </div>
+  </div>
+  <div class="watch-mini-frame">
+    <p style="color:rgba(255,255,255,0.4);font-size:12px;text-align:center;padding:20px;">Scroll back up to continue watching</p>
   </div>
 </div>
 
@@ -741,6 +795,225 @@ async function leaveRoom() {
 
   // Store context for auto-next
   window._watchContext = { type, tmdbId, season, episode, title, opts };
+
+  // ── Section 18 — Watch Page Upgrades ──────────────────────────────────
+
+  // Auto-dim + player glow
+  const playerContainer = document.getElementById("watch-player-container");
+  const glowEl = document.getElementById("watchPlayerGlow");
+  let glowEnabled = localStorage.getItem("cr_player_glow") === "1";
+
+  function applyGlow(color) {
+    if (!glowEl) return;
+    if (!glowEnabled || !color) {
+      glowEl.classList.remove("active");
+      return;
+    }
+    glowEl.style.background = color;
+    glowEl.classList.add("active");
+  }
+
+  async function extractGlowColor() {
+    if (!glowEnabled) return;
+    const posterImg = document.querySelector(".watch-poster img");
+    const posterUrl = posterImg?.src;
+    if (!posterUrl) { applyGlow("rgba(255,44,44,0.5)"); return; }
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = posterUrl + (posterUrl.includes("?") ? "&" : "?") + "_gc=1";
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; setTimeout(rej, 3000); });
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 8;
+      const ctx2 = canvas.getContext("2d");
+      ctx2.drawImage(img, 0, 0, 8, 8);
+      const data = ctx2.getImageData(0, 0, 8, 8).data;
+      let r = 0, g = 0, b = 0;
+      for (let i = 0; i < data.length; i += 4) { r += data[i]; g += data[i+1]; b += data[i+2]; }
+      const px = data.length / 4;
+      applyGlow(`rgba(${Math.round(r/px)},${Math.round(g/px)},${Math.round(b/px)},0.6)`);
+    } catch(e) {
+      applyGlow("rgba(255,44,44,0.5)");
+    }
+  }
+
+  if (glowEnabled) setTimeout(extractGlowColor, 1000);
+
+  const glowBtn = document.getElementById("watchGlowBtn");
+  if (glowBtn) {
+    glowBtn.textContent = glowEnabled ? "✦ Glow On" : "✦ Player Glow";
+    glowBtn.style.color = glowEnabled ? "#ff6b6b" : "";
+    glowBtn.onclick = () => {
+      glowEnabled = !glowEnabled;
+      localStorage.setItem("cr_player_glow", glowEnabled ? "1" : "0");
+      glowBtn.textContent = glowEnabled ? "✦ Glow On" : "✦ Player Glow";
+      glowBtn.style.color = glowEnabled ? "#ff6b6b" : "rgba(255,100,100,0.8)";
+      if (glowEnabled) extractGlowColor();
+      else applyGlow(null);
+    };
+  }
+
+  // Auto-dim page background when player active
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      document.body.style.transition = "background 0.6s ease";
+      document.body.style.background = e.isIntersecting ? "#000" : "";
+    });
+  }, { threshold: 0.5 });
+  observer.observe(playerContainer);
+
+  // ── Up Next card (TV only) ───────────────────────────────────────────
+  if (type === "tv") {
+    const upNextEl   = document.getElementById("watchUpNext");
+    const upNextLink = document.getElementById("watchUpNextLink");
+    const upNextThumb = document.getElementById("watchUpNextThumb");
+    const upNextEpEl  = document.getElementById("watchUpNextEp");
+    const upNextTitleEl = document.getElementById("watchUpNextTitle");
+
+    if (upNextEl) {
+      try {
+        const showData = await apiCall("/tv/" + tmdbId);
+        const currentSeason = showData?.seasons?.find(s => s.season_number === season);
+        let nextSeason = season, nextEp = episode + 1;
+
+        if (currentSeason && episode >= currentSeason.episode_count) {
+          nextSeason = season + 1;
+          nextEp = 1;
+        }
+
+        if (nextSeason <= (showData?.number_of_seasons || 1)) {
+          const epData = await apiCall(`/tv/${tmdbId}/season/${nextSeason}/episode/${nextEp}`).catch(() => null);
+          const epTitle = epData?.name || `Episode ${nextEp}`;
+          const epThumb = epData?.still_path
+            ? "https://image.tmdb.org/t/p/w300" + epData.still_path
+            : (showData?.backdrop_path ? "https://image.tmdb.org/t/p/w300" + showData.backdrop_path : "");
+
+          upNextEpEl.textContent   = `S${nextSeason} · E${nextEp}`;
+          upNextTitleEl.textContent = epTitle;
+          upNextLink.href = `/watch/tv/${tmdbId}/season/${nextSeason}/episode/${nextEp}`;
+          if (epThumb) upNextThumb.src = epThumb;
+          else upNextThumb.style.display = "none";
+          upNextEl.style.display = "block";
+        }
+      } catch(e) {}
+    }
+  }
+
+  // ── Cast row ──────────────────────────────────────────────────────────
+  const castSection = document.getElementById("watchCastSection");
+  const castRow     = document.getElementById("watchCastRow");
+  if (castSection && castRow && credits?.cast?.length) {
+    const castItems = credits.cast.slice(0, 14);
+    castRow.innerHTML = castItems.map(c => `
+      <div class="panel-cast-card" onclick="showPersonPanel(${c.id},'${c.name.replace(/'/g,"\\'")}')">
+        <img src="${c.profile_path ? "https://image.tmdb.org/t/p/w185" + c.profile_path : ""}"
+             alt="${c.name}" class="panel-cast-img"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="panel-cast-img panel-cast-placeholder" style="display:none;">👤</div>
+        <div class="panel-cast-name">${c.name}</div>
+        <div class="panel-cast-char">${c.character || ""}</div>
+      </div>
+    `).join("");
+    castSection.style.display = "block";
+  }
+
+  // ── You Might Also Like ───────────────────────────────────────────────
+  const simSection = document.getElementById("watchSimilarSection");
+  const simRow     = document.getElementById("watchSimilarRow");
+  if (simSection && simRow) {
+    try {
+      const simData = await apiCall("/" + type + "/" + tmdbId + "/recommendations");
+      const results = (simData?.results || []).filter(r => r.poster_path).slice(0, 20);
+      if (results.length) {
+        results.forEach(r => {
+          const card = createMovieCard(r, type);
+          if (card) simRow.appendChild(card);
+        });
+        simSection.style.display = "block";
+        if (typeof addRowScrollArrows === "function") addRowScrollArrows(simRow);
+      }
+    } catch(e) {}
+  }
+
+  // ── Report broken source ──────────────────────────────────────────────
+  const reportBtn = document.getElementById("watchReportBtn");
+  if (reportBtn) {
+    reportBtn.onclick = async () => {
+      reportBtn.textContent = "Reporting…";
+      reportBtn.disabled = true;
+      try {
+        const { getDatabase, ref, push } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+        const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+        const app = getApps().length ? getApps()[0] : initializeApp({
+          apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
+          authDomain: "cinerealm-8b7b9.firebaseapp.com",
+          databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
+          projectId: "cinerealm-8b7b9",
+        });
+        const db = getDatabase(app);
+        const activeSource = document.querySelector(".source-tab.active")?.dataset?.name || "Unknown";
+        await push(ref(db, "broken_sources"), {
+          tmdbId, type, title, source: activeSource,
+          season: season || null, episode: episode || null,
+          timestamp: Date.now()
+        });
+        showToast("Source reported — thanks!", "success");
+        reportBtn.textContent = "✓ Reported";
+      } catch(e) {
+        showToast("Failed to report", "error");
+        reportBtn.textContent = "⚠ Report Broken Source";
+        reportBtn.disabled = false;
+      }
+    };
+  }
+
+  // ── Mark as HD ────────────────────────────────────────────────────────
+  const hdBtn = document.getElementById("watchHDBtn");
+  if (hdBtn && type === "movie") {
+    hdBtn.onclick = () => voteHD(tmdbId, title);
+  } else if (hdBtn) {
+    hdBtn.style.display = "none";
+  }
+
+  // ── Miniplayer — floating corner player ───────────────────────────────
+  let miniActive = false;
+  const miniPlayerEl = document.getElementById("watchMiniPlayer");
+
+  // Show miniplayer when user scrolls away from player
+  const miniObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting && !miniActive && document.querySelector("#watch-iframe-placeholder iframe")) {
+        showMiniPlayer();
+      } else if (e.isIntersecting && miniActive) {
+        hideMiniPlayer();
+      }
+    });
+  }, { threshold: 0.1 });
+  miniObserver.observe(playerContainer);
+
+  function showMiniPlayer() {
+    if (!miniPlayerEl) return;
+    const iframe = document.querySelector("#watch-iframe-placeholder iframe");
+    if (!iframe) return;
+    miniActive = true;
+    miniPlayerEl.style.display = "flex";
+  }
+
+  function hideMiniPlayer() {
+    if (!miniPlayerEl) return;
+    miniActive = false;
+    miniPlayerEl.style.display = "none";
+  }
+
+  if (miniPlayerEl) {
+    document.getElementById("watchMiniClose").onclick = () => {
+      hideMiniPlayer();
+      miniObserver.disconnect();
+    };
+    document.getElementById("watchMiniExpand").onclick = () => {
+      playerContainer.scrollIntoView({ behavior: "smooth" });
+    };
+  }
 
 })();
 
