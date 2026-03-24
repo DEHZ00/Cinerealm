@@ -3212,6 +3212,266 @@ function initHomePage() {
   loadNewEpisodes();
   loadBecauseYouWatched();
   initHomeGenreFilter();
+  loadUpNext();
+  loadTopPicks();
+  loadGenrePersonalRows();
+  loadTrendingTicker();
+}
+
+// ── Section 16 — Hero & Home Upgrades ────────────────────────────────────
+
+// ── Up Next row — next episodes for in-progress TV shows ─────────────────
+async function loadUpNext() {
+  const section = document.getElementById("upNextSection");
+  const row     = document.getElementById("upNextRow");
+  if (!section || !row) return;
+
+  const tvShows = historyData.filter(h =>
+    h.type === "tv" && h.season && h.episode &&
+    (Date.now() - (h.addedAt || 0)) < 60 * 24 * 60 * 60 * 1000 // within 60 days
+  ).sort((a,b) => (b.addedAt||0) - (a.addedAt||0));
+
+  // Deduplicate by show
+  const seen = new Set();
+  const unique = tvShows.filter(h => {
+    const id = h.tmdbId || h.id;
+    if (seen.has(id)) return false;
+    seen.add(id); return true;
+  }).slice(0, 15);
+
+  if (!unique.length) return;
+
+  // Build next episode entries
+  const nextEps = [];
+  for (const h of unique) {
+    const id = h.tmdbId || h.id;
+    try {
+      const data = await apiCall("/tv/" + id);
+      if (!data) continue;
+
+      // Figure out next episode
+      let nextSeason  = h.season;
+      let nextEpisode = h.episode + 1;
+
+      const seasonData = data.seasons?.find(s => s.season_number === h.season);
+      if (seasonData && h.episode >= seasonData.episode_count) {
+        // End of season — go to next
+        nextSeason  = h.season + 1;
+        nextEpisode = 1;
+        if (nextSeason > (data.number_of_seasons || 1)) continue; // finished show
+      }
+
+      nextEps.push({ data, id, nextSeason, nextEpisode });
+    } catch(e) {}
+  }
+
+  if (!nextEps.length) return;
+  section.style.display = "block";
+  row.innerHTML = "";
+
+  for (const { data, id, nextSeason, nextEpisode } of nextEps) {
+    if (!data.poster_path) continue;
+    const card = createMovieCard(data, "tv");
+    if (!card) continue;
+
+    // Add next ep badge
+    const label = card.querySelector("p");
+    if (label) {
+      label.innerHTML += `<br><span class="last-episode-tag" style="color:#ff6b6b;">▶ S${nextSeason} E${nextEpisode}</span>`;
+    }
+
+    // Override click to go directly to next episode
+    card.onclick = (e) => {
+      e.preventDefault();
+      window.location.href = `/watch/tv/${id}/season/${nextSeason}/episode/${nextEpisode}`;
+    };
+
+    row.appendChild(card);
+  }
+  addRowScrollArrows(row);
+}
+
+// ── Top Picks For You — based on genre taste profile ─────────────────────
+async function loadTopPicks() {
+  const section = document.getElementById("topPicksSection");
+  const row     = document.getElementById("topPicksRow");
+  if (!section || !row) return;
+  if (historyData.length < 3) return; // need some history first
+
+  // Get top genre from watch history
+  const genreCounts = {};
+  for (const h of historyData.slice(0, 30)) {
+    const id = h.tmdbId || h.id;
+    try {
+      const data = await apiCall("/" + h.type + "/" + id);
+      (data?.genres || []).forEach(g => {
+        genreCounts[g.id] = (genreCounts[g.id] || 0) + 1;
+      });
+    } catch(e) {}
+  }
+
+  const topGenreId = Object.entries(genreCounts).sort((a,b) => b[1]-a[1])[0]?.[0];
+  if (!topGenreId) return;
+
+  const data = await apiCall("/discover/movie", {
+    with_genres: topGenreId,
+    sort_by: "vote_average.desc",
+    "vote_count.gte": "500",
+    page: Math.floor(Math.random() * 3) + 1
+  });
+
+  const results = (data?.results || []).filter(m => m.poster_path).slice(0, 20);
+  if (!results.length) return;
+
+  section.style.display = "block";
+  showSkeletons("topPicksRow", 10);
+  row.innerHTML = "";
+  results.forEach(m => {
+    const card = createMovieCard(m, "movie");
+    if (card) row.appendChild(card);
+  });
+  addRowScrollArrows(row);
+}
+
+// ── Because You Like [Genre] rows ─────────────────────────────────────────
+async function loadGenrePersonalRows() {
+  const container = document.getElementById("genrePersonalRows");
+  if (!container) return;
+  if (historyData.length < 5) return;
+
+  // Get top 3 genres from watch history
+  const genreMap = {};
+  const recentHistory = historyData.slice(0, 40);
+
+  await Promise.all(recentHistory.map(async h => {
+    try {
+      const id = h.tmdbId || h.id;
+      const data = await apiCall("/" + h.type + "/" + id);
+      (data?.genres || []).forEach(g => {
+        if (!genreMap[g.id]) genreMap[g.id] = { name: g.name, count: 0 };
+        genreMap[g.id].count++;
+      });
+    } catch(e) {}
+  }));
+
+  const top3 = Object.entries(genreMap)
+    .sort((a,b) => b[1].count - a[1].count)
+    .slice(0, 3);
+
+  if (!top3.length) return;
+
+  for (const [genreId, genreInfo] of top3) {
+    const data = await apiCall("/discover/movie", {
+      with_genres: genreId,
+      sort_by: "popularity.desc",
+      page: 1
+    });
+
+    const results = (data?.results || []).filter(m => m.poster_path).slice(0, 20);
+    if (!results.length) continue;
+
+    const section = document.createElement("section");
+    const rowId = "genreRow_" + genreId;
+    section.innerHTML = `
+      <h2>
+        <span class="section-title-text">Because You Like ${genreInfo.name}</span>
+        <a href="/genres?genre=${genreId}" class="see-all">See All →</a>
+      </h2>
+      <div id="${rowId}" class="movie-row"></div>
+    `;
+    container.appendChild(section);
+
+    const row = section.querySelector("#" + rowId);
+    results.forEach(m => {
+      const card = createMovieCard(m, "movie");
+      if (card) row.appendChild(card);
+    });
+    addRowScrollArrows(row);
+  }
+}
+
+// ── Trending ticker ───────────────────────────────────────────────────────
+async function loadTrendingTicker() {
+  const ticker = document.getElementById("trendingTicker");
+  const track  = document.getElementById("trendingTickerTrack");
+  if (!ticker || !track) return;
+
+  try {
+    const data = await apiCall("/trending/all/day");
+    const items = (data?.results || []).slice(0, 20);
+    if (!items.length) { ticker.style.display = "none"; return; }
+
+    // Build ticker content — duplicate for seamless loop
+    const html = items.map(item => {
+      const title = item.title || item.name || "";
+      const type  = item.media_type === "tv" ? "TV" : "Movie";
+      return `<span class="ticker-item" onclick="showMovieDetails({id:${item.id},poster_path:'${item.poster_path||""}',title:'${title.replace(/'/g,"\\'")}'},'${item.media_type||"movie"}')">
+        <span class="ticker-type">${type}</span> ${title}
+      </span>`;
+    }).join('<span class="ticker-sep">·</span>');
+
+    // Duplicate for seamless loop
+    track.innerHTML = html + html;
+    ticker.style.display = "flex";
+  } catch(e) {
+    ticker.style.display = "none";
+  }
+}
+
+// ── Hero meta badges (rating, seasons, year) ──────────────────────────────
+const _origShowHeroSlide = window.showHeroSlide || function(){};
+function showHeroSlide(index) {
+  if (!heroItems.length) return;
+  const movie = heroItems[index];
+  const heroBg = document.getElementById("heroBg");
+  const heroTitle = document.getElementById("heroTitle");
+  const heroOverview = document.getElementById("heroOverview");
+  const heroMeta = document.getElementById("heroMetaBadges");
+  const dotsContainer = document.getElementById("heroDots");
+
+  if (!heroBg || !heroTitle || !heroOverview) return;
+
+  heroBg.style.backgroundImage = `url(${IMG_BASE.replace("/w500", "/w1280")}${movie.backdrop_path})`;
+  heroTitle.textContent = movie.title || movie.name || "Trending now";
+  heroOverview.textContent = movie.overview || "";
+
+  // Meta badges
+  if (heroMeta) {
+    const year = (movie.release_date || movie.first_air_date || "").split("-")[0];
+    const rating = movie.vote_average ? movie.vote_average.toFixed(1) : null;
+    const isTV = !!(movie.name || movie.first_air_date);
+    const mediaType = isTV ? "TV Show" : "Movie";
+
+    heroMeta.innerHTML = `
+      <span class="hero-badge">${mediaType}</span>
+      ${year ? `<span class="hero-badge">${year}</span>` : ""}
+      ${rating ? `<span class="hero-badge hero-badge-rating">⭐ ${rating}</span>` : ""}
+    `;
+  }
+
+  if (dotsContainer) {
+    dotsContainer.querySelectorAll(".hero-dot").forEach((dot, i) => {
+      dot.classList.toggle("active", i === index);
+    });
+  }
+
+  const playBtn = document.getElementById("heroPlayBtn");
+  const moreBtn = document.getElementById("heroMoreBtn");
+
+  if (playBtn) {
+    const isTV = !!(movie.name || movie.first_air_date);
+    playBtn.onclick = () => {
+      window.location.href = isTV
+        ? `/watch/tv/${movie.id}/season/1/episode/1`
+        : `/watch/movie/${movie.id}`;
+    };
+  }
+  if (moreBtn) {
+    moreBtn.onclick = () => {
+      const type = (movie.name || movie.first_air_date) ? "tv" : "movie";
+      showMovieDetails(movie, type);
+    };
+  }
 }
 
 if (document.readyState === "loading") {

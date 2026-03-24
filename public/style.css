@@ -6794,3 +6794,108 @@ body.theater-mode #watch-content {
 }
 .movie-card:hover .card-cw-remove { opacity: 1; }
 .card-cw-remove:hover { background: rgba(255,44,44,0.85); border-color: transparent; color: #fff; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SECTION 16 — HERO & HOME UPGRADES
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Hero meta badges ────────────────────────────────────────────────────── */
+.hero-meta-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.hero-badge {
+  padding: 3px 10px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px);
+  letter-spacing: 0.3px;
+}
+.hero-badge-rating {
+  background: rgba(255,200,0,0.15);
+  border-color: rgba(255,200,0,0.3);
+  color: #ffd700;
+}
+
+/* ── Trending ticker ─────────────────────────────────────────────────────── */
+.trending-ticker {
+  display: none;
+  align-items: center;
+  gap: 0;
+  background: rgba(255,44,44,0.08);
+  border-top: 1px solid rgba(255,44,44,0.12);
+  border-bottom: 1px solid rgba(255,44,44,0.12);
+  overflow: hidden;
+  height: 36px;
+  position: relative;
+}
+
+.trending-ticker-label {
+  flex-shrink: 0;
+  padding: 0 14px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #ff2c2c;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  background: rgba(255,44,44,0.1);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid rgba(255,44,44,0.15);
+  z-index: 1;
+  white-space: nowrap;
+}
+
+.trending-ticker-track {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  animation: tickerScroll 60s linear infinite;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.trending-ticker-track:hover { animation-play-state: paused; }
+
+@keyframes tickerScroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.ticker-item {
+  padding: 0 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.ticker-item:hover { color: #fff; }
+
+.ticker-type {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+  background: rgba(255,44,44,0.2);
+  border-radius: 3px;
+  color: #ff6b6b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ticker-sep {
+  color: rgba(255,255,255,0.15);
+  font-size: 14px;
+  padding: 0 4px;
+}

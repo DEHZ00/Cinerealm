@@ -70,6 +70,7 @@
   <div class="hero-inner">
     <div class="hero-bg" id="heroBg"></div>
     <div class="hero-overlay">
+      <div class="hero-meta-badges" id="heroMetaBadges"></div>
       <h2 id="heroTitle">Trending now</h2>
       <p id="heroOverview"></p>
       <div class="hero-buttons">
@@ -81,8 +82,11 @@
   </div>
 </section>
 
-
-  <!-- Genre Filter Row -->
+<!-- Trending Ticker -->
+<div class="trending-ticker" id="trendingTicker">
+  <span class="trending-ticker-label">🔥 Trending</span>
+  <div class="trending-ticker-track" id="trendingTickerTrack"></div>
+</div>
   <section id="genreFilterSection" style="padding-bottom:0;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
       <h2 style="margin:0;">Browse by Genre</h2>
@@ -112,6 +116,21 @@
     <h2><span class="section-title-text" id="becauseYouWatchedTitle">Because You Watched</span></h2>
     <div id="becauseYouWatched" class="movie-row"></div>
   </section>
+
+  <!-- Up Next — next episodes for shows in progress -->
+  <section id="upNextSection" style="display:none;">
+    <h2><span class="section-title-text">Up Next</span></h2>
+    <div id="upNextRow" class="movie-row"></div>
+  </section>
+
+  <!-- Top Picks For You — personalized based on genre taste -->
+  <section id="topPicksSection" style="display:none;">
+    <h2><span class="section-title-text">Top Picks For You</span></h2>
+    <div id="topPicksRow" class="movie-row"></div>
+  </section>
+
+  <!-- Because You Like [Genre] rows — injected dynamically -->
+  <div id="genrePersonalRows"></div>
 
   <section>
     <h2><span class="section-title-text">🔴 New Episodes This Week</span> <a href="/trending?type=tv" class="see-all">See All →</a></h2>
