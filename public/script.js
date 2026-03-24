@@ -3720,6 +3720,348 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
+// ── Section 30 — Extra Polish ────────────────────────────────────────────
+
+// ── 1. Changelog popup ────────────────────────────────────────────────────
+const CR_VERSION = "2.0";
+const CR_CHANGELOG = [
+  { icon: "🔍", title: "Fullscreen Search", desc: "New overlay with filters, voice search, and person results" },
+  { icon: "⭐", title: "Reviews & Ratings", desc: "Rate and review anything — see what the community thinks" },
+  { icon: "🎭", title: "Tab Cloak", desc: "Make CineRealm look like Google Docs, Canvas, Khan Academy" },
+  { icon: "👥", title: "Watch Party Sync", desc: "Host can now push episodes to all guests instantly" },
+  { icon: "📋", title: "Watchlist Lists", desc: "Create custom lists like Horror Night or Date Night" },
+  { icon: "📱", title: "Mobile Upgrades", desc: "Pull to refresh, swipe cards, haptic feedback" },
+  { icon: "⚡", title: "Anime Page", desc: "Powered by AniList — real anime data, genres, seasonal" },
+];
+
+(function showChangelog() {
+  const key = "cr_seen_v" + CR_VERSION;
+  if (localStorage.getItem(key)) return;
+  setTimeout(() => {
+    const el = document.createElement("div");
+    el.id = "crChangelog";
+    el.style.cssText = "position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,0.82);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.3s ease;";
+    el.innerHTML = `
+      <div style="background:linear-gradient(160deg,#160202,#0a0606);border:1px solid rgba(255,44,44,0.2);border-radius:20px;width:100%;max-width:460px;max-height:82vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,0.7);">
+        <div style="padding:22px 22px 0;flex-shrink:0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:22px;">🎬</span>
+              <div>
+                <div style="font-size:17px;font-weight:900;color:#fff;">What's New</div>
+                <div style="font-size:11px;color:rgba(255,44,44,0.7);font-weight:700;">CineRealm v${CR_VERSION}</div>
+              </div>
+            </div>
+            <button id="crChangelogClose" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;">✕</button>
+          </div>
+        </div>
+        <div style="overflow-y:auto;padding:14px 22px 22px;flex:1;scrollbar-width:thin;scrollbar-color:rgba(255,44,44,0.2) transparent;">
+          ${CR_CHANGELOG.map(item => `
+            <div style="display:flex;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+              <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,44,44,0.1);border:1px solid rgba(255,44,44,0.15);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">${item.icon}</div>
+              <div>
+                <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:2px;">${item.title}</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.4;">${item.desc}</div>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+        <div style="padding:14px 22px;flex-shrink:0;border-top:1px solid rgba(255,255,255,0.06);">
+          <button id="crChangelogOk" style="width:100%;padding:12px;background:#ff2c2c;border:none;border-radius:10px;color:#fff;font-weight:800;font-size:14px;cursor:pointer;">Let's Go 🚀</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(el);
+    const dismiss = () => { el.remove(); localStorage.setItem(key, "1"); };
+    el.querySelector("#crChangelogClose").onclick = dismiss;
+    el.querySelector("#crChangelogOk").onclick = dismiss;
+    el.onclick = e => { if (e.target === el) dismiss(); };
+  }, 1800);
+})();
+
+// ── 2. OLED Mode ──────────────────────────────────────────────────────────
+(function initOledMode() {
+  const OLED_KEY = "cr_oled_mode";
+  function applyOled(on) {
+    document.documentElement.style.setProperty("--cr-bg", on ? "#000000" : "");
+    document.documentElement.style.setProperty("--cr-surface", on ? "#050505" : "");
+    document.body.classList.toggle("oled-mode", on);
+    if (on) {
+      document.body.style.background = "#000";
+    } else {
+      document.body.style.background = "";
+    }
+  }
+  const saved = localStorage.getItem(OLED_KEY) === "1";
+  if (saved) applyOled(true);
+  window.toggleOledMode = function() {
+    const now = localStorage.getItem(OLED_KEY) === "1";
+    localStorage.setItem(OLED_KEY, now ? "0" : "1");
+    applyOled(!now);
+    showToast(now ? "OLED mode off" : "OLED mode on — pure black 🖤", "info");
+  };
+})();
+
+// ── 3. Notification Center ────────────────────────────────────────────────
+(function initNotifCenter() {
+  // Build bell button in header
+  const header = document.querySelector("header");
+  if (!header) return;
+
+  const bell = document.createElement("button");
+  bell.id = "crNotifBell";
+  bell.style.cssText = "background:none;border:none;color:rgba(255,255,255,0.5);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:8px;transition:color 0.15s;position:relative;display:flex;align-items:center;";
+  bell.innerHTML = `<span>🔔</span><span id="crNotifDot" style="position:absolute;top:2px;right:4px;width:7px;height:7px;border-radius:50%;background:#ff2c2c;display:none;"></span>`;
+  bell.title = "Notifications";
+  header.appendChild(bell);
+
+  // Dropdown
+  const dropdown = document.createElement("div");
+  dropdown.id = "crNotifDropdown";
+  dropdown.style.cssText = "position:fixed;top:56px;right:16px;width:300px;background:linear-gradient(160deg,#160202,#0a0606);border:1px solid rgba(255,44,44,0.2);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,0.6);z-index:8800;display:none;flex-direction:column;overflow:hidden;animation:cloakPanelIn 0.2s ease;";
+  dropdown.innerHTML = `
+    <div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.07);font-size:13px;font-weight:800;color:#fff;">Notifications</div>
+    <div id="crNotifList" style="max-height:320px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,44,44,0.2) transparent;"></div>
+  `;
+  document.body.appendChild(dropdown);
+
+  let open = false;
+  bell.onclick = (e) => {
+    e.stopPropagation();
+    open = !open;
+    dropdown.style.display = open ? "flex" : "none";
+    if (open) loadNotifCenter();
+  };
+  document.addEventListener("click", e => {
+    if (!dropdown.contains(e.target) && e.target !== bell) {
+      open = false; dropdown.style.display = "none";
+    }
+  });
+
+  async function loadNotifCenter() {
+    const list = document.getElementById("crNotifList");
+    if (!list) return;
+    list.innerHTML = `<div style="padding:20px;text-align:center;color:rgba(255,255,255,0.3);font-size:13px;">Loading…</div>`;
+
+    const notifs = [];
+
+    // Load from notification.json
+    try {
+      const res = await fetch("/notification.json?t=" + Date.now());
+      const d = await res.json();
+      if (d.active) notifs.push({ icon: "📢", title: d.title, body: d.message, time: d.updated || "", highlight: true });
+    } catch(e) {}
+
+    // Load from Firebase admin_alerts
+    try {
+      const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+      const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+      const app = getApps().length ? getApps()[0] : initializeApp({
+        apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
+        databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
+        projectId: "cinerealm-8b7b9",
+      });
+      const db = getDatabase(app);
+      const snap = await get(ref(db, "admin_alerts"));
+      if (snap.exists()) {
+        const alerts = Object.values(snap.val())
+          .sort((a,b) => (b.timestamp||0) - (a.timestamp||0))
+          .slice(0, 5);
+        alerts.forEach(a => notifs.push({
+          icon: "⚠️", title: "Broken Source", body: a.message,
+          time: a.timestamp ? new Date(a.timestamp).toLocaleDateString() : "", highlight: false
+        }));
+      }
+    } catch(e) {}
+
+    if (!notifs.length) {
+      list.innerHTML = `<div style="padding:24px;text-align:center;color:rgba(255,255,255,0.25);font-size:13px;">No notifications</div>`;
+      document.getElementById("crNotifDot").style.display = "none";
+      return;
+    }
+
+    document.getElementById("crNotifDot").style.display = "block";
+    list.innerHTML = notifs.map(n => `
+      <div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;gap:10px;${n.highlight ? "background:rgba(255,44,44,0.05);" : ""}">
+        <span style="font-size:18px;flex-shrink:0;margin-top:1px;">${n.icon}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:800;color:#fff;margin-bottom:2px;">${n.title}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.45);line-height:1.4;">${n.body}</div>
+          ${n.time ? `<div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:4px;">${n.time}</div>` : ""}
+        </div>
+      </div>
+    `).join("");
+  }
+})();
+
+// ── 4. Keyboard shortcuts help overlay ────────────────────────────────────
+(function initShortcutsHelp() {
+  const SHORTCUTS = [
+    { key: "/",         desc: "Open search" },
+    { key: "Escape",    desc: "Close overlays / panels" },
+    { key: "F3",        desc: "Panic key (redirect away)" },
+    { key: "? ",        desc: "Show this shortcuts panel" },
+    { key: "↑↑↓↓←→←→", desc: "..." },
+  ];
+
+  function showShortcuts() {
+    document.getElementById("crShortcutsHelp")?.remove();
+    const el = document.createElement("div");
+    el.id = "crShortcutsHelp";
+    el.style.cssText = "position:fixed;inset:0;z-index:9600;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:20px;";
+    el.innerHTML = `
+      <div style="background:linear-gradient(160deg,#160202,#0a0606);border:1px solid rgba(255,44,44,0.2);border-radius:18px;width:100%;max-width:380px;box-shadow:0 24px 60px rgba(0,0,0,0.7);overflow:hidden;">
+        <div style="padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:15px;font-weight:900;color:#fff;">⌨ Keyboard Shortcuts</span>
+          <button id="crShortcutsClose" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;">✕</button>
+        </div>
+        <div style="padding:16px 20px 20px;">
+          ${SHORTCUTS.filter(s => s.key !== "? ").map(s => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+              <span style="font-size:12px;color:rgba(255,255,255,0.5);">${s.desc}</span>
+              <kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:5px;padding:3px 8px;font-size:11px;font-weight:700;color:#fff;font-family:monospace;">${s.key}</kbd>
+            </div>
+          `).join("")}
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">
+            <span style="font-size:12px;color:rgba(255,255,255,0.5);">Show shortcuts</span>
+            <kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:5px;padding:3px 8px;font-size:11px;font-weight:700;color:#fff;font-family:monospace;">?</kbd>
+          </div>
+          <div style="margin-top:14px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;">
+            Press <kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:1px 6px;font-family:monospace;">?</kbd> or <kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:1px 6px;font-family:monospace;">Esc</kbd> to close
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(el);
+    el.querySelector("#crShortcutsClose").onclick = () => el.remove();
+    el.onclick = e => { if (e.target === el) el.remove(); };
+  }
+
+  document.addEventListener("keydown", e => {
+    if (["INPUT","TEXTAREA"].includes(document.activeElement?.tagName)) return;
+    if (e.key === "?") { e.preventDefault(); showShortcuts(); }
+  });
+})();
+
+// ── 5. OLED mode toggle in cloak settings ─────────────────────────────────
+// Patch settings panel to include OLED toggle
+window.addEventListener("load", () => {
+  const origSettings = document.getElementById("crCloakPanel");
+  if (!origSettings) return;
+  // Add OLED button to settings section if not already there
+  const settingsSection = origSettings.querySelector(".cr-cloak-section:last-child");
+  if (settingsSection && !document.getElementById("oledToggleBtn")) {
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <hr style="border:none;border-top:1px solid rgba(255,255,255,0.07);margin:8px 0;">
+      <div class="cr-cloak-section-label">Display</div>
+      <button id="oledToggleBtn" class="cr-cloak-action-btn secondary" style="width:100%;" onclick="toggleOledMode()">
+        🖤 Toggle OLED Mode
+      </button>
+    `;
+    settingsSection.appendChild(div);
+  }
+});
+
+
+// ── Hidden ───────────────────────────────────────────────────────────────
+(function(){
+  const _s=[38,38,40,40,37,39,37,39,66,65];
+  let _i=0;
+  const _m=atob("SSBMb3ZlIFlvdSBBaXlhbmE=");
+  const _sub=atob("WW91IG1ha2UgZXZlcnl0aGluZyBiZXR0ZXIgXHUyNzY1");
+  document.addEventListener("keydown",function(e){
+    if(e.keyCode===_s[_i]){_i++;if(_i===_s.length){_i=0;_showSecret();}}else{_i=0;}
+  });
+  function _showSecret(){
+    if(document.getElementById("_cr_secret"))return;
+    const o=document.createElement("div");
+    o.id="_cr_secret";
+    o.style.cssText="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;overflow:hidden;";
+    o.innerHTML=`
+      <div id="_cr_s_bg" style="position:absolute;inset:0;background:#000;"></div>
+      <canvas id="_cr_s_canvas" style="position:absolute;inset:0;pointer-events:none;"></canvas>
+      <div style="position:relative;z-index:2;text-align:center;padding:40px;max-width:520px;">
+        <div id="_cr_s_heart" style="font-size:80px;line-height:1;margin-bottom:24px;animation:_heartPulse 1.2s ease-in-out infinite;">&#10084;</div>
+        <div id="_cr_s_msg" style="font-size:42px;font-weight:900;color:#fff;letter-spacing:-1px;margin-bottom:12px;font-family:'Georgia',serif;opacity:0;transform:translateY(20px);transition:all 0.8s ease 0.3s;">${_m}</div>
+        <div id="_cr_s_sub" style="font-size:16px;color:rgba(255,255,255,0.6);letter-spacing:2px;text-transform:uppercase;opacity:0;transform:translateY(10px);transition:all 0.8s ease 0.7s;">${_sub}</div>
+        <div style="margin-top:48px;opacity:0;transition:opacity 0.5s ease 1.5s;" id="_cr_s_btn_wrap">
+          <button onclick="document.getElementById('_cr_secret').remove();document.body.style.overflow='';_cleanupSecret();" style="padding:12px 32px;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.3);border-radius:999px;color:rgba(255,255,255,0.7);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.18)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">Back to CineRealm</button>
+        </div>
+      </div>
+    `;
+    const style=document.createElement("style");
+    style.textContent=`@keyframes _heartPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 20px rgba(255,100,150,0.6));}50%{transform:scale(1.2);filter:drop-shadow(0 0 40px rgba(255,100,150,0.9));}} @keyframes _fadeIn{from{opacity:0}to{opacity:1}}`;
+    document.head.appendChild(style);
+    document.body.style.overflow="hidden";
+    document.body.appendChild(o);
+
+    // Animate text in
+    setTimeout(()=>{
+      document.getElementById("_cr_s_msg").style.opacity="1";
+      document.getElementById("_cr_s_msg").style.transform="translateY(0)";
+    },100);
+    setTimeout(()=>{
+      document.getElementById("_cr_s_sub").style.opacity="1";
+      document.getElementById("_cr_s_sub").style.transform="translateY(0)";
+    },500);
+    setTimeout(()=>{
+      document.getElementById("_cr_s_btn_wrap").style.opacity="1";
+    },1200);
+
+    // Heart color pulse background
+    const bg=document.getElementById("_cr_s_bg");
+    const colors=["#1a0010","#0d0008","#1a0818","#08000d","#110008"];
+    let ci=0;
+    const bgInterval=setInterval(()=>{
+      ci=(ci+1)%colors.length;
+      bg.style.background=colors[ci];
+      bg.style.transition="background 1.2s ease";
+    },1200);
+
+    // Particle hearts canvas
+    const canvas=document.getElementById("_cr_s_canvas");
+    canvas.width=window.innerWidth;
+    canvas.height=window.innerHeight;
+    const ctx=canvas.getContext("2d");
+    const particles=[];
+    for(let i=0;i<60;i++){
+      particles.push({
+        x:Math.random()*canvas.width,
+        y:canvas.height+Math.random()*200,
+        size:Math.random()*20+8,
+        speed:Math.random()*1.5+0.5,
+        opacity:Math.random()*0.6+0.2,
+        drift:(Math.random()-0.5)*0.8,
+        char:Math.random()>0.3?"❤":"✨"
+      });
+    }
+    function drawParticles(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      particles.forEach(p=>{
+        p.y-=p.speed;
+        p.x+=p.drift;
+        p.opacity-=0.0015;
+        if(p.y<-50||p.opacity<=0){
+          p.y=canvas.height+20;
+          p.x=Math.random()*canvas.width;
+          p.opacity=Math.random()*0.5+0.2;
+        }
+        ctx.globalAlpha=p.opacity;
+        ctx.font=p.size+"px serif";
+        ctx.fillText(p.char,p.x,p.y);
+      });
+      ctx.globalAlpha=1;
+    }
+    const animFrame=requestAnimationFrame(function loop(){
+      drawParticles();
+      if(document.getElementById("_cr_secret"))requestAnimationFrame(loop);
+    });
+    window._cleanupSecret=function(){clearInterval(bgInterval);cancelAnimationFrame(animFrame);};
+  }
+})();
+
+
 // ── Service Worker Registration ────────────────────────────────────────────
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -4030,6 +4372,7 @@ async function loadBecauseYouWatched() {
   const container = document.getElementById("becauseYouWatched");
   const titleEl   = document.getElementById("becauseYouWatchedTitle");
 
+  if (!section || !container) return;
 
   const history = JSON.parse(localStorage.getItem("history") || "[]");
 
