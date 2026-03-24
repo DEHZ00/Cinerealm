@@ -258,6 +258,7 @@ const routes = {
   "/genres":    "genres.html",
   "/anime":     "anime.html",
   "/stats":     "stats.html",
+  "/donate":    "donate.html",
   "/games-proxy": "games-proxy.html",
 };
 
