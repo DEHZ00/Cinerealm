@@ -38,13 +38,13 @@ let heroTimer = null;
 function loadHistory() {
   const raw = JSON.parse(localStorage.getItem("history") || "[]");
 
-  // Deduplicate — keep only the most recent entry per show/movie
+
   // Key: type + tmdbId/id + (for TV: season+episode)
   const map = new Map();
   for (const entry of raw) {
     const id = entry.tmdbId || entry.id;
     if (!id || !entry.type) continue;
-    // For TV, key per show (not per episode) so we track the latest episode watched
+    // For TV, key per show (not per episode) so track the latest episode watched
     const key = entry.type + "_" + id;
     const existing = map.get(key);
     if (!existing || (entry.addedAt || 0) > (existing.addedAt || 0)) {
@@ -54,7 +54,7 @@ function loadHistory() {
 
   historyData = Array.from(map.values());
 
-  // If we cleaned up a lot, save the deduplicated version back
+  
   if (raw.length > historyData.length) {
 
     saveHistory();
@@ -80,14 +80,14 @@ function saveWatchlist() {
 
   const isHome = window.location.pathname === "/";
 
-  // Add home class so CSS can show the progress bar on home only
+ 
   if (isHome) intro.classList.add("intro-home");
 
-  // Remove hidden so it shows
+  // so it shows
   intro.classList.remove("hidden");
 
   // Home page = longer (2.6s) since there's more loading happening
-  // Other pages = shorter (1.6s) just the wordmark
+  // Other pages = shorter (1.6s)
   const duration = isHome ? 2600 : 1600;
 
   setTimeout(() => {
@@ -98,38 +98,49 @@ function saveWatchlist() {
   }, duration);
 })();
 
+
 // ── Greeting on home page ─────────────────────────────────────────────────
 function getGreeting() {
   const hour = new Date().getHours();
-  if (hour >= 5  && hour < 12) return "Good morning";
-  if (hour >= 12 && hour < 17) return "Good afternoon";
-  if (hour >= 17 && hour < 21) return "Good evening";
-  return "Good night";
+  if (hour >= 5  && hour < 12) return { text: "Good morning",   emoji: "☀️" };
+  if (hour >= 12 && hour < 17) return { text: "Good afternoon", emoji: "🌤" };
+  if (hour >= 17 && hour < 21) return { text: "Good evening",   emoji: "🌙" };
+  return { text: "Up late?", emoji: "🌙" };
 }
 
 function showGreeting() {
-  // Only on home page
   if (!document.getElementById("heroSection")) return;
+  if (document.getElementById("homeGreeting")) return;
 
-  const name = localStorage.getItem("cr_user_name") || "";
-  const greeting = getGreeting() + (name ? ", " + name : "");
+  const { text, emoji } = getGreeting();
+  const name = (typeof _crProfile !== "undefined" && _crProfile?.displayName)
+    || (typeof _crProfile !== "undefined" && _crProfile?.username)
+    || localStorage.getItem("cr_display_name")
+    || "";
 
-  // Insert greeting below hero section
   const heroSection = document.getElementById("heroSection");
   if (!heroSection) return;
-
-  // Don't add twice
-  if (document.getElementById("homeGreeting")) return;
 
   const el = document.createElement("div");
   el.id = "homeGreeting";
   el.className = "home-greeting";
-  el.textContent = greeting;
+  el.innerHTML = `
+    <span class="home-greeting-emoji">${emoji}</span>
+    <span class="home-greeting-text">${text}${name ? `<span class="home-greeting-name">, ${name}</span>` : ""}</span>
+  `;
   heroSection.insertAdjacentElement("afterend", el);
 }
 
-// Call greeting after page loads
-window.addEventListener("load", showGreeting);
+window.addEventListener("load", () => {
+  showGreeting();
+  // Re-run once auth loads in case profile wasn't ready
+  if (typeof onAuthReady === "function") {
+    onAuthReady(() => {
+      document.getElementById("homeGreeting")?.remove();
+      showGreeting();
+    });
+  }
+});
 
 // ---- UI Helpers ----
 function showLoading(show = true) {
@@ -146,7 +157,7 @@ function showToast(message, type = "info") {
   toast.className = `cr-toast cr-toast--${type}`;
   toast.textContent = message;
   document.body.appendChild(toast);
-  // Trigger reflow so the CSS transition fires
+  // Trigger reflow 
   void toast.offsetWidth;
   toast.classList.add("cr-toast--visible");
   setTimeout(() => {
@@ -155,7 +166,7 @@ function showToast(message, type = "info") {
   }, 3200);
 }
 
-// Keep showError as alias for backward compat (some places still call it)
+
 function showError(message) {
   // Detect success-like messages and route correctly
   const isSuccess = /added|✓|saved|removed/i.test(message);
@@ -185,7 +196,7 @@ function showDisclaimerThen(runAfterAccept) {
 
   const modal = document.getElementById("disclaimerModal");
   if (!modal) {
-    // Fallback: no modal on this page, just run
+    
     return runAfterAccept();
   }
 
@@ -252,7 +263,7 @@ async function apiCall(endpoint, params = {}) {
       return cached.data;
     }
 
-    // Deduplicate — if same URL is already in flight, wait for it
+    // Deduplicate
     if (_apiPending.has(url)) {
       showLoading(false);
       return _apiPending.get(url);
@@ -329,7 +340,7 @@ function removeFromWatchlist(id, type, btn) {
   }
 }
 
-// ── Person Filmography Panel ──────────────────────────────────────────────
+// ── Person Panel ──────────────────────────────────────────────
 let _personPanelOpen = false;
 
 async function showPersonPanel(personId, personName) {
@@ -350,7 +361,7 @@ async function showPersonPanel(personId, personName) {
     document.body.appendChild(panel);
   }
 
-  // Show loading state
+  //  loading state
   overlay.classList.add("open");
   panel.classList.add("open");
   _personPanelOpen = true;
@@ -445,7 +456,7 @@ function closePersonPanel() {
   _personPanelOpen = false;
 }
 
-// Close person panel on Escape
+// Escape close
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && _personPanelOpen) closePersonPanel();
 });
@@ -484,8 +495,8 @@ function createMovieCard(movie, type = "movie") {
       ★ ${score}
     </span>` : "";
 
-  // HD badge — 70+ days since release = likely available in HD digitally
-  // Also check user-confirmed HD votes from Firebase
+  // HD badge
+  
   const releaseDate = movie.release_date || movie.first_air_date || "";
   const daysOld = releaseDate
     ? (Date.now() - new Date(releaseDate).getTime()) / (1000 * 60 * 60 * 24)
@@ -517,7 +528,7 @@ function createMovieCard(movie, type = "movie") {
     }
   }
 
-  // Hover info — runtime and year, shown mid-card not overlapping title
+  // Hover info — runtime and year
   const year = (movie.release_date || movie.first_air_date || "").split("-")[0];
   const runtime = movie.runtime ? Math.floor(movie.runtime/60) + "h " + (movie.runtime%60) + "m" : "";
   const hoverInfo = (year || runtime) ? `
@@ -526,7 +537,7 @@ function createMovieCard(movie, type = "movie") {
       ${runtime ? `<span>${runtime}</span>` : ""}
     </div>` : "";
 
-  // User's own rating overlay if they've reviewed it
+  // User's own rating overlay
   const userReview = getReview(movie.id, type);
   const userRatingBadge = userReview ? `
     <span class="card-user-rating" title="Your rating: ${"★".repeat(userReview.stars)}">
@@ -583,7 +594,7 @@ function createMovieCard(movie, type = "movie") {
 
   card.addEventListener("click", () => showMovieDetails(movie, type));
 
-  // Store data for swipe gestures (Section 23)
+  // Store data for swipe gestures
   card._movieData  = movie;
   card._mediaType  = type;
   if (window._initCardSwipe) window._initCardSwipe(card, movie, type);
@@ -625,7 +636,7 @@ function openDetailsPanel() {
   detailsPanelOpen = true;
 }
 
-// Keep old modal working as fallback — vars already declared at top of file
+
 
 // Escape key closes panel
 document.addEventListener("keydown", (e) => {
@@ -635,7 +646,7 @@ document.addEventListener("keydown", (e) => {
 async function showMovieDetails(movie, type) {
   const panel = document.getElementById("detailsPanel");
 
-  // Use side panel if available, fallback to old modal
+  
   if (!panel) {
     return showMovieDetailsModal(movie, type);
   }
@@ -845,7 +856,7 @@ async function showMovieDetails(movie, type) {
   };
 
   // Rate & Review button — wired inside loadPanelReviews since it renders async
-  // but also handle if it's somehow in the main panel
+
   const _directReviewBtn = document.getElementById("crReviewBtn");
   if (_directReviewBtn) {
     _directReviewBtn.onclick = () => openReviewModal(movie.id, type, title, getReview(movie.id, type));
@@ -961,19 +972,19 @@ let DEFAULT_SOURCE = "FluxLine";
 const PROVIDERS = [
   // ── Standard Sources ─────────────────────────────────────────────────────
   { name: "FluxLine",  key: "vidplus",    tier: "standard", chromebook: true,  sandbox: true,  supports: { movie: true, tv: true, anime: true  } }, // default
-  { name: "NovaReel",  key: "spenEmbed",  tier: "standard", chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: true  } },
-  { name: "PulseView", key: "vidfast",    tier: "standard", chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
-  { name: "Ez",        key: "videasy",    tier: "standard", chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: true  } },
+  { name: "NovaReel",  key: "spenEmbed",  tier: "standard", chromebook: false,  sandbox: false, supports: { movie: true, tv: true, anime: true  } },
+  { name: "PulseView", key: "vidfast",    tier: "standard", chromebook: false,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "Ez",        key: "videasy",    tier: "standard", chromebook: false,  sandbox: false, supports: { movie: true, tv: true, anime: true  } },
   { name: "Saturn",    key: "VidSrc",     tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "Mars",      key: "vidlink",    tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
-  { name: "Jupiter",   key: "VidZen",     tier: "standard", chromebook: false, sandbox: true,  supports: { movie: true, tv: true, anime: true  } },
+  { name: "Jupiter",   key: "VidZen",     tier: "premium", chromebook: true, sandbox: true,  supports: { movie: true, tv: true, anime: true  } },
   { name: "Seenima",   key: "vidora",     tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
-  { name: "King",      key: "vidking",    tier: "standard", chromebook: false, sandbox: true,  supports: { movie: true, tv: true, anime: false } },
+  { name: "King",      key: "vidking",    tier: "premium", chromebook: false, sandbox: true,  supports: { movie: true, tv: true, anime: true } },
 
-  // ── Premium Sources ───────────────────────────────────────────────────────
+  // ── extra Sources ───────────────────────────────────────────────────────
   { name: "VidUp",     key: "vidup",      tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
-  { name: "MoviesAPI", key: "moviesapi",  tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
-  { name: "111Movies", key: "111movies",  tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "MoviesAPI", key: "moviesapi",  tier: "standard",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "111Movies", key: "111movies",  tier: "standard",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
 ];
 
 
@@ -1210,8 +1221,7 @@ function renderSourcePills(media, defaultName, opts) {
     const err = document.getElementById("player-error") || document.getElementById("watch-player-error");
     if (err) err.style.display = "none";
 
-    // Always use the latest season/episode from _watchContext so switching
-    // sources after changing episodes doesn't reset back to S1E1
+
     const ctx = window._watchContext;
     const currentMedia = ctx ? {
       ...media,
@@ -1294,7 +1304,7 @@ function renderSourcePills(media, defaultName, opts) {
 }
 
 
-// Unified loadPlayer you call from cards
+// Unified loadPlayer
 function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
   const media = {
     type,
@@ -1428,7 +1438,7 @@ function addRowScrollArrows(row) {
 
 // ── Re-run personal rows when returning to the page ───────────────────────
 function refreshPersonalRows() {
-  // Only run on home page — these elements don't exist on other pages
+  // Only run on home page 
   if (!document.getElementById("continueWatching")) return;
   loadHistory();
   renderContinueWatching();
@@ -1445,7 +1455,7 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") refreshPersonalRows();
 });
 
-// Also refresh when window regains focus
+// refresh when window regains focus
 window.addEventListener("focus", refreshPersonalRows);
 function showSkeletons(container, count = 8) {
   container.innerHTML = Array(count).fill(
@@ -1495,7 +1505,7 @@ async function fetchMovies(endpoint, containerId, type = "movie") {
   }
 }
 
-  // Show options
+
 
  // ---- Render Seasons & Episodes Dropdown ----
 async function renderSeasonsDropdown(tvId, media, extraOpts = {}) {
@@ -1507,7 +1517,7 @@ async function renderSeasonsDropdown(tvId, media, extraOpts = {}) {
   const tvData = await apiCall(`/tv/${tvId}`);
   if (!tvData || !tvData.seasons) return;
 
-  // Filter out specials (season 0)
+
   const seasons = tvData.seasons.filter(s => s.season_number > 0);
   if (!seasons.length) return;
 
@@ -1645,7 +1655,7 @@ async function renderSeasonsDropdown(tvId, media, extraOpts = {}) {
     loadEpisodes(chosen);
   });
 
-  // 🔑 Initial season: use extraOpts.season if present, otherwise first season
+  //  Initial season: use extraOpts.season if present, otherwise first season
   const initialSeason = extraOpts.season || seasons[0].season_number;
   seasonSelect.value = initialSeason;
   loadEpisodes(initialSeason);
@@ -1850,7 +1860,7 @@ function removeSearchHistory(q) {
   localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(h));
 }
 
-// ── Section 19 — Fullscreen Search Overlay ───────────────────────────────
+
 let _searchOverlay = null;
 let _searchDebounce = null;
 let _searchResultIndex = -1;
@@ -2210,7 +2220,7 @@ function _doVoiceSearch(voiceBtn, input) {
     if (errorShown) return;
     errorShown = true;
     if (voiceBtn) { voiceBtn.textContent = "🎤"; voiceBtn.style.color = ""; }
-    // "no-speech" is common and not a real error — just nothing was said
+   
     if (e.error === "no-speech") {
       showToast("No speech detected, try again", "info");
     } else if (e.error === "not-allowed" || e.error === "permission-denied") {
@@ -2433,7 +2443,7 @@ window.addEventListener("message", function (event) {
     if (!tmdbId || !mediaType) return;
 
     // Find existing entry for this show/movie — for TV match by show ID only
-    // (we always update the single entry per show to track latest episode)
+ 
     let entry = historyData.find((m) => {
       if (m.type !== mediaType) return false;
       const entryId = m.tmdbId || m.id;
@@ -2467,7 +2477,7 @@ window.addEventListener("message", function (event) {
       renderContinueWatching();
     }
   } catch (e) {
-    // ignore
+  
   }
 });
 
@@ -2504,7 +2514,7 @@ window.addEventListener("message", function (event) {
     saveHistory();
 
   } catch (e) {
-    // ignore
+
   }
 });
 if (document.getElementById("heroSection")) {
@@ -2573,7 +2583,7 @@ if (document.getElementById("heroSection")) {
   btn.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 })();
 
-// ── Section 13 — Extra Premium Polish ────────────────────────────────────
+// ── Section 13 —────────────────────────────────────
 
 // ── 1. Favicon animation ──────────────────────────────────────────────────
 let _faviconInterval = null;
@@ -2745,8 +2755,7 @@ window.showMovieDetails = async function(movie, type) {
   addRecentlyViewed(movie, type);
   return _origShowMovieDetails(movie, type);
 };
-// Also patch the global reference
-// (handled by the window assignment above)
+
 
 // ── Section 12 — Push Notifications ──────────────────────────────────────
 const FCM_VAPID_KEY = "BOsL8MnlTNg3rBdAVKccsOKUYyZrNg_V6ZKDqOQYZTGWGWzr5D7NeymF4BHWy44RUVD3nt79hnGim_Wgrp-HANs";
@@ -2860,9 +2869,9 @@ if (!window.location.pathname.startsWith("/watch")) {
   let _customPresets  = JSON.parse(localStorage.getItem("cr_cloak_custom") || "[]");
   let _panel          = null;
   let _btn            = null;
-  let _listening      = false; // for key capture mode
+  let _listening      = false; 
 
-  // ── Favicon fix — removes ALL existing favicons and force-replaces ─────
+  // removes ALL existing favicons and force-replaces ─────
   function setFavicon(url) {
     document.querySelectorAll("link[rel*='icon']").forEach(el => el.remove());
     ["shortcut icon", "icon"].forEach(rel => {
@@ -3208,7 +3217,7 @@ function deleteReview(id, type) {
   localStorage.setItem(CR_REVIEWS_KEY, JSON.stringify(reviews));
 }
 
-// ── Reviews Panel (community + yours) ────────────────────────────────────
+// ── Reviews Panel (community + theirs) ────────────────────────────────────
 async function loadPanelReviews(id, type, title) {
   const section = document.getElementById("panelReviewsSection");
   if (!section) return;
@@ -3272,7 +3281,7 @@ async function loadPanelReviews(id, type, title) {
     }
 
     const allReviews = Object.values(snap.val())
-      .filter(r => r.stars && r.deviceId !== _getDeviceId()) // exclude own review from community list
+      .filter(r => r.stars && r.deviceId !== _getDeviceId())
       .sort((a,b) => (b.ts||0) - (a.ts||0))
       .slice(0, 20);
 
@@ -3614,7 +3623,7 @@ function updateReviewBadgeInPanel(id, type) {
 
 // ── Section 22 — Frontend Performance Optimizations ──────────────────────
 
-// 1. Link prefetching — prefetch likely next pages on idle
+// 1. Link prefetching — 
 (function prefetchLikelyPages() {
   if (!("requestIdleCallback" in window)) return;
   const currentPath = window.location.pathname;
@@ -3633,7 +3642,7 @@ function updateReviewBadgeInPanel(id, type) {
 })();
 
 // 2. IntersectionObserver-based lazy loading for all images
-// (upgrades native loading="lazy" with better control)
+
 (function initLazyImages() {
   const observer = new IntersectionObserver((entries, obs) => {
     entries.forEach(entry => {
@@ -4005,7 +4014,7 @@ function _showChangelogPopup(version, items, dismissKey) {
 })();
 
 // ── 5. OLED mode toggle — added to cloak panel ───────────────────────────
-// Injected into cloak panel after it's built
+// Injected into cloak panel 
 function _addOledToCloak() {
   const panel = document.getElementById("crCloakPanel");
   if (!panel || document.getElementById("oledToggleBtn")) return;
@@ -4221,6 +4230,16 @@ function _addOledToCloak() {
     window._cleanupSecret=function(){clearInterval(bgI);cancelAnimationFrame(animId);};
   }
 })();
+
+
+
+
+
+
+
+
+
+
 
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -4950,7 +4969,7 @@ function showSessionGreeting() {
 }
 
 // ── Reviews — use display name from profile when logged in ────────────────
-// This replaces the Firebase-only patch from Section 24 with a combined version
+// 
 const _origSaveReviewBase = saveReview; // the original localStorage version
 window.saveReview = async function(id, type, stars, text) {
   // 1. Save locally
@@ -5092,7 +5111,7 @@ if ("serviceWorker" in navigator) {
       })
       .catch(err => console.warn("SW registration failed:", err));
 
-    // When SW takes control, reload once to get fresh assets
+  
     let refreshing = false;
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (!refreshing) {
@@ -5612,7 +5631,7 @@ async function loadTopPicks() {
   const section = document.getElementById("topPicksSection");
   const row     = document.getElementById("topPicksRow");
   if (!section || !row) return;
-  if (historyData.length < 3) return; // need some history first
+  if (historyData.length < 3) return; 
 
   // Get top genre from watch history
   const genreCounts = {};

@@ -6213,16 +6213,39 @@ header.header-hidden {
 
 /* ── Home greeting ───────────────────────────────────────────────────────── */
 .home-greeting {
-  padding: 8px 28px 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: rgba(255,255,255,0.85);
-  letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 28px 4px;
   animation: introText 0.5s ease 0.1s both;
 }
 
+.home-greeting-emoji {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.home-greeting-text {
+  font-size: 24px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.home-greeting-name {
+  background: linear-gradient(90deg, #ff2c2c, #ff6b6b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 900;
+}
+
 @media (max-width: 768px) {
-  .home-greeting { font-size: 18px; padding: 8px 16px 0; }
+  .home-greeting { padding: 14px 16px 0; }
+  .home-greeting-text { font-size: 20px; }
+  .home-greeting-emoji { font-size: 18px; }
 }
 
 /* ── Nav logo gradient to match splash wordmark ──────────────────────────── */
