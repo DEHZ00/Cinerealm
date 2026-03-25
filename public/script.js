@@ -2753,8 +2753,8 @@ function renderRecentlyViewed() {
 // Patch showMovieDetails to track recently viewed
 const _origShowMovieDetails = showMovieDetails;
 window.showMovieDetails = async function(movie, type) {
-  addRecentlyViewed(movie, type);
-  return _origShowMovieDetails(movie, type);
+  try { addRecentlyViewed(movie, type); } catch(e) {}
+  try { return await _origShowMovieDetails(movie, type); } catch(e) { console.error("showMovieDetails error:", e); }
 };
 // Also patch the global reference
 // (handled by the window assignment above)
