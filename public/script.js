@@ -5202,31 +5202,70 @@ updateWatchlistBadge();
 (function() {
   const currentPath = window.location.pathname;
 
-  const navItems = [
+  // Remove any nav that was hardcoded in HTML to avoid duplicates
+  document.querySelectorAll(".mobile-bottom-nav").forEach(el => el.remove());
+  document.getElementById("mobileDrawer")?.remove();
+  document.getElementById("mobileDrawerOverlay")?.remove();
+
+  const mainItems = [
     { href: "/",          icon: "🏠", label: "Home"      },
     { href: "/search",    icon: "🔍", label: "Search"    },
-    { href: "/trending",  icon: "🔥", label: "Trending"  },
+    { href: "/movies",    icon: "🎬", label: "Movies"    },
     { href: "/watchlist", icon: "★",  label: "Watchlist" },
-    { href: "/stats",     icon: "📊", label: "Stats"     },
+    { href: "/anime",     icon: "⛩️", label: "Anime"     },
   ];
 
+  const moreItems = [
+    { href: "/trending", icon: "🔥", label: "Trending"  },
+    { href: "/genres",   icon: "🎭", label: "Genres"    },
+    { href: "/games",    icon: "🎮", label: "Games"     },
+    { href: "/stats",    icon: "📊", label: "Stats"     },
+    { href: "/donate",   icon: "♥",  label: "Support"   },
+    { href: "/legal",    icon: "📄", label: "Legal"     },
+  ];
+
+  // Build bottom nav bar
   const bar = document.createElement("nav");
   bar.className = "mobile-bottom-nav";
   bar.id = "mobileBottomNav";
-
-  bar.innerHTML = navItems.map(item => {
+  bar.innerHTML = mainItems.map(item => {
     const isActive = currentPath === item.href ||
       (item.href !== "/" && currentPath.startsWith(item.href));
-    return `
-      <a href="${item.href}" class="mobile-nav-item ${isActive ? "active" : ""}">
+    return `<a href="${item.href}" class="mobile-nav-item ${isActive ? "active" : ""}">
         <span class="mobile-nav-icon">${item.icon}</span>
         <span class="mobile-nav-label">${item.label}</span>
-      </a>
-    `;
-  }).join("");
+      </a>`;
+  }).join("") + `<button class="mobile-nav-item" id="mobileMoreBtn" onclick="toggleMobileDrawer()">
+      <span class="mobile-nav-icon">⋯</span>
+      <span class="mobile-nav-label">More</span>
+    </button>`;
+
+  // Build drawer
+  const drawer = document.createElement("div");
+  drawer.id = "mobileDrawer";
+  drawer.style.cssText = "display:none;position:fixed;bottom:60px;left:0;right:0;z-index:9989;background:rgba(8,4,4,0.97);border-top:1.5px solid rgba(255,44,44,0.25);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:14px 10px 10px;";
+  drawer.innerHTML = `
+    <div style="font-size:10px;font-weight:800;color:rgba(255,44,44,0.6);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;padding:0 4px;">More</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+      ${moreItems.map(item => `
+        <a href="${item.href}" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 6px;border-radius:10px;text-decoration:none;color:rgba(255,255,255,0.65);font-size:11px;font-weight:600;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);-webkit-tap-highlight-color:transparent;">
+          <span style="font-size:22px;line-height:1;">${item.icon}</span>
+          ${item.label}
+        </a>`).join("")}
+    </div>
+  `;
+
+  // Overlay
+  const overlay = document.createElement("div");
+  overlay.id = "mobileDrawerOverlay";
+  overlay.style.cssText = "display:none;position:fixed;inset:0;z-index:9988;background:rgba(0,0,0,0.6);";
+  overlay.onclick = () => window.toggleMobileDrawer && window.toggleMobileDrawer();
 
   document.body.appendChild(bar);
+  document.body.appendChild(drawer);
+  document.body.appendChild(overlay);
 })();
+
 
 // ── Swipe gestures on watch page ──────────────────────────────────────────
 (function() {
