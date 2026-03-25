@@ -95,8 +95,8 @@ async function mvLoad(reset) {
     const items = (data?.results || []).filter(m => m.poster_path);
     _mvTotalPages = Math.min(data?.total_pages || 1, 500);
 
-    if (results) results.innerHTML = reset ? "" : results.innerHTML.replace(/<div class="mv-skeleton"><\/div>/g, "");
-    // Clear skeletons
+    // Clear skeletons without destroying existing cards
+    if (reset && results) results.innerHTML = "";
     if (results) results.querySelectorAll(".mv-skeleton").forEach(s => s.remove());
     if (spinner) spinner.style.display = "none";
 

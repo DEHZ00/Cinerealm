@@ -120,6 +120,15 @@
 <script src="/cloak-config.js"></script>
 <script src="/script.js"></script>
 <script src="/movies/movies.js"></script>
+<script>
+// Force movie card clicks to work on movies page
+document.addEventListener("click", function(e) {
+  const card = e.target.closest(".movie-card");
+  if (!card || !card._movieData) return;
+  e.stopImmediatePropagation();
+  showMovieDetails(card._movieData, card._mediaType || "movie");
+}, true);
+</script>
 
 <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
 <script defer src="/_vercel/insights/script.js"></script>
