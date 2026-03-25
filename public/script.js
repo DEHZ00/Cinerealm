@@ -5380,17 +5380,57 @@ function initHomeGenreFilter() {
 
   async function loadGenreResults(type, genreId) {
     resultsRow.innerHTML = "<p class=\"placeholder\">Loading\u2026</p>";
-    const data = await apiCall("/discover/" + type, { with_genres: genreId, sort_by: "popularity.desc", page: 1 });
-    const items = ((data && data.results) ? data.results : []).filter(function(i) { return i.poster_path; }).slice(0, 14);
-    resultsRow.innerHTML = "";
-    if (!items.length) {
-      resultsRow.innerHTML = "<p class=\"placeholder\">No results found.</p>";
-      return;
+    // Reset infinite scroll state
+    let _gPage = 1, _gDone = false, _gLoading = false;
+
+    async function loadGenrePage(reset) {
+      if (_gLoading || _gDone) return;
+      _gLoading = true;
+      if (reset) { _gPage = 1; _gDone = false; resultsRow.innerHTML = ""; }
+
+      const data = await apiCall("/discover/" + type, {
+        with_genres: genreId,
+        sort_by: "popularity.desc",
+        page: _gPage
+      });
+      const items = ((data && data.results) ? data.results : []).filter(i => i.poster_path);
+      const totalPages = Math.min(data?.total_pages || 1, 20); // cap at 20 pages
+
+      if (!items.length && _gPage === 1) {
+        resultsRow.innerHTML = "<p class=\"placeholder\">No results found.</p>";
+        _gLoading = false;
+        return;
+      }
+
+      items.forEach(item => {
+        const card = createMovieCard(item, type);
+        if (card) resultsRow.appendChild(card);
+      });
+
+      if (_gPage >= totalPages) {
+        _gDone = true;
+        // Remove sentinel if exists
+        document.getElementById("genreSentinel_" + genreId)?.remove();
+      } else {
+        _gPage++;
+        // Create or keep sentinel
+        let sentinel = document.getElementById("genreSentinel_" + genreId);
+        if (!sentinel) {
+          sentinel = document.createElement("div");
+          sentinel.id = "genreSentinel_" + genreId;
+          sentinel.style.cssText = "height:20px;width:100%;flex-basis:100%;";
+          resultsRow.parentElement?.appendChild(sentinel);
+          // Observe sentinel
+          const obs = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting) loadGenrePage(false);
+          }, { rootMargin: "300px" });
+          obs.observe(sentinel);
+        }
+      }
+      _gLoading = false;
     }
-    items.forEach(function(item) {
-      const card = createMovieCard(item, type);
-      if (card) resultsRow.appendChild(card);
-    });
+
+    loadGenrePage(true);
   }
 
   document.querySelectorAll(".genre-home-type").forEach(function(btn) {
