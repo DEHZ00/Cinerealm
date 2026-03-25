@@ -221,6 +221,23 @@
     .cloak-panic-note { font-size: 11px; color: rgba(255,255,255,0.35); line-height: 1.4; }
     }
   </style>
+  <script>
+    // Block all popup windows opened by game iframes
+    // Override window.open so any ad/popup call silently fails
+    const _origOpen = window.open.bind(window);
+    window.open = function(url, target, features) {
+      // Only allow about:blank (used by cloak feature)
+      if (url === "about:blank") return _origOpen(url, target, features);
+      // Block everything else silently
+      return null;
+    };
+
+    // Also block any attempt to change parent location from iframe
+    Object.defineProperty(window, 'location', {
+      get: function() { return window._location || location; },
+      set: function(v) { /* blocked */ }
+    });
+  </script>
 </head>
 <body>
 
@@ -282,7 +299,6 @@
       allow="fullscreen; autoplay; clipboard-read; clipboard-write; gamepad"
       allowfullscreen
       title="CineRealm Games"
-      sandbox="allow-scripts allow-forms allow-pointer-lock allow-downloads allow-modals allow-orientation-lock"
     ></iframe>
 
   </div>
@@ -299,7 +315,7 @@
   </div>
   <div class="game-modal-frame">
     <iframe id="gameModalIframe" src="" allow="fullscreen; autoplay; gamepad" allowfullscreen
-      sandbox="allow-scripts allow-forms allow-pointer-lock allow-downloads allow-modals"></iframe>
+      sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-downloads allow-modals allow-orientation-lock"></iframe>
   </div>
 </div>
 
@@ -468,7 +484,16 @@ function renderFallbackGrid() {
 function openFallbackGame(idx) {
   const game = GAMES[idx];
   if (!game) return;
-  if (game.newTab) { window.open(game.url, "_blank", "noopener"); return; }
+  if (game.newTab) {
+    // Open in modal instead of new tab to avoid popup blocker issues
+    if (!gridModal) gridModal = document.getElementById("gameModal");
+    document.getElementById("gameModalTitle").textContent = game.title;
+    document.getElementById("gameModalNewTab").href = game.url;
+    document.getElementById("gameModalIframe").src = game.url;
+    gridModal.classList.add("open");
+    document.body.style.overflow = "hidden";
+    return;
+  }
   if (!gridModal) gridModal = document.getElementById("gameModal");
   document.getElementById("gameModalTitle").textContent = game.title;
   document.getElementById("gameModalNewTab").href = game.url;
