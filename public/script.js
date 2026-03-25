@@ -1,4 +1,14 @@
 // CineRealm script.js — v2.2
+
+const FB_CONFIG = {
+  apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
+  authDomain: "cinerealm-8b7b9.firebaseapp.com",
+  databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
+  projectId: "cinerealm-8b7b9",
+  storageBucket: "cinerealm-8b7b9.firebasestorage.app",
+  messagingSenderId: "1076768481536",
+  appId: "1:1076768481536:web:4fd3bdc3f222e4850ad3e5"
+};
 //CONFIGURATION
 const BACKEND_URL = "https://ez-streaming-api.vercel.app";
 const IMG_BASE = "https://image.tmdb.org/t/p/w500";
@@ -2789,7 +2799,7 @@ async function registerFCMToken() {
     const reg = await navigator.serviceWorker.ready;
     const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
     const { getMessaging, getToken, onMessage } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js");
-    const firebaseConfig = {
+    const app = getApps().length === 0 ? initializeApp(typeof FB_CONFIG !== "undefined" ? FB_CONFIG : {
       apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
       authDomain: "cinerealm-8b7b9.firebaseapp.com",
       databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
@@ -2797,8 +2807,7 @@ async function registerFCMToken() {
       storageBucket: "cinerealm-8b7b9.firebasestorage.app",
       messagingSenderId: "1076768481536",
       appId: "1:1076768481536:web:4fd3bdc3f222e4850ad3e5"
-    };
-    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+    }) : getApps()[0];
     const fcmMessaging = getMessaging(app);
     const token = await getToken(fcmMessaging, { vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: reg });
     if (token) {
@@ -4218,15 +4227,6 @@ function _addOledToCloak() {
 // SECTION P — PROFILES & LOGIN
 // ══════════════════════════════════════════════════════════════════════════
 
-const FB_CONFIG = {
-  apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
-  authDomain: "cinerealm-8b7b9.firebaseapp.com",
-  databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
-  projectId: "cinerealm-8b7b9",
-  storageBucket: "cinerealm-8b7b9.firebasestorage.app",
-  messagingSenderId: "1076768481536",
-  appId: "1:1076768481536:web:4fd3bdc3f222e4850ad3e5"
-};
 
 // ── Auth state ────────────────────────────────────────────────────────────
 let _crUser        = null; // Firebase Auth user object
@@ -4925,9 +4925,13 @@ function showSessionGreeting() {
     pointer-events:none;
   `;
   el.innerHTML = `
-    <div style="font-size:13px;color:rgba(255,255,255,0.45);font-weight:600;margin-bottom:4px;">${greeting} 👋</div>
-    <div style="font-size:18px;font-weight:900;color:#fff;margin-bottom:4px;">${name}</div>
-    <div style="font-size:12px;color:rgba(255,255,255,0.4);">${sub}</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="font-size:28px;line-height:1;flex-shrink:0;">👋</div>
+      <div>
+        <div style="font-size:16px;font-weight:900;color:#fff;">${greeting}, ${name}</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">${sub}</div>
+      </div>
+    </div>
   `;
   document.body.appendChild(el);
 
@@ -5495,35 +5499,38 @@ let _myHdVotes = JSON.parse(localStorage.getItem("cr_hd_votes") || "{}"); // mov
 
 async function voteHD(movieId, movieTitle) {
   if (_myHdVotes[movieId]) {
-    showToast("You already confirmed this as HD", "info");
+    showToast("You already voted on this one", "info");
     return;
   }
-
   try {
-    const { getDatabase, ref, runTransaction } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const { getDatabase, ref, set, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
     const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-    const app = getApps().length ? getApps()[0] : initializeApp({
-      apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
-      authDomain: "cinerealm-8b7b9.firebaseapp.com",
-      databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
-      projectId: "cinerealm-8b7b9",
+    const app = getApps().length ? getApps()[0] : initializeApp(typeof FB_CONFIG !== "undefined" ? FB_CONFIG : {
+      apiKey:"AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
+      databaseURL:"https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
+      projectId:"cinerealm-8b7b9",
     });
-    const db = getDatabase(app);
-
-    await runTransaction(ref(db, "hd_votes/" + movieId), current => (current || 0) + 1);
+    const db  = getDatabase(app);
+    const vRef = ref(db, "hd_votes/" + movieId);
+    // Read current count then increment — no auth needed, rules allow public write
+    const snap = await get(vRef);
+    const newCount = (snap.exists() ? snap.val() : 0) + 1;
+    await set(vRef, newCount);
 
     _myHdVotes[movieId] = true;
     localStorage.setItem("cr_hd_votes", JSON.stringify(_myHdVotes));
-    _hdVotes[movieId] = (_hdVotes[movieId] || 0) + 1;
+    _hdVotes[movieId] = newCount;
 
-    const count = _hdVotes[movieId];
-    if (count >= 3) {
-      showToast("HD confirmed! Badge added.", "success");
+    if (newCount >= 3) {
+      showToast("HD confirmed! Badge added ✓", "success");
     } else {
-      showToast(`HD vote recorded (${count}/3 needed)`, "info");
+      showToast(`HD vote recorded (${newCount}/3 needed)`, "info");
     }
   } catch(e) {
-    showToast("Failed to record vote", "error");
+    // If Firebase fails, just track locally
+    _myHdVotes[movieId] = true;
+    localStorage.setItem("cr_hd_votes", JSON.stringify(_myHdVotes));
+    showToast("HD vote recorded locally", "info");
   }
 }
 

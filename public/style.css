@@ -537,28 +537,43 @@ iframe {
 /* Responsive */
 @media (max-width: 768px) {
   header {
-    flex-direction: column;
-    gap: 12px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 14px;
+    align-items: center;
   }
 
   .header-left {
-    width: 100%;
-    justify-content: space-between;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   header h1 {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   #searchBar {
-    width: 100%;
+    flex: 1;
+    min-width: 120px;
     max-width: none;
+    order: 3;
+    width: 100%;
   }
 
+  /* Hide desktop nav links on mobile - bottom nav handles navigation */
   .nav-links {
-    width: 100%;
-    justify-content: flex-start;
-    margin-left: 0;
+    display: none !important;
+  }
+
+  /* Bell and profile sit right of the logo on mobile */
+  #crNotifBell {
+    order: 2;
+  }
+  #crProfileBtn {
+    order: 2;
   }
 
   .nav-btn {
@@ -6828,9 +6843,9 @@ body.theater-mode #watch-content {
   display: none;
   align-items: center;
   gap: 0;
-  background: rgba(255,44,44,0.08);
-  border-top: 1px solid rgba(255,44,44,0.12);
-  border-bottom: 1px solid rgba(255,44,44,0.12);
+  background: rgba(20,2,2,0.95);
+  border-top: 1px solid rgba(255,44,44,0.2);
+  border-bottom: 1px solid rgba(255,44,44,0.2);
   overflow: hidden;
   height: 36px;
   position: relative;
