@@ -174,10 +174,9 @@ function brResolve(val) {
 }
 
 function brOpen(url) {
-  // Open UV proxy in new tab — UV registers its service worker then proxies the URL
-  window.open(`${UV}/?url=${encodeURIComponent(url)}`, '_blank', 'noopener');
+  // navigate from within UV itself
+  window.open(`https://usd.cinerealm.online`, '_blank', 'noopener');
 }
-
 function brGo() {
   const url = brResolve(document.getElementById("brInput").value);
   if (url) brOpen(url);
