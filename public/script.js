@@ -2808,31 +2808,31 @@ function showNotifPrompt() {
 async function registerFCMToken() {
   try {
     const reg = await navigator.serviceWorker.ready;
-    const { initializeApp, getApps, getApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
     const { getMessaging, getToken, onMessage } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js");
 
-    // Always use FB_CONFIG which has the full config including appId
+    // Use existing app if available, otherwise init with full config
+    const existingApps = getApps();
     let app;
-    try {
-      app = getApp(); // get default app
-      // Check it has appId — if not, we can't use it for FCM
-      if (!app.options.appId) throw new Error("missing appId");
-    } catch(e) {
-      // Initialize fresh with full config
+    if (existingApps.length > 0) {
+      app = existingApps[0];
+      // If existing app missing appId, we can't use FCM - silently skip
+      if (!app.options.appId || !app.options.messagingSenderId) {
+        return;
+      }
+    } else {
       app = initializeApp(FB_CONFIG);
     }
 
     const fcmMessaging = getMessaging(app);
     const token = await getToken(fcmMessaging, { vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: reg });
-    if (token) {
-      localStorage.setItem("cr_fcm_token", token);
-    }
+    if (token) localStorage.setItem("cr_fcm_token", token);
     onMessage(fcmMessaging, payload => {
       const { title, body } = payload.notification || {};
       if (title) showToast("🔔 " + title + (body ? " — " + body : ""), "info");
     });
   } catch(err) {
-    console.warn("FCM registration failed:", err);
+    // Silent fail — FCM is non-critical
   }
 }
 
@@ -3268,12 +3268,7 @@ async function loadPanelReviews(id, type, title) {
   try {
     const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
     const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-    const app = getApps().length ? getApps()[0] : initializeApp({
-      apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
-      authDomain: "cinerealm-8b7b9.firebaseapp.com",
-      databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
-      projectId: "cinerealm-8b7b9",
-    });
+    const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
     const db = getDatabase(app);
     const snap = await get(ref(db, "reviews/" + reviewKey));
     const communityEl = document.getElementById("crCommunityReviews");
@@ -3353,8 +3348,7 @@ window.deleteReview = async function(id, type) {
   try {
     const { getDatabase, ref, remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
     const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-    const _cfg = typeof FB_CONFIG !== "undefined" ? FB_CONFIG : { apiKey:"AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM", databaseURL:"https://cinerealm-8b7b9-default-rtdb.firebaseio.com", projectId:"cinerealm-8b7b9" };
-    const app = getApps().length ? getApps()[0] : initializeApp(_cfg);
+    const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
     const db = getDatabase(app);
     await remove(ref(db, "reviews/" + type + "_" + id + "/" + _getDeviceId()));
   } catch(e) {}
@@ -5511,12 +5505,7 @@ let _myHdVotes = JSON.parse(localStorage.getItem("cr_hd_votes") || "{}"); // mov
   try {
     const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
     const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-    const app = getApps().length ? getApps()[0] : initializeApp({
-      apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
-      authDomain: "cinerealm-8b7b9.firebaseapp.com",
-      databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
-      projectId: "cinerealm-8b7b9",
-    });
+    const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
     const db = getDatabase(app);
     const snap = await get(ref(db, "hd_votes"));
     if (snap.exists()) _hdVotes = snap.val();

@@ -5493,7 +5493,7 @@ section {
 
 @media (max-width: 900px) {
   .mobile-bottom-nav {
-    display: flex;
+    display: flex !important;
   }
 
   /* Push page content up so it's not hidden behind bottom nav */
