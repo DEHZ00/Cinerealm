@@ -478,175 +478,98 @@ window.addEventListener("load", loadAnimeRows);
 <script src="https://uptime.betterstack.com/widgets/announcement.js" data-id="240420" async type="text/javascript"></script>
 
 
+
 <style>
-/* Anime splash variants */
-.intro-tagline { transition: none; }
-
-/* Option 2 — Glitch */
 @keyframes animeGlitch1 {
-  0%   { transform: translate(0); color: inherit; }
-  10%  { transform: translate(-2px, 1px); color: #ff2c2c; }
-  20%  { transform: translate(2px, -1px); color: #00ffff; }
-  30%  { transform: translate(-1px, 2px); color: #ff00ff; }
-  40%  { transform: translate(1px, -2px); color: inherit; }
-  50%  { transform: translate(-2px, 1px); color: #ff2c2c; }
-  60%  { transform: translate(2px, 0px); color: inherit; }
-  70%  { transform: translate(0, 1px); }
+  0%   { transform: translate(0); }
+  20%  { transform: translate(-2px, 1px); }
+  40%  { transform: translate(2px, -1px); }
+  60%  { transform: translate(-1px, 2px); }
+  80%  { transform: translate(1px, -1px); }
   100% { transform: translate(0); }
-}
-.glitch-active {
-  animation: animeGlitch1 0.1s infinite;
-  font-family: monospace;
-}
-
-/* Option 6 — Brush stroke */
-.brush-overlay {
-  position: absolute;
-  top: 0; left: -10%; width: 0; height: 100%;
-  background: #ff2c2c;
-  z-index: 10;
-  pointer-events: none;
-}
-@keyframes brushSweep {
-  0%   { width: 0; left: -10%; }
-  45%  { width: 120%; left: -10%; }
-  55%  { width: 120%; left: -10%; }
-  100% { width: 0; left: 110%; }
-}
-.brush-sweeping {
-  animation: brushSweep 0.9s cubic-bezier(0.4,0,0.2,1) forwards;
 }
 </style>
 
 <script>
-// ── Anime page splash animation ───────────────────────────────────────────
 (function() {
   const tagline = document.getElementById("animeTagline");
   if (!tagline) return;
-
-  // Pick which animation — change this number to switch:
-  // 2 = Glitch with Japanese chars
-  // 5 = Language swap/translation
-  // 6 = Brush stroke wipe
-  const ANIME_VARIANT = 6; // ← CHANGE THIS TO 2, 5, OR 6
-
+  const japaneseChars = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホ";
   const finalText = "Watch Anime ⛩️";
-  const originalText = "Stream Movies, TV & Anime";
 
-  // Wait for splash to be visible before animating
-  setTimeout(() => {
-    if (ANIME_VARIANT === 2) runGlitch();
-    else if (ANIME_VARIANT === 5) runLanguageSwap();
-    else if (ANIME_VARIANT === 6) runBrushStroke();
-  }, 300);
-
-  // ── Option 2: Glitch with Japanese chars ─────────────────────────────
-  function runGlitch() {
-    const japaneseChars = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン";
+  function glitchReveal(callback) {
     let frame = 0;
-    const totalFrames = 18;
-    const glitchInterval = setInterval(() => {
+    const totalFrames = 22;
+    const interval = setInterval(() => {
       frame++;
-      if (frame < totalFrames * 0.6) {
-        // Scramble with random Japanese chars + glitch effect
+      if (frame < totalFrames * 0.55) {
         let scrambled = "";
-        for (let i = 0; i < originalText.length; i++) {
-          if (originalText[i] === " ") { scrambled += " "; continue; }
-          if (Math.random() > 0.4) {
-            scrambled += japaneseChars[Math.floor(Math.random() * japaneseChars.length)];
-          } else {
-            scrambled += originalText[i];
-          }
+        for (let i = 0; i < finalText.length; i++) {
+          if (finalText[i] === " ") { scrambled += " "; continue; }
+          scrambled += Math.random() > 0.45
+            ? japaneseChars[Math.floor(Math.random() * japaneseChars.length)]
+            : finalText[i];
         }
         tagline.textContent = scrambled;
-        tagline.style.color = frame % 2 === 0 ? "#ff2c2c" : "#00ffff";
-        tagline.style.textShadow = "2px 0 #ff2c2c, -2px 0 #00ffff";
-        tagline.style.letterSpacing = (Math.random() * 4) + "px";
+        tagline.style.color = frame % 2 === 0 ? "#ff2c2c" : "#a855f7";
+        tagline.style.textShadow = "2px 0 #ff2c2c, -2px 0 #a855f7, 0 0 12px #ff69b4";
+        tagline.style.letterSpacing = (Math.random() * 3) + "px";
+        tagline.style.fontFamily = "monospace";
       } else if (frame < totalFrames * 0.8) {
-        // Settling — mix of Japanese and final text
+        const progress = (frame - totalFrames * 0.55) / (totalFrames * 0.25);
         let result = "";
-        const progress = (frame - totalFrames * 0.6) / (totalFrames * 0.2);
         for (let i = 0; i < finalText.length; i++) {
           if (finalText[i] === " ") { result += " "; continue; }
-          if (Math.random() < progress) result += finalText[i];
-          else result += japaneseChars[Math.floor(Math.random() * japaneseChars.length)];
+          result += Math.random() < progress
+            ? finalText[i]
+            : japaneseChars[Math.floor(Math.random() * japaneseChars.length)];
         }
         tagline.textContent = result;
-        tagline.style.color = "rgba(255,255,255,0.9)";
-        tagline.style.textShadow = "";
+        tagline.style.color = "rgba(255,255,255,0.95)";
+        tagline.style.textShadow = "0 0 12px rgba(255,44,44,0.6), 0 0 24px rgba(168,85,247,0.3)";
         tagline.style.letterSpacing = "";
+        tagline.style.fontFamily = "";
       } else {
-        // Locked in
-        clearInterval(glitchInterval);
+        clearInterval(interval);
         tagline.textContent = finalText;
         tagline.style.color = "#fff";
         tagline.style.textShadow = "";
         tagline.style.letterSpacing = "";
+        tagline.style.fontFamily = "";
         tagline.style.fontWeight = "800";
+        if (callback) callback();
       }
-    }, 60);
+    }, 55);
   }
 
-  // ── Option 5: Language swap ────────────────────────────────────────────
-  function runLanguageSwap() {
-    const steps = [
-      { text: "Stream Movies, TV & Anime", color: "rgba(255,255,255,0.7)", delay: 0 },
-      { text: "映画とアニメを見る",          color: "rgba(255,44,44,0.9)",  delay: 350 },
-      { text: "アニメを見る",               color: "rgba(255,150,50,0.9)", delay: 700 },
-      { text: "Watch Anime ⛩️",           color: "#fff",                  delay: 1050 },
-    ];
-
-    steps.forEach(step => {
-      setTimeout(() => {
-        tagline.style.transition = "opacity 0.2s ease, transform 0.2s ease";
-        tagline.style.opacity = "0";
-        tagline.style.transform = "translateY(-6px)";
-        setTimeout(() => {
-          tagline.textContent = step.text;
-          tagline.style.color = step.color;
-          tagline.style.opacity = "1";
-          tagline.style.transform = "translateY(0)";
-          if (step.text === "アニメを見る" || step.text === "映画とアニメを見る") {
-            tagline.style.fontFamily = "'Georgia', serif";
-            tagline.style.letterSpacing = "2px";
-          } else {
-            tagline.style.fontFamily = "";
-            tagline.style.letterSpacing = "";
-          }
-          if (step.text === "Watch Anime ⛩️") {
-            tagline.style.fontWeight = "800";
-          }
-        }, 200);
-      }, step.delay);
-    });
-  }
-
-  // ── Option 6: Brush stroke wipe ────────────────────────────────────────
-  function runBrushStroke() {
-    // Create brush overlay element
-    const introEl = document.getElementById("appIntro");
-    if (!introEl) return;
-    introEl.style.position = "relative";
-    introEl.style.overflow = "hidden";
-
-    const brush = document.createElement("div");
-    brush.className = "brush-overlay";
-    introEl.appendChild(brush);
-
+  function swap(text, color, fontStyle, then, thenDelay) {
+    tagline.style.transition = "opacity 0.18s ease, transform 0.18s ease";
+    tagline.style.opacity = "0";
+    tagline.style.transform = "translateY(-5px)";
     setTimeout(() => {
-      // Start sweep
-      brush.classList.add("brush-sweeping");
-      // At halfway point, swap text while brush covers it
-      setTimeout(() => {
-        tagline.textContent = finalText;
-        tagline.style.fontWeight = "800";
-        tagline.style.letterSpacing = "1px";
-      }, 380);
-      // Remove brush after animation
-      setTimeout(() => brush.remove(), 950);
-    }, 100);
+      tagline.textContent = text;
+      tagline.style.color = color;
+      tagline.style.fontFamily = fontStyle || "";
+      tagline.style.letterSpacing = fontStyle ? "2px" : "";
+      tagline.style.opacity = "1";
+      tagline.style.transform = "translateY(0)";
+      if (then) setTimeout(then, thenDelay || 400);
+    }, 180);
   }
 
+  // Sequence: language swap → glitch reveal
+  setTimeout(() => {
+    // Step 1: Japanese full phrase
+    swap("映画とアニメを見る", "rgba(255,44,44,0.9)", "'Georgia',serif", () => {
+      // Step 2: Shorter Japanese
+      swap("アニメを見る", "rgba(255,180,50,0.95)", "'Georgia',serif", () => {
+        // Step 3: Glitch into final English
+        tagline.style.fontFamily = "monospace";
+        tagline.style.transition = "none";
+        glitchReveal();
+      }, 380);
+    }, 420);
+  }, 250);
 })();
 </script>
 
