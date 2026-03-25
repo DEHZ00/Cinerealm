@@ -2808,22 +2808,24 @@ function showNotifPrompt() {
 async function registerFCMToken() {
   try {
     const reg = await navigator.serviceWorker.ready;
-    const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const { initializeApp, getApps, getApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
     const { getMessaging, getToken, onMessage } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js");
-    const app = getApps().length === 0 ? initializeApp(typeof FB_CONFIG !== "undefined" ? FB_CONFIG : {
-      apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
-      authDomain: "cinerealm-8b7b9.firebaseapp.com",
-      databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
-      projectId: "cinerealm-8b7b9",
-      storageBucket: "cinerealm-8b7b9.firebasestorage.app",
-      messagingSenderId: "1076768481536",
-      appId: "1:1076768481536:web:4fd3bdc3f222e4850ad3e5"
-    }) : getApps()[0];
+
+    // Always use FB_CONFIG which has the full config including appId
+    let app;
+    try {
+      app = getApp(); // get default app
+      // Check it has appId — if not, we can't use it for FCM
+      if (!app.options.appId) throw new Error("missing appId");
+    } catch(e) {
+      // Initialize fresh with full config
+      app = initializeApp(FB_CONFIG);
+    }
+
     const fcmMessaging = getMessaging(app);
     const token = await getToken(fcmMessaging, { vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: reg });
     if (token) {
       localStorage.setItem("cr_fcm_token", token);
-
     }
     onMessage(fcmMessaging, payload => {
       const { title, body } = payload.notification || {};

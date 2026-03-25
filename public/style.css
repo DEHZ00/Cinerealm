@@ -535,7 +535,7 @@ iframe {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   header {
     flex-direction: row;
     flex-wrap: wrap;
@@ -5455,8 +5455,13 @@ section {
   text-decoration: none;
   color: rgba(255,255,255,0.4);
   transition: color 0.15s;
-  padding: 6px 4px;
+  padding: 6px 2px;
   position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mobile-nav-item.active {
@@ -5486,14 +5491,14 @@ section {
   letter-spacing: 0.2px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .mobile-bottom-nav {
     display: flex;
   }
 
   /* Push page content up so it's not hidden behind bottom nav */
   body {
-    padding-bottom: 60px;
+    padding-bottom: calc(60px + env(safe-area-inset-bottom));
   }
 
   /* Hide hamburger when bottom nav is showing */
