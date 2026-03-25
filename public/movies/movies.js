@@ -1,29 +1,39 @@
 // movies.js — infinite scroll
-// uses apiCall(), createMovieCard() from script.js
+// depends on apiCall(), createMovieCard() from script.js
 
 let _mvPage = 1;
 let _mvTotalPages = 1;
 let _mvLoading = false;
 let _mvDone = false;
 let _mvGenres = [];
+let _mvObserver = null;
 const _mvSelected = new Set();
 
-const resultsEl  = document.getElementById("moviesResults");
-const metaEl     = document.getElementById("moviesMeta");
-const panelEl    = document.getElementById("genresPanel");
-const loadingEl  = document.getElementById("mvLoadingIndicator");
-const badgeEl    = document.getElementById("genreCountBadge");
+// Wait for both DOM and script.js to be ready
+function mvReady(fn) {
+  if (typeof apiCall === "function") { fn(); return; }
+  // script.js not loaded yet — wait for it
+  let tries = 0;
+  const check = setInterval(() => {
+    tries++;
+    if (typeof apiCall === "function") { clearInterval(check); fn(); }
+    if (tries > 50) clearInterval(check); // give up after 5s
+  }, 100);
+}
 
 // ── Genre chips ────────────────────────────────────────────────────────────
-async function loadGenres() {
+async function mvLoadGenres() {
   try {
     const data = await apiCall("/genre/movie/list");
     _mvGenres = data?.genres || [];
-    renderGenres();
+    mvRenderGenres();
   } catch(e) {}
 }
 
-function renderGenres() {
+function mvRenderGenres() {
+  const panelEl = document.getElementById("genresPanel");
+  const badgeEl = document.getElementById("genreCountBadge");
+  if (!panelEl) return;
   panelEl.innerHTML = "";
   _mvGenres.forEach(g => {
     const chip = document.createElement("div");
@@ -33,7 +43,6 @@ function renderGenres() {
       if (_mvSelected.has(g.id)) _mvSelected.delete(g.id);
       else _mvSelected.add(g.id);
       chip.classList.toggle("active");
-      // Update badge
       if (badgeEl) {
         badgeEl.textContent = _mvSelected.size;
         badgeEl.style.display = _mvSelected.size ? "inline-flex" : "none";
@@ -44,10 +53,10 @@ function renderGenres() {
 }
 
 // ── Build params ───────────────────────────────────────────────────────────
-function buildParams(page) {
-  const sort_by = document.getElementById("moviesSort").value;
-  const yf = parseInt(document.getElementById("yearFrom").value || "2000", 10);
-  const yt = parseInt(document.getElementById("yearTo").value || "2025", 10);
+function mvBuildParams(page) {
+  const sort_by = document.getElementById("moviesSort")?.value || "popularity.desc";
+  const yf = parseInt(document.getElementById("yearFrom")?.value || "2000", 10);
+  const yt = parseInt(document.getElementById("yearTo")?.value  || "2025", 10);
   const y1 = Math.max(1900, Math.min(2100, isNaN(yf) ? 2000 : yf));
   const y2 = Math.max(1900, Math.min(2100, isNaN(yt) ? 2025 : yt));
   const p = {
@@ -62,18 +71,23 @@ function buildParams(page) {
 }
 
 // ── Load a page ────────────────────────────────────────────────────────────
-async function loadMoviesPage(reset) {
-  if (_mvLoading || (!reset && _mvDone)) return;
+async function mvLoadPage(reset) {
+  if (_mvLoading) return;
+  if (!reset && _mvDone) return;
   _mvLoading = true;
+
+  const resultsEl = document.getElementById("moviesResults");
+  const metaEl    = document.getElementById("moviesMeta");
+  const loadingEl = document.getElementById("mvLoadingIndicator");
 
   if (reset) {
     _mvPage = 1;
     _mvDone = false;
-    resultsEl.innerHTML = "";
+    if (resultsEl) resultsEl.innerHTML = "";
   }
 
-  // Show skeletons on first page, spinner on subsequent
-  if (_mvPage === 1) {
+  // Show skeletons first load, spinner on append
+  if (_mvPage === 1 && resultsEl) {
     for (let i = 0; i < 12; i++) {
       const s = document.createElement("div");
       s.className = "mv-skeleton";
@@ -85,17 +99,15 @@ async function loadMoviesPage(reset) {
   }
 
   try {
-    const data = await apiCall("/discover/movie", buildParams(_mvPage));
+    const data = await apiCall("/discover/movie", mvBuildParams(_mvPage));
 
-    // Remove skeletons
-    resultsEl.querySelectorAll("[data-skeleton]").forEach(s => s.remove());
+    if (resultsEl) resultsEl.querySelectorAll("[data-skeleton]").forEach(s => s.remove());
     if (loadingEl) loadingEl.style.display = "none";
 
     _mvTotalPages = Math.min(data?.total_pages || 1, 500);
     const total = data?.total_results || 0;
     const items = (data?.results || []).filter(m => m.poster_path);
 
-    // Update meta
     if (metaEl) {
       const shown = Math.min(_mvPage * 20, total);
       metaEl.textContent = total
@@ -104,7 +116,7 @@ async function loadMoviesPage(reset) {
     }
 
     if (!items.length && _mvPage === 1) {
-      resultsEl.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:rgba(255,255,255,0.3);">No movies found — try different filters.</div>`;
+      if (resultsEl) resultsEl.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:rgba(255,255,255,0.3);">No movies found — try different filters.</div>`;
       _mvDone = true;
       _mvLoading = false;
       return;
@@ -112,12 +124,14 @@ async function loadMoviesPage(reset) {
 
     items.forEach(m => {
       const card = createMovieCard(m, "movie");
-      if (card) resultsEl.appendChild(card);
+      if (card && resultsEl) resultsEl.appendChild(card);
     });
 
     if (_mvPage >= _mvTotalPages) {
       _mvDone = true;
-      if (_mvPage > 1) {
+      // Disconnect observer since we're done
+      if (_mvObserver) { _mvObserver.disconnect(); _mvObserver = null; }
+      if (_mvPage > 1 && resultsEl) {
         const end = document.createElement("div");
         end.className = "mv-end";
         end.textContent = `✓ All ${total.toLocaleString()} movies loaded`;
@@ -126,12 +140,13 @@ async function loadMoviesPage(reset) {
     } else {
       _mvPage++;
     }
+
   } catch(e) {
-    resultsEl.querySelectorAll("[data-skeleton]").forEach(s => s.remove());
+    if (resultsEl) resultsEl.querySelectorAll("[data-skeleton]").forEach(s => s.remove());
     if (loadingEl) loadingEl.style.display = "none";
-    if (_mvPage === 1) {
+    if (_mvPage === 1 && resultsEl) {
       resultsEl.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:rgba(255,255,255,0.3);">
-        Failed to load. <button onclick="loadMoviesPage(false)" class="nav-btn" style="margin-left:8px;">Retry</button>
+        Failed to load. <button onclick="mvLoadPage(false)" class="nav-btn" style="margin-left:8px;">Retry</button>
       </div>`;
     }
   }
@@ -140,59 +155,72 @@ async function loadMoviesPage(reset) {
 }
 
 // ── Infinite scroll ────────────────────────────────────────────────────────
-function initInfiniteScroll() {
+function mvInitScroll() {
+  // Disconnect any existing observer first
+  if (_mvObserver) { _mvObserver.disconnect(); _mvObserver = null; }
+
   const sentinel = document.getElementById("mvSentinel");
   if (!sentinel) return;
-  const obs = new IntersectionObserver(entries => {
+
+  _mvObserver = new IntersectionObserver(entries => {
     if (entries[0].isIntersecting && !_mvLoading && !_mvDone) {
-      loadMoviesPage(false);
+      mvLoadPage(false);
     }
-  }, { rootMargin: "600px" });
-  obs.observe(sentinel);
+  }, { rootMargin: "800px" }); // trigger 800px before sentinel is visible
+
+  _mvObserver.observe(sentinel);
 }
 
 // ── UI wiring ──────────────────────────────────────────────────────────────
-function hookUI() {
-  // Genres toggle
-  document.getElementById("toggleGenres").onclick = () => {
+function mvHookUI() {
+  const panelEl = document.getElementById("genresPanel");
+
+  document.getElementById("toggleGenres")?.addEventListener("click", () => {
+    if (!panelEl) return;
     const open = panelEl.style.display !== "none";
     panelEl.style.display = open ? "none" : "flex";
     document.getElementById("toggleGenres").classList.toggle("active", !open);
-  };
+  });
 
-  // Apply
-  document.getElementById("applyMoviesFilters").onclick = () => {
-    loadMoviesPage(true);
-    panelEl.style.display = "none";
-    document.getElementById("toggleGenres").classList.remove("active");
+  document.getElementById("applyMoviesFilters")?.addEventListener("click", () => {
+    if (panelEl) panelEl.style.display = "none";
+    document.getElementById("toggleGenres")?.classList.remove("active");
+    _mvDone = false; // reset done flag so scroll works again
+    mvInitScroll();  // re-init observer
+    mvLoadPage(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  });
 
-  // Clear
-  document.getElementById("clearMoviesFilters").onclick = () => {
+  document.getElementById("clearMoviesFilters")?.addEventListener("click", () => {
+    const badgeEl = document.getElementById("genreCountBadge");
     _mvSelected.clear();
     if (badgeEl) { badgeEl.textContent = "0"; badgeEl.style.display = "none"; }
-    document.getElementById("moviesSort").value = "popularity.desc";
-    document.getElementById("yearFrom").value   = "2000";
-    document.getElementById("yearTo").value     = "2025";
-    renderGenres();
-    loadMoviesPage(true);
+    const sortEl = document.getElementById("moviesSort");
+    if (sortEl) sortEl.value = "popularity.desc";
+    const yfEl = document.getElementById("yearFrom");
+    const ytEl = document.getElementById("yearTo");
+    if (yfEl) yfEl.value = "2000";
+    if (ytEl) ytEl.value = "2025";
+    mvRenderGenres();
+    _mvDone = false;
+    mvInitScroll();
+    mvLoadPage(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  });
 
-  // Enter key on year inputs
   ["yearFrom","yearTo"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener("keydown", e => {
-      if (e.key === "Enter") document.getElementById("applyMoviesFilters").click();
+    document.getElementById(id)?.addEventListener("keydown", e => {
+      if (e.key === "Enter") document.getElementById("applyMoviesFilters")?.click();
     });
   });
 }
 
-// ── Init ───────────────────────────────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", async () => {
-  await loadGenres();
-  hookUI();
-  initInfiniteScroll();
-  loadMoviesPage(true);
+// ── Init — wait for script.js then go ─────────────────────────────────────
+window.addEventListener("load", () => {
+  mvReady(async () => {
+    await mvLoadGenres();
+    mvHookUI();
+    mvInitScroll();
+    mvLoadPage(true);
+  });
 });
