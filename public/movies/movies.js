@@ -1,4 +1,4 @@
-// movies.js — infinite scroll
+// movies.js — bulletproof infinite scroll using scroll event
 // depends on apiCall(), createMovieCard() from script.js
 
 let _mvPage = 1;
@@ -6,22 +6,24 @@ let _mvTotalPages = 1;
 let _mvLoading = false;
 let _mvDone = false;
 let _mvGenres = [];
-let _mvObserver = null;
 const _mvSelected = new Set();
 
-// Wait for both DOM and script.js to be ready
+function getEl(id) { return document.getElementById(id); }
+
+// ── Wait for script.js to be ready ─────────────────────────────────────────
 function mvReady(fn) {
-  if (typeof apiCall === "function") { fn(); return; }
-  // script.js not loaded yet — wait for it
-  let tries = 0;
-  const check = setInterval(() => {
-    tries++;
-    if (typeof apiCall === "function") { clearInterval(check); fn(); }
-    if (tries > 50) clearInterval(check); // give up after 5s
-  }, 100);
+  if (typeof apiCall === "function" && typeof createMovieCard === "function") { fn(); return; }
+  let t = 0;
+  const iv = setInterval(() => {
+    t++;
+    if (typeof apiCall === "function" && typeof createMovieCard === "function") {
+      clearInterval(iv); fn();
+    }
+    if (t > 100) clearInterval(iv);
+  }, 50);
 }
 
-// ── Genre chips ────────────────────────────────────────────────────────────
+// ── Genres ─────────────────────────────────────────────────────────────────
 async function mvLoadGenres() {
   try {
     const data = await apiCall("/genre/movie/list");
@@ -31,38 +33,33 @@ async function mvLoadGenres() {
 }
 
 function mvRenderGenres() {
-  const panelEl = document.getElementById("genresPanel");
-  const badgeEl = document.getElementById("genreCountBadge");
-  if (!panelEl) return;
-  panelEl.innerHTML = "";
+  const panel = getEl("genresPanel");
+  const badge = getEl("genreCountBadge");
+  if (!panel) return;
+  panel.innerHTML = "";
   _mvGenres.forEach(g => {
     const chip = document.createElement("div");
     chip.className = "genre-chip" + (_mvSelected.has(g.id) ? " active" : "");
     chip.textContent = g.name;
     chip.onclick = () => {
-      if (_mvSelected.has(g.id)) _mvSelected.delete(g.id);
-      else _mvSelected.add(g.id);
+      _mvSelected.has(g.id) ? _mvSelected.delete(g.id) : _mvSelected.add(g.id);
       chip.classList.toggle("active");
-      if (badgeEl) {
-        badgeEl.textContent = _mvSelected.size;
-        badgeEl.style.display = _mvSelected.size ? "inline-flex" : "none";
-      }
+      if (badge) { badge.textContent = _mvSelected.size; badge.style.display = _mvSelected.size ? "inline-flex" : "none"; }
     };
-    panelEl.appendChild(chip);
+    panel.appendChild(chip);
   });
 }
 
-// ── Build params ───────────────────────────────────────────────────────────
-function mvBuildParams(page) {
-  const sort_by = document.getElementById("moviesSort")?.value || "popularity.desc";
-  const yf = parseInt(document.getElementById("yearFrom")?.value || "2000", 10);
-  const yt = parseInt(document.getElementById("yearTo")?.value  || "2025", 10);
-  const y1 = Math.max(1900, Math.min(2100, isNaN(yf) ? 2000 : yf));
-  const y2 = Math.max(1900, Math.min(2100, isNaN(yt) ? 2025 : yt));
+// ── Params ──────────────────────────────────────────────────────────────────
+function mvParams(page) {
+  const sort  = getEl("moviesSort")?.value || "popularity.desc";
+  const yf    = parseInt(getEl("yearFrom")?.value || "2000", 10);
+  const yt    = parseInt(getEl("yearTo")?.value   || "2025", 10);
+  const y1    = Math.max(1900, Math.min(2100, isNaN(yf) ? 2000 : yf));
+  const y2    = Math.max(1900, Math.min(2100, isNaN(yt) ? 2025 : yt));
   const p = {
-    page, sort_by,
-    include_adult: "false",
-    include_video: "false",
+    page, sort_by: sort,
+    include_adult: "false", include_video: "false",
     "primary_release_date.gte": `${Math.min(y1,y2)}-01-01`,
     "primary_release_date.lte": `${Math.max(y1,y2)}-12-31`,
   };
@@ -70,157 +67,134 @@ function mvBuildParams(page) {
   return p;
 }
 
-// ── Load a page ────────────────────────────────────────────────────────────
-async function mvLoadPage(reset) {
+// ── Load page ───────────────────────────────────────────────────────────────
+async function mvLoad(reset) {
   if (_mvLoading) return;
   if (!reset && _mvDone) return;
   _mvLoading = true;
 
-  const resultsEl = document.getElementById("moviesResults");
-  const metaEl    = document.getElementById("moviesMeta");
-  const loadingEl = document.getElementById("mvLoadingIndicator");
+  const results = getEl("moviesResults");
+  const meta    = getEl("moviesMeta");
+  const spinner = getEl("mvSpinner");
 
   if (reset) {
     _mvPage = 1;
     _mvDone = false;
-    if (resultsEl) resultsEl.innerHTML = "";
+    if (results) results.innerHTML = "";
   }
 
-  // Show skeletons first load, spinner on append
-  if (_mvPage === 1 && resultsEl) {
-    for (let i = 0; i < 12; i++) {
-      const s = document.createElement("div");
-      s.className = "mv-skeleton";
-      s.dataset.skeleton = "1";
-      resultsEl.appendChild(s);
-    }
-  } else {
-    if (loadingEl) loadingEl.style.display = "flex";
+  // Show skeletons on first page
+  if (_mvPage === 1 && results) {
+    results.innerHTML = Array(12).fill(`<div class="mv-skeleton"></div>`).join("");
   }
+  if (spinner) spinner.style.display = _mvPage > 1 ? "flex" : "none";
 
   try {
-    const data = await apiCall("/discover/movie", mvBuildParams(_mvPage));
-
-    if (resultsEl) resultsEl.querySelectorAll("[data-skeleton]").forEach(s => s.remove());
-    if (loadingEl) loadingEl.style.display = "none";
-
-    _mvTotalPages = Math.min(data?.total_pages || 1, 500);
+    const data  = await apiCall("/discover/movie", mvParams(_mvPage));
     const total = data?.total_results || 0;
     const items = (data?.results || []).filter(m => m.poster_path);
+    _mvTotalPages = Math.min(data?.total_pages || 1, 500);
 
-    if (metaEl) {
-      const shown = Math.min(_mvPage * 20, total);
-      metaEl.textContent = total
-        ? `${shown.toLocaleString()} of ${total.toLocaleString()} movies`
-        : "No results";
-    }
+    if (results) results.innerHTML = reset ? "" : results.innerHTML.replace(/<div class="mv-skeleton"><\/div>/g, "");
+    // Clear skeletons
+    if (results) results.querySelectorAll(".mv-skeleton").forEach(s => s.remove());
+    if (spinner) spinner.style.display = "none";
+
+    // Update meta
+    if (meta) meta.textContent = total ? `${Math.min(_mvPage*20,total).toLocaleString()} of ${total.toLocaleString()} movies` : "No results";
 
     if (!items.length && _mvPage === 1) {
-      if (resultsEl) resultsEl.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:rgba(255,255,255,0.3);">No movies found — try different filters.</div>`;
-      _mvDone = true;
-      _mvLoading = false;
-      return;
+      if (results) results.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:rgba(255,255,255,0.3);">No movies found — try different filters.</div>`;
+      _mvDone = true; _mvLoading = false; return;
     }
 
     items.forEach(m => {
       const card = createMovieCard(m, "movie");
-      if (card && resultsEl) resultsEl.appendChild(card);
+      if (card && results) results.appendChild(card);
     });
 
     if (_mvPage >= _mvTotalPages) {
       _mvDone = true;
-      // Disconnect observer since we're done
-      if (_mvObserver) { _mvObserver.disconnect(); _mvObserver = null; }
-      if (_mvPage > 1 && resultsEl) {
+      if (results && _mvPage > 1) {
         const end = document.createElement("div");
         end.className = "mv-end";
         end.textContent = `✓ All ${total.toLocaleString()} movies loaded`;
-        resultsEl.appendChild(end);
+        results.appendChild(end);
       }
     } else {
       _mvPage++;
     }
 
   } catch(e) {
-    if (resultsEl) resultsEl.querySelectorAll("[data-skeleton]").forEach(s => s.remove());
-    if (loadingEl) loadingEl.style.display = "none";
-    if (_mvPage === 1 && resultsEl) {
-      resultsEl.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:rgba(255,255,255,0.3);">
-        Failed to load. <button onclick="mvLoadPage(false)" class="nav-btn" style="margin-left:8px;">Retry</button>
-      </div>`;
+    if (results) results.querySelectorAll(".mv-skeleton").forEach(s => s.remove());
+    if (spinner) spinner.style.display = "none";
+    if (_mvPage === 1 && results) {
+      results.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:rgba(255,255,255,0.3);">
+        Failed to load. <button onclick="mvLoad(false)" class="nav-btn">Retry</button></div>`;
     }
   }
 
   _mvLoading = false;
 }
 
-// ── Infinite scroll ────────────────────────────────────────────────────────
-function mvInitScroll() {
-  // Disconnect any existing observer first
-  if (_mvObserver) { _mvObserver.disconnect(); _mvObserver = null; }
-
-  const sentinel = document.getElementById("mvSentinel");
-  if (!sentinel) return;
-
-  _mvObserver = new IntersectionObserver(entries => {
-    if (entries[0].isIntersecting && !_mvLoading && !_mvDone) {
-      mvLoadPage(false);
-    }
-  }, { rootMargin: "800px" }); // trigger 800px before sentinel is visible
-
-  _mvObserver.observe(sentinel);
+// ── Scroll-based infinite load (bulletproof) ─────────────────────────────
+function mvCheckScroll() {
+  if (_mvLoading || _mvDone) return;
+  const scrolled  = window.scrollY + window.innerHeight;
+  const total     = document.documentElement.scrollHeight;
+  // Load more when within 600px of the bottom
+  if (total - scrolled < 600) {
+    mvLoad(false);
+  }
 }
 
-// ── UI wiring ──────────────────────────────────────────────────────────────
+// ── UI ──────────────────────────────────────────────────────────────────────
 function mvHookUI() {
-  const panelEl = document.getElementById("genresPanel");
+  const panel = getEl("genresPanel");
 
-  document.getElementById("toggleGenres")?.addEventListener("click", () => {
-    if (!panelEl) return;
-    const open = panelEl.style.display !== "none";
-    panelEl.style.display = open ? "none" : "flex";
-    document.getElementById("toggleGenres").classList.toggle("active", !open);
+  getEl("toggleGenres")?.addEventListener("click", () => {
+    if (!panel) return;
+    const open = panel.style.display !== "none";
+    panel.style.display = open ? "none" : "flex";
+    getEl("toggleGenres").classList.toggle("active", !open);
   });
 
-  document.getElementById("applyMoviesFilters")?.addEventListener("click", () => {
-    if (panelEl) panelEl.style.display = "none";
-    document.getElementById("toggleGenres")?.classList.remove("active");
-    _mvDone = false; // reset done flag so scroll works again
-    mvInitScroll();  // re-init observer
-    mvLoadPage(true);
+  getEl("applyMoviesFilters")?.addEventListener("click", () => {
+    if (panel) panel.style.display = "none";
+    getEl("toggleGenres")?.classList.remove("active");
+    _mvDone = false;
+    mvLoad(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
-  document.getElementById("clearMoviesFilters")?.addEventListener("click", () => {
-    const badgeEl = document.getElementById("genreCountBadge");
+  getEl("clearMoviesFilters")?.addEventListener("click", () => {
     _mvSelected.clear();
-    if (badgeEl) { badgeEl.textContent = "0"; badgeEl.style.display = "none"; }
-    const sortEl = document.getElementById("moviesSort");
-    if (sortEl) sortEl.value = "popularity.desc";
-    const yfEl = document.getElementById("yearFrom");
-    const ytEl = document.getElementById("yearTo");
-    if (yfEl) yfEl.value = "2000";
-    if (ytEl) ytEl.value = "2025";
+    const badge = getEl("genreCountBadge");
+    if (badge) { badge.textContent = "0"; badge.style.display = "none"; }
+    const sort = getEl("moviesSort"); if (sort) sort.value = "popularity.desc";
+    const yf = getEl("yearFrom"); if (yf) yf.value = "2000";
+    const yt = getEl("yearTo");   if (yt) yt.value = "2025";
     mvRenderGenres();
     _mvDone = false;
-    mvInitScroll();
-    mvLoadPage(true);
+    mvLoad(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
   ["yearFrom","yearTo"].forEach(id => {
-    document.getElementById(id)?.addEventListener("keydown", e => {
-      if (e.key === "Enter") document.getElementById("applyMoviesFilters")?.click();
+    getEl(id)?.addEventListener("keydown", e => {
+      if (e.key === "Enter") getEl("applyMoviesFilters")?.click();
     });
   });
+
+  // Scroll listener — fires on every scroll, checks if near bottom
+  window.addEventListener("scroll", mvCheckScroll, { passive: true });
 }
 
-// ── Init — wait for script.js then go ─────────────────────────────────────
+// ── Init ────────────────────────────────────────────────────────────────────
 window.addEventListener("load", () => {
   mvReady(async () => {
     await mvLoadGenres();
     mvHookUI();
-    mvInitScroll();
-    mvLoadPage(true);
+    mvLoad(true);
   });
 });

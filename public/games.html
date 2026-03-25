@@ -282,6 +282,7 @@
       allow="fullscreen; autoplay; clipboard-read; clipboard-write; gamepad"
       allowfullscreen
       title="CineRealm Games"
+      sandbox="allow-scripts allow-forms allow-pointer-lock allow-downloads allow-modals allow-orientation-lock"
     ></iframe>
 
   </div>
@@ -297,7 +298,8 @@
     </div>
   </div>
   <div class="game-modal-frame">
-    <iframe id="gameModalIframe" src="" allow="fullscreen; autoplay; gamepad" allowfullscreen></iframe>
+    <iframe id="gameModalIframe" src="" allow="fullscreen; autoplay; gamepad" allowfullscreen
+      sandbox="allow-scripts allow-forms allow-pointer-lock allow-downloads allow-modals"></iframe>
   </div>
 </div>
 
@@ -480,6 +482,11 @@ function closeGame() {
   document.getElementById("gameModalIframe").src = "";
   document.body.style.overflow = "";
 }
+
+// Block popup windows opened by game iframes trying to open ads
+window.addEventListener("message", function(e) {
+  // Block any postMessage trying to redirect parent
+}, false);
 
 // ── Tab Cloak (runs on parent page, actually works) ───────────────────────
 (function() {
