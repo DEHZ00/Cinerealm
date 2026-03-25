@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CineRealm — Browse</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="icon" href="/favicon.ico">
+  <meta name="theme-color" content="#ff2c2c">
+  <style>
+    body { background: #060202; overflow: hidden; }
+    header { display: none !important; }
+
+    .br-wrap {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      background: #060202;
+    }
+
+    /* Top bar */
+    .br-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(10,3,3,0.98);
+      border-bottom: 1px solid rgba(255,44,44,0.15);
+      z-index: 10;
+      flex-shrink: 0;
+    }
+
+    .br-back, .br-fwd, .br-reload, .br-home {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.6);
+      border-radius: 8px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .br-back:hover, .br-fwd:hover, .br-reload:hover, .br-home:hover {
+      background: rgba(255,44,44,0.12);
+      color: #fff;
+      border-color: rgba(255,44,44,0.3);
+    }
+
+    .br-url-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 0 12px;
+      gap: 8px;
+      transition: border-color 0.15s;
+    }
+    .br-url-wrap:focus-within {
+      border-color: rgba(255,44,44,0.4);
+    }
+    .br-lock { font-size: 12px; color: rgba(255,255,255,0.3); flex-shrink: 0; }
+    .br-url {
+      flex: 1;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+      padding: 8px 0;
+    }
+    .br-go {
+      background: #ff2c2c;
+      border: none;
+      color: #fff;
+      border-radius: 7px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .br-go:hover { background: #e01f1f; }
+
+    /* Quick links */
+    .br-quicklinks {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .br-ql {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.5);
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .br-ql:hover { background: rgba(255,44,44,0.1); color: #ff6b6b; border-color: rgba(255,44,44,0.3); }
+
+    .br-close {
+      background: rgba(255,44,44,0.1);
+      border: 1px solid rgba(255,44,44,0.2);
+      color: #ff6b6b;
+      border-radius: 8px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 14px;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .br-close:hover { background: rgba(255,44,44,0.2); }
+
+    /* iframe */
+    .br-frame {
+      flex: 1;
+      border: none;
+      background: #fff;
+    }
+
+    /* Loading bar */
+    .br-progress {
+      height: 2px;
+      background: #ff2c2c;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 0%;
+      transition: width 0.3s ease;
+      z-index: 20;
+      box-shadow: 0 0 8px #ff2c2c;
+    }
+
+    /* New tab home */
+    .br-newtab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      padding: 40px 20px;
+      background: #060202;
+    }
+    .br-newtab-logo {
+      font-size: 32px;
+      font-weight: 900;
+      color: #ff2c2c;
+      letter-spacing: -0.5px;
+    }
+    .br-newtab-search {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      max-width: 560px;
+    }
+    .br-newtab-input {
+      flex: 1;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 14px 18px;
+      color: #fff;
+      font-size: 15px;
+      outline: none;
+    }
+    .br-newtab-input:focus { border-color: rgba(255,44,44,0.4); }
+    .br-newtab-input::placeholder { color: rgba(255,255,255,0.3); }
+    .br-newtab-go {
+      background: #ff2c2c;
+      border: none;
+      color: #fff;
+      border-radius: 12px;
+      padding: 14px 24px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .br-newtab-go:hover { background: #e01f1f; }
+    .br-shortcuts {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      width: 100%;
+      max-width: 560px;
+    }
+    .br-shortcut {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 8px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+      color: rgba(255,255,255,0.6);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .br-shortcut:hover { background: rgba(255,44,44,0.08); border-color: rgba(255,44,44,0.2); color: #fff; }
+    .br-shortcut span { font-size: 24px; }
+  </style>
+</head>
+<body>
+
+<div class="br-wrap" id="brWrap">
+  <div class="br-progress" id="brProgress"></div>
+  <div class="br-bar">
+    <button class="br-back"    onclick="brBack()">←</button>
+    <button class="br-fwd"     onclick="brForward()">→</button>
+    <button class="br-reload"  onclick="brReload()">↻</button>
+    <button class="br-home"    onclick="brHome()">🏠</button>
+
+    <div class="br-url-wrap">
+      <span class="br-lock">🔒</span>
+      <input class="br-url" id="brUrl" placeholder="Search or enter URL..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <button class="br-go" onclick="brNavigate()">Go</button>
+    </div>
+
+    <div class="br-quicklinks">
+      <button class="br-ql" onclick="brLoad('https://www.youtube.com')">▶ YT</button>
+      <button class="br-ql" onclick="brLoad('https://www.google.com')">G</button>
+      <button class="br-ql" onclick="brLoad('https://discord.com/app')">💬</button>
+      <button class="br-ql" onclick="brLoad('https://www.reddit.com')">📋</button>
+    </div>
+
+    <button class="br-close" onclick="location.href='/'">✕ Close</button>
+  </div>
+
+  <!-- New tab home shown by default -->
+  <div class="br-newtab" id="brHome">
+    <div class="br-newtab-logo">CineRealm Browser</div>
+    <div class="br-newtab-search">
+      <input class="br-newtab-input" id="brHomeSearch" placeholder="Search Google or enter a URL..." autocomplete="off">
+      <button class="br-newtab-go" onclick="brHomeGo()">→</button>
+    </div>
+    <div class="br-shortcuts">
+      <a class="br-shortcut" onclick="brLoad('https://www.youtube.com')"><span>▶</span>YouTube</a>
+      <a class="br-shortcut" onclick="brLoad('https://www.google.com')"><span>🔍</span>Google</a>
+      <a class="br-shortcut" onclick="brLoad('https://discord.com/app')"><span>💬</span>Discord</a>
+      <a class="br-shortcut" onclick="brLoad('https://www.reddit.com')"><span>📋</span>Reddit</a>
+      <a class="br-shortcut" onclick="brLoad('https://www.spotify.com')"><span>🎵</span>Spotify</a>
+      <a class="br-shortcut" onclick="brLoad('https://www.twitch.tv')"><span>🎮</span>Twitch</a>
+      <a class="br-shortcut" onclick="brLoad('https://www.instagram.com')"><span>📸</span>Instagram</a>
+      <a class="br-shortcut" onclick="brLoad('https://www.twitter.com')"><span>𝕏</span>X</a>
+    </div>
+  </div>
+
+  <iframe class="br-frame" id="brFrame" style="display:none;"
+    allow="fullscreen; autoplay; clipboard-read; clipboard-write; gamepad; microphone; camera"
+    allowfullscreen></iframe>
+</div>
+
+<script src="/cloak-config.js"></script>
+<script src="/script.js"></script>
+<script>
+const UV_BASE = "https://usd.cinerealm.online";
+
+const brFrame    = document.getElementById("brFrame");
+const brHomeEl   = document.getElementById("brHome");
+const brUrlInput = document.getElementById("brUrl");
+const brProgress = document.getElementById("brProgress");
+
+function brEncodeUrl(url) {
+  // Use UV's encoder
+  if (typeof __uv$config !== "undefined" && __uv$config.encodeUrl) {
+    return UV_BASE + __uv$config.encodeUrl(url);
+  }
+  // Fallback - base64 encode
+  return UV_BASE + btoa(url);
+}
+
+function brResolveInput(val) {
+  val = val.trim();
+  if (!val) return null;
+  // Full URL
+  if (/^https?:\/\//i.test(val)) return val;
+  // Looks like a domain
+  if (/^[\w-]+\.[\w.-]+/.test(val) && !val.includes(' ')) return 'https://' + val;
+  // Search query
+  return 'https://www.google.com/search?q=' + encodeURIComponent(val);
+}
+
+function brLoad(url) {
+  if (!url) return;
+  brHomeEl.style.display = "none";
+  brFrame.style.display  = "block";
+
+  // Show progress bar
+  brProgress.style.width = "30%";
+  setTimeout(() => brProgress.style.width = "70%", 300);
+
+  const proxyUrl = brEncodeUrl(url);
+  brFrame.src    = proxyUrl;
+  brUrlInput.value = url;
+
+  brFrame.onload = () => {
+    brProgress.style.width = "100%";
+    setTimeout(() => { brProgress.style.width = "0%"; }, 400);
+  };
+}
+
+function brNavigate() {
+  const url = brResolveInput(brUrlInput.value);
+  if (url) brLoad(url);
+}
+
+function brHomeGo() {
+  const url = brResolveInput(document.getElementById("brHomeSearch").value);
+  if (url) brLoad(url);
+}
+
+function brHome() {
+  brFrame.style.display  = "none";
+  brHomeEl.style.display = "flex";
+  brUrlInput.value = "";
+  brFrame.src = "";
+}
+
+function brBack()    { brFrame.contentWindow?.history.back(); }
+function brForward() { brFrame.contentWindow?.history.forward(); }
+function brReload()  { brFrame.contentWindow?.location.reload(); }
+
+// Enter key
+brUrlInput.addEventListener("keydown", e => { if (e.key === "Enter") brNavigate(); });
+document.getElementById("brHomeSearch").addEventListener("keydown", e => { if (e.key === "Enter") brHomeGo(); });
+
+// Load UV config from your UV instance
+const uvScript = document.createElement("script");
+uvScript.src = "https://ultraviolet-app-zeta-pied.vercel.app/uv/uv.bundle.js";
+uvScript.onload = () => {
+  const cfg = document.createElement("script");
+  cfg.src = "https://ultraviolet-app-zeta-pied.vercel.app/uv/uv.config.js";
+  document.head.appendChild(cfg);
+};
+document.head.appendChild(uvScript);
+</script>
+</body>
+</html>

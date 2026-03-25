@@ -5088,6 +5088,26 @@ window.toggleMobileDrawer = function() {
   if (btn) btn.style.color = open ? "" : "#ff2c2c";
 };
 
+
+// ── Browser shortcut — ↓↓←↑→ ─────────────────────────────────────────────
+(function() {
+  const SEQ = ["ArrowDown","ArrowDown","ArrowLeft","ArrowUp","ArrowRight"];
+  let pos = 0, timer;
+  document.addEventListener("keydown", e => {
+    if (e.key === SEQ[pos]) {
+      pos++;
+      clearTimeout(timer);
+      timer = setTimeout(() => pos = 0, 1500);
+      if (pos === SEQ.length) {
+        pos = 0;
+        window.location.href = "/browser";
+      }
+    } else {
+      pos = 0;
+    }
+  });
+})();
+
 // ── Service Worker Registration ────────────────────────────────────────────
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -5219,6 +5239,7 @@ updateWatchlistBadge();
     { href: "/trending", icon: "🔥", label: "Trending"  },
     { href: "/genres",   icon: "🎭", label: "Genres"    },
     { href: "/games",    icon: "🎮", label: "Games"     },
+    { href: "/browser",  icon: "🌐", label: "Browser"   },
     { href: "/stats",    icon: "📊", label: "Stats"     },
     { href: "/donate",   icon: "♥",  label: "Support"   },
     { href: "/legal",    icon: "📄", label: "Legal"     },

@@ -260,6 +260,7 @@ const routes = {
   "/stats":     "stats.html",
   "/donate":    "donate.html",
   "/admin":     "admin.html",
+  "/browser":   "browser.html",
   "/games-proxy": "games-proxy.html",
 };
 
