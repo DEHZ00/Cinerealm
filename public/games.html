@@ -231,12 +231,6 @@
       // Block everything else silently
       return null;
     };
-
-    // Also block any attempt to change parent location from iframe
-    Object.defineProperty(window, 'location', {
-      get: function() { return window._location || location; },
-      set: function(v) { /* blocked */ }
-    });
   </script>
 </head>
 <body>
