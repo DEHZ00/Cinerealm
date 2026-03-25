@@ -92,6 +92,40 @@ window.CR_CLOAK_PRESETS = [
     title: "Duolingo",
     icon:  "https://d35aaqx5ub95lt.cloudfront.net/favicon.ico"
   },
+   {
+    id:    "1Login",
+    name:  "One Login",
+    title: "OneLogin",
+    icon:  "https://www.onelogin.com/favicon.ico"
+  },
+   {
+    id:    "1LoginUportal",
+    name:  "One Login Portal",
+    title: "User Portal - Home",
+    icon:  "https://www.onelogin.com/favicon.ico"
+  },
+
+   {
+    id:    "1LoginUportalL",
+    name:  "One Login Portal light",
+    title: "User Portal - Home",
+    icon:  "https://sjusd.onelogin.com/favicon.ico?return=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwYXJhbXMiOnt9LCJmZl9tdWx0aXBsZV9icmFuZHMiOmZhbHNlLCJtZXRob2QiOiJnZXQiLCJ1cmkiOiJodHRwczovL3NqdXNkLm9uZWxvZ2luLmNvbS8iLCJhdWQiOiJBQ0NFU1MiLCJpc3MiOiJNT05PUkFJTCIsImJyYW5kX2lkIjoibWFzdGVyIiwiZXhwIjoxNzc0Mzc3NTk1fQ.qgfe209_1Z_MYE-w9l_SYMD5nVa6u8kxgwONora0nIg#app=",
+  },
+  
+  {
+    id:    "wghsWeb",
+    name:  "WGHS website",
+    title: "Home - Willow Glen High",
+    icon:  "https://resources.finalsite.net/images/f_auto,q_auto/v1687313857/sjusdorg/praubpyo9n4tmyzhbmss/favicon9.ico"
+  },
+  {
+    id:    "collegeboard",
+    name:  "College Board",
+    title: "College Board - SAT, AP, College Search and Admission Tools",
+    icon:  "https://www.collegeboard.org/themes/custom/apricot_theme/favicon.ico"
+  },
+  
+  
 
   // ── Microsoft / Work ─────────────────────────────────────────────────────
   {
