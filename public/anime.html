@@ -494,82 +494,116 @@ window.addEventListener("load", loadAnimeRows);
 (function() {
   const tagline = document.getElementById("animeTagline");
   if (!tagline) return;
-  const japaneseChars = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホ";
-  const finalText = "Watch Anime ⛩️";
 
-  function glitchReveal(callback) {
+  // ── Extend splash duration for anime page ──────────────────────────────
+  // Override the default 1600ms — anime animation needs ~4.5s
+  const introEl = document.getElementById("appIntro");
+  if (introEl) {
+    // Cancel any existing hide timer by removing fade-out immediately if added
+    const ANIME_SPLASH_DURATION = 4800;
+    // Re-schedule the splash hide
+    setTimeout(() => {
+      introEl.classList.add("fade-out");
+      setTimeout(() => { introEl.style.display = "none"; }, 800);
+    }, ANIME_SPLASH_DURATION);
+  }
+
+  const japaneseChars = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモ";
+  const finalText     = "Watch Anime ⛩️";
+
+  // ── Glitch reveal into final text ─────────────────────────────────────
+  function glitchReveal() {
     let frame = 0;
-    const totalFrames = 22;
+    const totalFrames = 36;    // more frames = slower
+    const frameDuration = 80;  // ms per frame — slower tick
     const interval = setInterval(() => {
       frame++;
-      if (frame < totalFrames * 0.55) {
+
+      if (frame < totalFrames * 0.5) {
+        // Pure chaos — all scrambled
         let scrambled = "";
         for (let i = 0; i < finalText.length; i++) {
           if (finalText[i] === " ") { scrambled += " "; continue; }
-          scrambled += Math.random() > 0.45
-            ? japaneseChars[Math.floor(Math.random() * japaneseChars.length)]
-            : finalText[i];
+          scrambled += japaneseChars[Math.floor(Math.random() * japaneseChars.length)];
         }
         tagline.textContent = scrambled;
         tagline.style.color = frame % 2 === 0 ? "#ff2c2c" : "#a855f7";
-        tagline.style.textShadow = "2px 0 #ff2c2c, -2px 0 #a855f7, 0 0 12px #ff69b4";
+        tagline.style.textShadow = "2px 0 #ff2c2c, -2px 0 #a855f7, 0 0 16px #ff69b4";
         tagline.style.letterSpacing = (Math.random() * 3) + "px";
         tagline.style.fontFamily = "monospace";
-      } else if (frame < totalFrames * 0.8) {
-        const progress = (frame - totalFrames * 0.55) / (totalFrames * 0.25);
+
+      } else if (frame < totalFrames * 0.85) {
+        // Gradual resolve — more correct chars each frame
+        const progress = (frame - totalFrames * 0.5) / (totalFrames * 0.35);
         let result = "";
         for (let i = 0; i < finalText.length; i++) {
           if (finalText[i] === " ") { result += " "; continue; }
-          result += Math.random() < progress
+          // Each character resolves individually based on its index + progress
+          const charProgress = Math.max(0, progress * 1.4 - (i / finalText.length) * 0.4);
+          result += Math.random() < charProgress
             ? finalText[i]
             : japaneseChars[Math.floor(Math.random() * japaneseChars.length)];
         }
         tagline.textContent = result;
-        tagline.style.color = "rgba(255,255,255,0.95)";
-        tagline.style.textShadow = "0 0 12px rgba(255,44,44,0.6), 0 0 24px rgba(168,85,247,0.3)";
+        const alpha = 0.7 + progress * 0.3;
+        tagline.style.color = `rgba(255,255,255,${alpha})`;
+        tagline.style.textShadow = `0 0 ${12 - progress*10}px rgba(255,44,44,0.6), 0 0 24px rgba(168,85,247,0.3)`;
         tagline.style.letterSpacing = "";
         tagline.style.fontFamily = "";
+
       } else {
+        // Locked — show final text clearly
         clearInterval(interval);
         tagline.textContent = finalText;
         tagline.style.color = "#fff";
-        tagline.style.textShadow = "";
-        tagline.style.letterSpacing = "";
+        tagline.style.textShadow = "0 0 20px rgba(255,44,44,0.3)";
+        tagline.style.letterSpacing = "0.5px";
         tagline.style.fontFamily = "";
         tagline.style.fontWeight = "800";
-        if (callback) callback();
+        tagline.style.transition = "text-shadow 1s ease";
+        // Glow fades to nothing — clean final state
+        setTimeout(() => { tagline.style.textShadow = ""; }, 800);
       }
-    }, 55);
+    }, frameDuration);
   }
 
-  function swap(text, color, fontStyle, then, thenDelay) {
-    tagline.style.transition = "opacity 0.18s ease, transform 0.18s ease";
+  // ── Language swap step ────────────────────────────────────────────────
+  function swap(text, color, fontStyle, then, holdMs) {
+    tagline.style.transition = "opacity 0.25s ease, transform 0.25s ease";
     tagline.style.opacity = "0";
-    tagline.style.transform = "translateY(-5px)";
+    tagline.style.transform = "translateY(-6px)";
     setTimeout(() => {
       tagline.textContent = text;
       tagline.style.color = color;
       tagline.style.fontFamily = fontStyle || "";
-      tagline.style.letterSpacing = fontStyle ? "2px" : "";
+      tagline.style.letterSpacing = fontStyle ? "3px" : "";
       tagline.style.opacity = "1";
       tagline.style.transform = "translateY(0)";
-      if (then) setTimeout(then, thenDelay || 400);
-    }, 180);
+      if (then) setTimeout(then, holdMs || 600);
+    }, 250);
   }
 
-  // Sequence: language swap → glitch reveal
+  // ── Full sequence ─────────────────────────────────────────────────────
+  // Start 400ms in — splash is just appearing
   setTimeout(() => {
-    // Step 1: Japanese full phrase
+
+    // 1. Japanese full phrase — holds 650ms
     swap("映画とアニメを見る", "rgba(255,44,44,0.9)", "'Georgia',serif", () => {
-      // Step 2: Shorter Japanese
+
+      // 2. Shorter Japanese — holds 650ms
       swap("アニメを見る", "rgba(255,180,50,0.95)", "'Georgia',serif", () => {
-        // Step 3: Glitch into final English
+
+        // 3. Glitch into final English
         tagline.style.fontFamily = "monospace";
         tagline.style.transition = "none";
+        tagline.style.letterSpacing = "";
         glitchReveal();
-      }, 380);
-    }, 420);
-  }, 250);
+
+      }, 650); // hold "アニメを見る" for 650ms
+    }, 650);   // hold "映画とアニメを見る" for 650ms
+
+  }, 400);
+
 })();
 </script>
 

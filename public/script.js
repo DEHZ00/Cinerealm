@@ -86,9 +86,9 @@ function saveWatchlist() {
   // Remove hidden so it shows
   intro.classList.remove("hidden");
 
-  // Home page = longer (2.6s) since there's more loading happening
-  // Other pages = shorter (1.6s) just the wordmark
-  const duration = isHome ? 2600 : 1600;
+  // Home page = longer (2.6s), anime page = even longer (5.5s for animation), others = 1.6s
+  const isAnime = window.location.pathname === "/anime";
+  const duration = isHome ? 2600 : isAnime ? 5500 : 1600;
 
   setTimeout(() => {
     intro.classList.add("fade-out");
