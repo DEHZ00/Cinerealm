@@ -322,69 +322,46 @@
     <!-- ── NOTIFICATIONS ── -->
     <div class="adm-panel" id="tab-notifications">
 
-      <!-- 🎬 Popup Control -->
-      <div class="adm-section" style="border-color:rgba(96,165,250,0.2);background:rgba(96,165,250,0.03);">
+      <!-- 1. Bell Notification -->
+      <div class="adm-section">
         <div class="adm-section-header">
-          <div class="adm-section-title" style="color:#60a5fa;">🎬 What's New Popup — Show to Everyone</div>
-          <span style="font-size:11px;color:rgba(255,255,255,0.25);">Forces the full-screen popup for all users on next visit</span>
+          <div class="adm-section-title">🔔 Send Bell Notification</div>
+          <span style="font-size:11px;color:rgba(255,255,255,0.3);">Shows in the 🔔 bell icon for all users</span>
         </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
-          <button class="adm-btn adm-btn-blue" onclick="admTriggerPopup('changelog')">
-            📋 Show Current v2.0 Changelog
-          </button>
-          <button class="adm-btn adm-btn-blue" onclick="admTriggerPopup('custom')">
-            ✏️ Show Custom Popup
-          </button>
-          <button class="adm-btn adm-btn-red" onclick="admClearPopup()">
-            🗑 Clear / Stop Showing
-          </button>
+        <p style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:14px;">Use this to send a short message that appears in the notification bell. Good for quick announcements, maintenance notices, or updates.</p>
+        <div class="adm-notif-form">
+          <input class="adm-input" id="admAlertTitle" placeholder="Title — e.g. Maintenance Tonight">
+          <textarea class="adm-input adm-textarea" id="admAlertMsg" placeholder="Message — e.g. CineRealm will be down for updates tonight at 11pm." style="min-height:60px;"></textarea>
+          <select class="adm-input adm-select" id="admAlertType" style="max-width:220px;">
+            <option value="info">ℹ️ Info — general announcement</option>
+            <option value="warning">⚠️ Warning — maintenance/issues</option>
+            <option value="success">✅ Resolved — something is fixed/live</option>
+          </select>
+          <button class="adm-btn adm-btn-primary" style="width:fit-content;" onclick="admSendAlert()">🔔 Send Bell Notification</button>
         </div>
-
-        <!-- Custom popup composer -->
-        <div id="admCustomPopupForm" style="display:none;border-top:1px solid rgba(255,255,255,0.06);padding-top:14px;margin-top:4px;">
-          <div class="adm-notif-form">
-            <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              <div style="flex:1;min-width:120px;">
-                <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;">Version Tag</div>
-                <input class="adm-input" id="popupVersion" placeholder="e.g. v2.1" value="v2.0">
-              </div>
-              <div style="flex:2;min-width:180px;">
-                <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;">Popup Title</div>
-                <input class="adm-input" id="popupTitle" placeholder="e.g. What's New in CineRealm" value="What's New in CineRealm">
-              </div>
-            </div>
-            <div>
-              <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;">Items — one per line (emoji Title — description)</div>
-              <textarea class="adm-input adm-textarea" id="popupItems" style="min-height:120px;font-size:12px;line-height:1.6;" placeholder="🔥 New Feature — description of what's new
-⚡ Another Thing — more details here"></textarea>
-            </div>
-            <button class="adm-btn adm-btn-blue" style="width:fit-content;" onclick="admSendCustomPopup()">🎬 Show This Popup to Everyone</button>
-          </div>
-        </div>
-
-        <div id="admPopupStatus" style="margin-top:10px;font-size:12px;min-height:18px;"></div>
       </div>
 
-      <!-- 🚀 Release Announcement -->
-      <div class="adm-section" style="border-color:rgba(255,44,44,0.2);background:rgba(255,44,44,0.04);">
+      <!-- 2. Fullscreen Popup -->
+      <div class="adm-section" style="border-color:rgba(255,44,44,0.2);background:rgba(255,44,44,0.03);">
         <div class="adm-section-header">
-          <div class="adm-section-title" style="color:#ff6b6b;">🚀 Release Announcement</div>
-          <span style="font-size:11px;color:rgba(255,255,255,0.25);">Sends to bell + shows on-screen popup for all users</span>
+          <div class="adm-section-title" style="color:#ff6b6b;">🪟 Fullscreen "What's New" Popup</div>
+          <span style="font-size:11px;color:rgba(255,255,255,0.3);">The big popup that fills the screen on page load</span>
         </div>
+        <p style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:16px;">This triggers the big scrollable popup all users see when they first open the site. Fill in the version, headline, and changelog then hit Send. Each user sees it once until they dismiss it.</p>
         <div class="adm-notif-form">
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <div style="flex:1;min-width:160px;">
-              <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;">Version Tag</div>
-              <input class="adm-input" id="relVersion" placeholder="e.g. v2.0, v2.1" value="v2.0">
+            <div style="flex:0 0 120px;">
+              <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;">Version</div>
+              <input class="adm-input" id="popupVersion" placeholder="e.g. v2.1" value="v2.0">
             </div>
-            <div style="flex:2;min-width:200px;">
+            <div style="flex:1;min-width:200px;">
               <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;">Headline</div>
-              <input class="adm-input" id="relTitle" placeholder="e.g. CineRealm v2 is Live 🎬" value="CineRealm v2 is Live 🎬">
+              <input class="adm-input" id="popupTitle" placeholder="e.g. CineRealm v2 is Live 🎬" value="CineRealm v2 is Live 🎬">
             </div>
           </div>
           <div>
-            <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;">What's New — add one item per line</div>
-            <textarea class="adm-input adm-textarea" id="relChangelog" style="min-height:140px;font-size:12px;line-height:1.6;">🔐 Profiles & Login — sign in with Google or email
+            <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;">Changelog items — one per line — format: emoji Title — description</div>
+            <textarea class="adm-input adm-textarea" id="popupChangelog" style="min-height:130px;font-size:12px;line-height:1.7;">🔐 Profiles & Login — sign in with Google or email, data syncs across devices
 👑 Role Badges — Owner, Developer, Verified, Moderator
 🔍 Search V2 — fullscreen overlay, voice search, filters
 ⭐ Reviews & Ratings — rate and review any title
@@ -400,74 +377,37 @@
 🛠 Admin Dashboard — manage everything at /admin</textarea>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <button class="adm-btn adm-btn-primary" onclick="admSendRelease()">🚀 Send Release Announcement</button>
-            <span style="font-size:11px;color:rgba(255,255,255,0.25);">Posts to 🔔 bell + shows popup for users who haven't seen this version</span>
-          </div>
-          <div id="relMsg" style="font-size:12px;min-height:18px;"></div>
-        </div>
-      </div>
-
-      <!-- Manual popup trigger -->
-      <div class="adm-section">
-        <div class="adm-section-header">
-          <div class="adm-section-title">🪟 Trigger Fullscreen Popup for Everyone</div>
-          <span style="font-size:11px;color:rgba(255,255,255,0.25);">Forces the What's New popup to show again for all users</span>
-        </div>
-        <p style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px;line-height:1.6;">
-          Use this to make the big fullscreen changelog popup appear again for everyone — without sending a bell notification. 
-          Good for after maintenance, mid-version updates, or when you want everyone to see a message.
-        </p>
-        <div class="adm-notif-form">
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <div style="flex:1;min-width:120px;">
-              <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;">Version Tag</div>
-              <input class="adm-input" id="popupVersion" placeholder="e.g. v2.1" value="v2.0">
-            </div>
-            <div style="flex:2;min-width:200px;">
-              <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;">Popup Headline</div>
-              <input class="adm-input" id="popupTitle" placeholder="e.g. CineRealm v2 is Live 🎬" value="CineRealm v2 is Live 🎬">
-            </div>
-          </div>
-          <div>
-            <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;">Changelog — one item per line (emoji Name — description)</div>
-            <textarea class="adm-input adm-textarea" id="popupChangelog" style="min-height:120px;font-size:12px;line-height:1.6;">🔐 Profiles & Login — sign in with Google or email, data syncs across devices
-👑 Role Badges — Owner, Developer, Verified, Moderator
-🔍 Search V2 — fullscreen overlay, voice search, filters
-⭐ Reviews & Ratings — rate and review any title
-📋 Watchlist Lists — custom folders, status tracking
-👥 Watch Party Sync — host pushes episodes to guests
-👻 Tab Cloak — disguise CineRealm as other sites
-⚡ Anime Page — powered by AniList
-🏆 Achievements — 11 badges to unlock
-📱 Mobile Upgrades — pull to refresh, swipe cards
-🔔 Notification Center — alerts in header bell
-🎨 OLED Mode — pure black theme
-♥ Donations — support the site
-🛠 Admin Dashboard — manage everything at /admin</textarea>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="adm-btn adm-btn-primary" onclick="admTriggerPopup()">🪟 Show Popup for Everyone</button>
-            <button class="adm-btn adm-btn-red" onclick="admClearPopupSeen()">🗑 Reset — Force Re-show for All</button>
+            <button class="adm-btn adm-btn-primary" onclick="admTriggerPopup()">🪟 Send Popup to Everyone</button>
+            <button class="adm-btn adm-btn-red" onclick="admClearPopupSeen()">🔄 Force Re-show for ALL Users</button>
           </div>
           <div id="popupMsg" style="font-size:12px;min-height:18px;margin-top:4px;"></div>
         </div>
-
-        <!-- Current active popups -->
         <div style="margin-top:16px;">
-          <div style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:10px;">Active Popup Announcements</div>
+          <div style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:8px;">Currently Active Popups</div>
           <div id="admActivePopups"><div class="adm-loading">Loading…</div></div>
         </div>
       </div>
+
+      <!-- 3. Sent alerts history -->
       <div class="adm-section">
         <div class="adm-section-header">
-          <div class="adm-section-title">Site Banner (notification.json)</div>
-          <span style="font-size:11px;color:rgba(255,255,255,0.25);">Top-of-page banner on all pages</span>
+          <div class="adm-section-title">📋 Bell Notifications History</div>
+          <button class="adm-btn adm-btn-red" onclick="admClearAllAlerts()">Clear All</button>
+        </div>
+        <div id="admAllAlerts"><div class="adm-loading">Loading…</div></div>
+      </div>
+
+      <!-- 4. Site banner -->
+      <div class="adm-section">
+        <div class="adm-section-header">
+          <div class="adm-section-title">📢 Top-of-Page Banner</div>
+          <span style="font-size:11px;color:rgba(255,255,255,0.3);">Thin banner shown at the top of every page</span>
         </div>
         <div id="admNotifStatus"><div class="adm-loading">Checking…</div></div>
         <div style="margin-top:14px;padding:12px;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.07);">
-          <div style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:8px;">To control the banner</div>
+          <div style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:8px;">How to control the banner</div>
           <div style="font-size:12px;color:rgba(255,255,255,0.45);line-height:1.7;">
-            Edit <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:4px;">notification.json</code> in your repo root:
+            Edit <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:4px;">notification.json</code> in your repo root and push:
             <pre style="background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;margin:8px 0;font-size:11px;overflow-x:auto;color:rgba(255,255,255,0.7);">{
   "active": true,
   "type": "info",
@@ -475,78 +415,27 @@
   "message": "Profiles, reviews, achievements and more.",
   "updated": "2026"
 }</pre>
-            Set <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:4px;">"active": false</code> to hide it. Push to deploy.
+            Set <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:4px;">"active": false</code> to hide it.
           </div>
         </div>
       </div>
 
-      <!-- Bell alert composer -->
+      <!-- 5. Push notifications -->
       <div class="adm-section">
-        <div class="adm-section-header"><div class="adm-section-title">Send Custom Bell Alert 🔔</div></div>
-        <div class="adm-notif-form">
-          <input class="adm-input" id="admAlertTitle" placeholder="Alert title e.g. Maintenance Tonight">
-          <textarea class="adm-input adm-textarea" id="admAlertMsg" placeholder="Message…" style="min-height:60px;"></textarea>
-          <select class="adm-input adm-select" id="admAlertType" style="max-width:200px;">
-            <option value="info">ℹ️ Info</option>
-            <option value="warning">⚠️ Warning</option>
-            <option value="success">✅ Success / Resolved</option>
-          </select>
-          <button class="adm-btn adm-btn-primary" style="width:fit-content;" onclick="admSendAlert()">Send to Bell</button>
-        </div>
-      </div>
-
-      <!-- All sent alerts -->
-      <div class="adm-section">
-        <div class="adm-section-header">
-          <div class="adm-section-title">Sent Alerts History</div>
-          <button class="adm-btn adm-btn-red" onclick="admClearAllAlerts()">Clear All</button>
-        </div>
-        <div id="admAllAlerts"><div class="adm-loading">Loading…</div></div>
-      </div>
-
-      <!-- Popup trigger -->
-      <div class="adm-section">
-        <div class="adm-section-header">
-          <div class="adm-section-title">📺 Changelog Popup — Show for Everyone</div>
-          <span style="font-size:11px;color:rgba(255,255,255,0.25);">Full-screen What's New popup on next visit</span>
-        </div>
-        <p style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:14px;">Choose what to show users when they next visit the site. This clears their "seen" flag so the popup appears again.</p>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="adm-btn adm-btn-primary" onclick="admTriggerPopup('current')">
-            🎬 Show Current v2.0 Changelog
-          </button>
-          <button class="adm-btn adm-btn-blue" onclick="admTriggerPopup('latest')">
-            🚀 Show Latest Release Announcement
-          </button>
-          <button class="adm-btn adm-btn-green" onclick="admTriggerPopup('custom')">
-            ✏️ Show Custom Message
-          </button>
-        </div>
-
-        <!-- Custom popup composer -->
-        <div id="admCustomPopupForm" style="display:none;margin-top:16px;border-top:1px solid rgba(255,255,255,0.07);padding-top:16px;">
-          <div class="adm-notif-form">
-            <input class="adm-input" id="admPopupVersion" placeholder="Version label e.g. v2.1" value="v2.0">
-            <textarea class="adm-input adm-textarea" id="admPopupChangelog" style="min-height:120px;font-size:12px;" placeholder="One item per line e.g.&#10;🔐 Profiles &amp; Login — sign in with Google or email&#10;⭐ Reviews — rate and review any title"></textarea>
-            <button class="adm-btn adm-btn-green" onclick="admSendCustomPopup()">✏️ Send Custom Popup to Everyone</button>
-          </div>
-        </div>
-        <div id="admPopupMsg" style="font-size:12px;margin-top:10px;min-height:18px;"></div>
-      </div>
+        <div class="adm-section-header"><div class="adm-section-title">📲 Push Notifications (FCM)</div></div>
         <div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.7;">
           <ol style="margin:0 0 10px;padding-left:20px;">
             <li>Go to <a href="https://console.firebase.google.com" target="_blank" style="color:#ff6b6b;">Firebase Console</a> → your project</li>
             <li>Click <strong style="color:#fff;">Messaging</strong> → <strong style="color:#fff;">New Campaign</strong></li>
             <li>Choose <strong style="color:#fff;">Firebase Notification messages</strong></li>
-            <li>Set title, body, optionally a click URL</li>
-            <li>Target → select your web app → Send</li>
+            <li>Set title, body, optional click URL → Send</li>
           </ol>
           <p style="margin:0;color:rgba(255,255,255,0.3);">Users who clicked Allow on the notification prompt receive push notifs. iOS requires adding site to home screen first.</p>
         </div>
       </div>
     </div>
 
-    <!-- ── MAINTENANCE ── -->
+        <!-- ── MAINTENANCE ── -->
     <div class="adm-panel" id="tab-maintenance">
       <div class="adm-section">
         <div class="adm-section-header"><div class="adm-section-title">Maintenance Mode</div></div>
@@ -645,6 +534,9 @@ window.addEventListener("load", async () => {
       authDomain:"cinerealm-8b7b9.firebaseapp.com",
       databaseURL:"https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
       projectId:"cinerealm-8b7b9",
+      storageBucket:"cinerealm-8b7b9.firebasestorage.app",
+      messagingSenderId:"1076768481536",
+      appId:"1:1076768481536:web:4fd3bdc3f222e4850ad3e5"
     });
     _db = getDatabase(app);
     window._admDb = _db;
@@ -1027,53 +919,7 @@ async function admTriggerPopup() {
   } catch(e) { msgEl.textContent = "Error: " + e.message; msgEl.style.color = "#ff6b6b"; }
 }
 
-async function admClearPopupSeen() {
-  // Sets a "force_reset" flag in Firebase — script.js clears localStorage seen keys when it detects this
-  if (!confirm("This will make the popup show again for ALL users, even those who already dismissed it. Continue?")) return;
-  const msgEl = document.getElementById("popupMsg");
-  try {
-    const { set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-    await set(window._admRef(_db, "popup_force_reset"), { ts: Date.now(), by: _admUser.uid });
-    msgEl.textContent = "✓ Force reset set — all users will see the popup again";
-    msgEl.style.color = "#ffd700";
-  } catch(e) { msgEl.textContent = "Error: " + e.message; msgEl.style.color = "#ff6b6b"; }
-}
 
-async function loadActivePopups() {
-  const el = document.getElementById("admActivePopups");
-  if (!el) return;
-  try {
-    const snap = await window._admGet(window._admRef(_db, "release_announcements"));
-    if (!snap.exists()) { el.innerHTML = `<div class="adm-empty">No active popups</div>`; return; }
-
-    const releases = Object.entries(snap.val())
-      .sort((a,b) => (b[1].timestamp||0)-(a[1].timestamp||0))
-      .slice(0, 10);
-
-    el.innerHTML = `
-      <table class="adm-table">
-        <thead><tr><th>Version</th><th>Title</th><th>Type</th><th>Sent</th><th>Action</th></tr></thead>
-        <tbody>
-          ${releases.map(([key, r]) => `
-            <tr>
-              <td style="font-weight:800;color:#fff;">${r.version||"—"}</td>
-              <td style="font-size:12px;color:rgba(255,255,255,0.6);">${r.title||"—"}</td>
-              <td><span class="adm-badge ${r.popupOnly ? 'adm-badge-pending' : 'adm-badge-open'}">${r.popupOnly ? "Popup only" : "Bell + Popup"}</span></td>
-              <td style="font-size:10px;color:rgba(255,255,255,0.3);">${r.timestamp ? new Date(r.timestamp).toLocaleString() : "—"}</td>
-              <td><button class="adm-btn adm-btn-red" onclick="admDeletePopup('${key}')">✕ Remove</button></td>
-            </tr>`).join("")}
-        </tbody>
-      </table>`;
-
-    window.admDeletePopup = async key => {
-      if (!confirm("Remove this popup? Users who haven't seen it won't see it anymore.")) return;
-      const { remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-      await remove(window._admRef(_db, "release_announcements/" + key));
-      loadActivePopups();
-      showToast("Popup removed ✓", "info");
-    };
-  } catch(e) { el.innerHTML = `<div class="adm-empty">Error loading</div>`; }
-}
 
 async function admSendAlert() {
   const title = document.getElementById("admAlertTitle").value.trim();
@@ -1092,83 +938,33 @@ async function admSendAlert() {
   } catch(e) { showToast("Failed: " + e.message, "error"); }
 }
 
-async function admTriggerPopup(type) {
-  const statusEl = document.getElementById("admPopupStatus");
-  const customForm = document.getElementById("admCustomPopupForm");
 
-  if (type === "custom") {
-    customForm.style.display = customForm.style.display === "none" ? "block" : "none";
-    return;
-  }
 
-  // type === "changelog" — push current CR_CHANGELOG to Firebase
-  try {
-    const { push, set, ref } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-    // Write a release announcement that everyone will see
-    const changelog = [
-      "🔐 Profiles & Login — sign in with Google or email, sync across devices",
-      "👑 Role Badges — Owner, Developer, Verified, Moderator badges",
-      "🔍 Search V2 — fullscreen overlay, voice search, filters, user search",
-      "⭐ Reviews & Ratings — rate and review any title, see community ratings",
-      "📋 Watchlist Lists — custom folders, status tracking, sort and filter",
-      "👥 Watch Party Sync — host pushes episodes to all guests instantly",
-      "👻 Tab Cloak — disguise CineRealm as other sites",
-      "⚡ Anime Page — powered by AniList",
-      "🏆 Achievements — 11 badges to unlock",
-      "📱 Mobile Upgrades — pull to refresh, swipe cards, haptic feedback",
-      "🔔 Notification Center — bell alerts in header",
-      "🎨 OLED Mode — pure black theme",
-      "♥ Donations Page — support CineRealm",
-      "🛠 Admin Dashboard — manage everything at /admin",
-    ].join("\n");
 
-    await set(window._admRef(_db, "active_popup"), {
-      version: "v2.0",
-      title: "What's New in CineRealm",
-      changelog,
-      timestamp: Date.now(),
-      active: true,
-      sentBy: _admUser.uid,
-    });
-    statusEl.textContent = "✓ Changelog popup will show to all users on their next visit";
-    statusEl.style.color = "#60a5fa";
-  } catch(e) { statusEl.textContent = "Error: " + e.message; statusEl.style.color = "#ff6b6b"; }
-}
+
+
 
 async function admSendCustomPopup() {
-  const version  = document.getElementById("popupVersion").value.trim();
-  const title    = document.getElementById("popupTitle").value.trim();
-  const items    = document.getElementById("popupItems").value.trim();
-  const statusEl = document.getElementById("admPopupStatus");
-  if (!version || !items) { statusEl.textContent = "Fill in version and items"; statusEl.style.color = "#ff6b6b"; return; }
+  const version   = document.getElementById("admPopupVersion").value.trim();
+  const changelog = document.getElementById("admPopupChangelog").value.trim();
+  const msgEl     = document.getElementById("admPopupMsg");
+  if (!version || !changelog) { msgEl.textContent = "Fill in version and changelog"; msgEl.style.color = "#ff6b6b"; return; }
   try {
     const { set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-    await set(window._admRef(_db, "active_popup"), {
-      version, title, changelog: items,
-      timestamp: Date.now(), active: true, sentBy: _admUser.uid,
+    await set(window._admRef(_db, "release_announcements/popup_custom"), {
+      version, changelog, timestamp: Date.now(), active: true, sentBy: _admUser.uid,
     });
-    statusEl.textContent = "✓ Custom popup will show to all users on their next visit";
-    statusEl.style.color = "#60a5fa";
+    msgEl.textContent = `✓ Custom popup for ${version} will show for everyone on next visit`;
+    msgEl.style.color = "#34d399";
     document.getElementById("admCustomPopupForm").style.display = "none";
-  } catch(e) { statusEl.textContent = "Error: " + e.message; statusEl.style.color = "#ff6b6b"; }
+  } catch(e) { msgEl.textContent = "Error: " + e.message; msgEl.style.color = "#ff6b6b"; }
 }
-
-async function admClearPopup() {
-  const statusEl = document.getElementById("admPopupStatus");
-  try {
-    const { remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-    await remove(window._admRef(_db, "active_popup"));
-    statusEl.textContent = "✓ Popup cleared — users won't see it anymore";
-    statusEl.style.color = "#34d399";
-  } catch(e) { statusEl.textContent = "Error: " + e.message; statusEl.style.color = "#ff6b6b"; }
-}
-
 async function admSendRelease() {
-  const version  = document.getElementById("relVersion").value.trim();
-  const title    = document.getElementById("relTitle").value.trim();
-  const changelog= document.getElementById("relChangelog").value.trim();
+  const version  = document.getElementById("relVersion")?.value.trim();
+  const title    = document.getElementById("relTitle")?.value.trim();
+  const changelog= document.getElementById("relChangelog")?.value.trim();
   const msgEl    = document.getElementById("relMsg");
-  if (!version || !title) { msgEl.textContent = "Fill in version and headline"; msgEl.style.color = "#ff6b6b"; return; }
+  if (!version || !title) { if(msgEl){msgEl.textContent = "Fill in version and headline"; msgEl.style.color = "#ff6b6b";} return; }
 
   try {
     const { push } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");

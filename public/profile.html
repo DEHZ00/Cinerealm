@@ -153,13 +153,26 @@
   <div id="detailsPanelBody" class="details-panel-body"></div>
 </div>
 
+
 <nav class="mobile-bottom-nav">
   <a href="/" class="mobile-nav-item"><span class="mobile-nav-icon">🏠</span><span class="mobile-nav-label">Home</span></a>
   <a href="/search" class="mobile-nav-item"><span class="mobile-nav-icon">🔍</span><span class="mobile-nav-label">Search</span></a>
   <a href="/movies" class="mobile-nav-item"><span class="mobile-nav-icon">🎬</span><span class="mobile-nav-label">Movies</span></a>
   <a href="/watchlist" class="mobile-nav-item"><span class="mobile-nav-icon">★</span><span class="mobile-nav-label">Watchlist</span></a>
   <a href="/anime" class="mobile-nav-item"><span class="mobile-nav-icon">⛩️</span><span class="mobile-nav-label">Anime</span></a>
+  <button class="mobile-nav-item" onclick="toggleMobileDrawer()" id="mobileMoreBtn"><span class="mobile-nav-icon">⋯</span><span class="mobile-nav-label">More</span></button>
 </nav>
+<div id="mobileDrawer" style="display:none;position:fixed;bottom:60px;left:0;right:0;z-index:9989;background:rgba(8,4,4,0.97);border-top:1px solid rgba(255,44,44,0.2);backdrop-filter:blur(20px);padding:12px 0 8px;">
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:0 8px;">
+    <a href="/trending" class="mobile-drawer-item"><span>🔥</span>Trending</a>
+    <a href="/genres"   class="mobile-drawer-item"><span>🎭</span>Genres</a>
+    <a href="/games"    class="mobile-drawer-item"><span>🎮</span>Games</a>
+    <a href="/stats"    class="mobile-drawer-item"><span>📊</span>Stats</a>
+    <a href="/donate"   class="mobile-drawer-item"><span>♥</span>Support</a>
+    <a href="/legal"    class="mobile-drawer-item"><span>📄</span>Legal</a>
+  </div>
+</div>
+<div id="mobileDrawerOverlay" onclick="toggleMobileDrawer()" style="display:none;position:fixed;inset:0;z-index:9988;background:rgba(0,0,0,0.5);"></div>
 
 <script src="/cloak-config.js"></script>
 <script src="/script.js"></script>
