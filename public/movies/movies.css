@@ -240,3 +240,7 @@
   .mv-title { font-size: 22px; }
   .mv-filter-actions { flex-direction: row; align-items: center; width: 100%; }
 }
+
+/* Ensure details panel works on movies page */
+#detailsPanel  { z-index: 9999 !important; }
+#detailsOverlay { z-index: 9998 !important; }

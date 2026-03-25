@@ -5905,9 +5905,16 @@ function showHeroSlide(index) {
   }
 }
 
+// Always load history/watchlist on all pages
+loadHistory();
+loadWatchlist();
+
+// Only run home page specific stuff on home page
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initHomePage);
+  document.addEventListener("DOMContentLoaded", () => {
+    if (window.location.pathname === "/") initHomePage();
+  });
 } else {
-  initHomePage();
+  if (window.location.pathname === "/") initHomePage();
 }
 
