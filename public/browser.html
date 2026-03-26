@@ -75,6 +75,69 @@
     .br-shortcut:hover { background: rgba(255,44,44,0.08); border-color: rgba(255,44,44,0.25); color: #fff; transform: translateY(-2px); }
     .br-shortcut-icon { font-size: 26px; line-height: 1; }
 
+    /* Proxy picker */
+    .br-proxy-section {
+      margin-bottom: 28px;
+      text-align: left;
+    }
+    .br-proxy-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.2);
+      margin-bottom: 10px;
+      padding-left: 2px;
+    }
+    .br-proxy-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 8px;
+    }
+    .br-proxy-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: left;
+      color: rgba(255,255,255,0.7);
+      font-size: 13px;
+      font-weight: 600;
+      width: 100%;
+    }
+    .br-proxy-btn:hover { background: rgba(255,44,44,0.08); border-color: rgba(255,44,44,0.3); color: #fff; }
+    .br-proxy-btn.active { background: rgba(255,44,44,0.12); border-color: rgba(255,44,44,0.5); color: #ff2c2c; }
+    .br-proxy-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .br-proxy-btn.active .br-proxy-dot { background: #2ecc71; box-shadow: 0 0 6px rgba(46,204,113,0.6); }
+    .br-proxy-btn .br-proxy-dot.down {
+      background: #ff2c2c;
+      box-shadow: 0 0 6px rgba(255,44,44,0.6);
+      animation: blink-dot 1.2s ease-in-out infinite;
+    }
+    @keyframes blink-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+    .br-proxy-sub {
+      font-size: 10px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.25);
+      display: block;
+      margin-top: 1px;
+    }
+    .br-proxy-btn.active .br-proxy-sub { color: rgba(255,44,44,0.6); }
+
     .br-note {
       font-size: 12px;
       color: rgba(255,255,255,0.2);
@@ -87,6 +150,7 @@
 
     @media (max-width: 500px) {
       .br-shortcuts { grid-template-columns: repeat(3, 1fr); }
+      .br-proxy-list { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -108,11 +172,16 @@
 <div class="br-page">
   <div class="br-icon">🌐</div>
   <div class="br-title">CineRealm Browser</div>
-  <div class="br-sub">Search anything or enter a URL — opens in a new tab through the proxy</div>
+  <div class="br-sub">Select a proxy, then search or click a shortcut</div>
 
   <div class="br-search-wrap">
     <input class="br-input" id="brInput" placeholder="Search Google or enter a URL..." autocomplete="off" autocorrect="off" spellcheck="false">
     <button class="br-go" onclick="brGo()">Open →</button>
+  </div>
+
+  <div class="br-proxy-section">
+    <div class="br-proxy-label">Choose Proxy</div>
+    <div class="br-proxy-list" id="proxyList"></div>
   </div>
 
   <div class="br-shortcuts">
@@ -155,35 +224,82 @@
   </div>
 
   <div class="br-note">
-    Opens sites through <strong style="color:rgba(255,255,255,0.6);">proxy.cinerealm.online</strong> — 
-    a secure proxy that keeps your browsing private. First time using it? The proxy page will open and register itself, then you can browse normally.
+    Pick a proxy above then search or click a shortcut — it opens in a new tab.
+    If one proxy is blocked or down, just switch to another. Proxies are community-maintained and may rotate.
   </div>
 </div>
 
 <script src="/cloak-config.js"></script>
 <script src="/script.js"></script>
 <script>
-const UV = "https://usd.cinerealm.online";
+  // ── Proxy list ──────────────────────────────────────────────────
+  // All proxies just open their homepage in a new tab.
+  // UV requires its service worker to be registered first before it can
+  // proxy anything — so we always open the homepage and let the user
+  // navigate from there. Shortcuts/search are just a convenience UX.
+  const PROXIES = [
+    { name: "CineRealm UV",  url: "https://usd.cinerealm.online",                               note: "own proxy",  down: true  },
+    { name: "DogeUB",        url: "https://dogeub-915531448785.europe-west1.run.app",            note: "UV-based"              },
+    { name: "DogeUB Static", url: "https://storage.googleapis.com/dogeub/index.html",            note: "static"                },
+    { name: "DogeUB Edu",    url: "https://storage.googleapis.com/educationate/index.html",      note: "static"                },
+    { name: "DogeUB Canvas", url: "https://storage.googleapis.com/canvas-lms/index.html",        note: "static"                },
+    { name: "DogeUB Inst",   url: "https://storage.googleapis.com/instructure/index.html",       note: "static"                },
+    { name: "DogeUB JSDelivr",url: "https://cdn.jsdelivr.net/gh/dogeub/-/index.svg",             note: "almost unblockable"    },
+    { name: "DogeUB Nepal",  url: "http://xtramathforkids.dilbahadurkc.com.np",                  note: "mirror"                },
+    { name: "DogeUB OVH",    url: "https://vps-8f90ea3e.vps.ovh.us",                            note: "mirror"                },
+    { name: "ed-ed",         url: "https://ed-ed.ccwu.cc",                                       note: "proxy"                 },
+    { name: "Desmos",        url: "https://desmos.us.ci",                                        note: "proxy"                 },
+    { name: "Classroom.de5", url: "https://classroom.de5.net",                                   note: "proxy"                 },
+    { name: "Mega-Mega",     url: "https://mega-mega.cc.cd",                                     note: "proxy"                 },
+    { name: "Interstellar",  url: "https://interstellar.baby",                                   note: "UV-based"              },
+    { name: "Holy UB",       url: "https://holyubofficial.net",                                  note: "multi-proxy"           },
+    { name: "Nebula",        url: "https://nebulaproxy.io",                                      note: "UV-based"              },
+    { name: "Hypertabs",     url: "https://hypertabs.cc",                                        note: "UV-based"              },
+    { name: "Croxy",         url: "https://www.croxyproxy.com",                                  note: "web proxy"             },
+  ];
 
-function brResolve(val) {
-  val = val.trim();
-  if (!val) return null;
-  if (/^https?:\/\//i.test(val)) return val;
-  if (/^[\w-]+\.[\w.-]+/.test(val) && !val.includes(' ')) return 'https://' + val;
-  return 'https://www.google.com/search?q=' + encodeURIComponent(val);
-}
+  const SAVED_KEY = 'cr_browser_proxy';
+  let selectedProxy = parseInt(localStorage.getItem(SAVED_KEY) || '0');
+  if (selectedProxy >= PROXIES.length) selectedProxy = 0;
 
-function brOpen(url) {
-  window.open('https://usd.cinerealm.online', '_blank', 'noopener');
-}
+  function getProxyUrl() {
+    return PROXIES[selectedProxy].url;
+  }
 
-function brGo() {
-  window.open('https://usd.cinerealm.online', '_blank', 'noopener');
-}
+  function brOpen(hint) {
+    // hint is ignored — UV needs SW registration first, just open homepage
+    window.open(getProxyUrl(), '_blank', 'noopener');
+  }
 
-document.getElementById("brInput").addEventListener("keydown", e => {
-  if (e.key === "Enter") brGo();
-});
+  function brGo() {
+    window.open(getProxyUrl(), '_blank', 'noopener');
+  }
+
+  document.getElementById('brInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') brGo();
+  });
+
+  // ── Render proxy buttons ────────────────────────────────────────
+  function renderProxies() {
+    const list = document.getElementById('proxyList');
+    list.innerHTML = PROXIES.map((p, i) => `
+      <button class="br-proxy-btn ${i === selectedProxy ? 'active' : ''}" onclick="selectProxy(${i})">
+        <span class="br-proxy-dot ${p.down ? 'down' : ''}"></span>
+        <span>
+          ${p.name}${p.down ? ' <span style="font-size:10px;color:rgba(255,44,44,0.6);font-weight:400;">down</span>' : ''}
+          <span class="br-proxy-sub">${p.note}</span>
+        </span>
+      </button>
+    `).join('');
+  }
+
+  function selectProxy(i) {
+    selectedProxy = i;
+    try { localStorage.setItem(SAVED_KEY, i); } catch(e) {}
+    renderProxies();
+  }
+
+  renderProxies();
 </script>
 </body>
 </html>
