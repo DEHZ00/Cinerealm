@@ -72,7 +72,7 @@ window.CR_CLOAK_PRESETS = [
     id:    "desmos",
     name:  "Desmos",
     title: "Desmos | Graphing Calculator",
-    icon:  "https://www.desmos.com/favicon.ico"
+    icon:  "https://www.desmos.com/assets/img/apps/graphing/favicon.ico"
   },
   {
     id:    "wiki",
