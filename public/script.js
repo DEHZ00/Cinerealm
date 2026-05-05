@@ -977,14 +977,15 @@ const PROVIDERS = [
   { name: "Ez",        key: "videasy",    tier: "standard", chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: true  } },
   { name: "Saturn",    key: "VidSrc",     tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "Mars",      key: "vidlink",    tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
-  { name: "Jupiter",   key: "VidZen",     tier: "standard", chromebook: false, sandbox: true,  supports: { movie: true, tv: true, anime: true  } },
-  { name: "Seenima",   key: "vidora",     tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
-  { name: "King",      key: "vidking",    tier: "standard", chromebook: false, sandbox: true,  supports: { movie: true, tv: true, anime: false } },
+
+,
 
   // ── Premium Sources ───────────────────────────────────────────────────────
   { name: "VidUp",     key: "vidup",      tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "MoviesAPI", key: "moviesapi",  tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "111Movies", key: "111movies",  tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "King",      key: "vidking",    tier: "premium", chromebook: false, sandbox: false,  supports: { movie: true, tv: true, anime: false } },
+  { name: "Jupiter",   key: "VidZen",     tier: "premium", chromebook: true, sandbox: true,  supports: { movie: true, tv: true, anime: true  } },
 ];
 
 
