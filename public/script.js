@@ -978,7 +978,7 @@ const PROVIDERS = [
   { name: "Saturn",    key: "VidSrc",     tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "Mars",      key: "vidlink",    tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
 
-,
+
 
   // ── Premium Sources ───────────────────────────────────────────────────────
   { name: "VidUp",     key: "vidup",      tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
