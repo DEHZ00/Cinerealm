@@ -22,12 +22,12 @@
   .source-tab { transition: none; }
 }
 /* Hide sources incompatible with watch party when party is active */
-body.wp-active .source-tab:not([data-key="vidfast"]):not([data-key="spenEmbed"]):not([data-key="vidplus"]) {
+body.wp-active .source-tab:not([data-key="vidfast"]) {
   opacity: 0.35;
   pointer-events: none;
   position: relative;
 }
-body.wp-active .source-tab:not([data-key="vidfast"]):not([data-key="spenEmbed"]):not([data-key="vidplus"])::after {
+body.wp-active .source-tab:not([data-key="vidfast"])::after {
   content: "⚠";
   font-size: 9px;
   position: absolute;
@@ -35,7 +35,7 @@ body.wp-active .source-tab:not([data-key="vidfast"]):not([data-key="spenEmbed"])
   right: 2px;
 }
 body.wp-active .source-section-label::after {
-  content: " (Watch Party: sync sources highlighted)";
+  content: " (Watch Party: use PulseView for sync)";
   font-size: 9px;
   color: rgba(255,200,0,0.6);
   font-weight: 400;
@@ -307,21 +307,18 @@ body.wp-active .source-section-label::after {
   const skipIntroBtn  = document.getElementById("skipIntroBtn");
   const skipRecapBtn  = document.getElementById("skipRecapBtn");
 
-  // Show skip buttons after player loads for anime content
   window.addEventListener("load", () => {
     const ctx = window._watchContext;
     if (!ctx) return;
 
     const times = getSkipTimes(ctx.tmdbId, ctx.season || 1, ctx.episode || 1);
 
-    // Show intro skip button after 30s if not already set, or immediately if set
     const introDelay = times.intro_start ? 0 : 30000;
     setTimeout(() => {
       skipIntroBtn.classList.add("visible");
       skipIntroBtn.textContent = "Skip Intro →";
     }, introDelay);
 
-    // Show recap skip at start if set
     if (times.recap_end) {
       skipRecapBtn.classList.add("visible");
       setTimeout(() => skipRecapBtn.classList.remove("visible"), (times.recap_end * 1000) + 3000);
@@ -330,7 +327,6 @@ body.wp-active .source-section-label::after {
 
   skipIntroBtn.onclick = () => {
     skipIntroBtn.classList.remove("visible");
-    // Save approx skip time so next episode remembers
     const ctx = window._watchContext;
     if (ctx) saveSkipTime(ctx.tmdbId, ctx.season || 1, ctx.episode || 1, "intro_start", 90);
     showToast("Intro skipped", "info");
@@ -461,7 +457,6 @@ if (urlRoom) {
 
 // Panel toggle
 document.getElementById("watchPartyBtn").onclick = () => {
-  // Require account
   if (typeof _crUser === "undefined" || !_crUser) {
     showToast("Sign in to use Watch Party 👥", "error");
     if (typeof openAuthModal === "function") openAuthModal("signin");
@@ -472,7 +467,6 @@ document.getElementById("watchPartyBtn").onclick = () => {
   panel.style.display = "flex";
   overlay.style.display = "block";
   if (wpNameInput.value === "" && wpName) wpNameInput.value = wpName;
-  // Pre-fill name from profile
   if (typeof _crProfile !== "undefined" && _crProfile && !wpNameInput.value) {
     wpNameInput.value = _crProfile.displayName || _crProfile.username || "";
     wpName = wpNameInput.value;
@@ -503,7 +497,7 @@ document.getElementById("wpCreateBtn").onclick = async () => {
   const code = genCode();
   wpRoomId = code;
   wpIsHost = true;
-  localStorage.setItem("cr_hosted_party", "1"); // for Party Host achievement
+  localStorage.setItem("cr_hosted_party", "1");
 
   const ctx = window._watchContext || {};
   await set(ref(db, "rooms/" + code), {
@@ -537,7 +531,6 @@ document.getElementById("wpJoinBtn").onclick = async () => {
     name, isHost: false, joinedAt: serverTimestamp()
   });
 
-  // Load room content and navigate if needed
   const roomData = snap.val();
   if (roomData.content) {
     const c = roomData.content;
@@ -558,7 +551,7 @@ document.getElementById("wpJoinBtn").onclick = async () => {
 function enterRoom(code) {
   document.getElementById("wpNoRoom").style.display = "none";
   document.getElementById("wpInRoom").style.display = "block";
-  
+
   document.body.classList.add("wp-active");
   document.getElementById("wpRoomCode").textContent = code;
   document.getElementById("wpRoleBadge").textContent = wpIsHost ? "👑 Host" : "👤 Guest";
@@ -584,7 +577,6 @@ function enterRoom(code) {
       title: ctx.title || "",
       ts: Date.now()
     };
-    // Only include season/episode for TV — null causes Firebase "undefined" crash
     if (ctx.type === "tv" && ctx.season) {
       syncPayload.season = ctx.season;
       syncPayload.episode = ctx.episode || 1;
@@ -592,6 +584,36 @@ function enterRoom(code) {
     await set(ref(db, "rooms/" + code + "/sync"), syncPayload);
     showToast("Synced to all guests ⚡", "success");
   };
+
+  // Host: listen for VidFast play/pause/seek and broadcast to Firebase
+  if (wpIsHost) {
+    const vidfastOrigins = ["https://vidfast.pro","https://vidfast.in","https://vidfast.io","https://vidfast.me","https://vidfast.net","https://vidfast.pm","https://vidfast.xyz"];
+    window.addEventListener("message", (event) => {
+      if (!vidfastOrigins.includes(event.origin)) return;
+      if (!event.data || event.data.type !== "PLAYER_EVENT") return;
+      const { event: evt, currentTime } = event.data.data || {};
+      if (!["play","pause","seeked"].includes(evt)) return;
+      set(ref(db, "rooms/" + code + "/playback"), {
+        event: evt, time: currentTime, ts: Date.now()
+      });
+    });
+  }
+
+  // Guests: receive playback events and apply to their player
+  if (!wpIsHost) {
+    const pbRef = ref(db, "rooms/" + code + "/playback");
+    onValue(pbRef, snap => {
+      if (!snap.exists()) return;
+      const { event: evt, time } = snap.val();
+      const iframe = document.querySelector("#watch-iframe-placeholder iframe");
+      if (!iframe) return;
+      iframe.contentWindow.postMessage({
+        command: evt === "seeked" ? "seek" : evt,
+        time: time
+      }, "*");
+    });
+    wpListeners.push(() => off(pbRef, "value"));
+  }
 
   // Listen for sync commands (guests)
   if (!wpIsHost) {
@@ -702,7 +724,6 @@ async function leaveRoom() {
   document.body.classList.remove("wp-active");
   document.getElementById("wpSyncBar").style.display = "none";
   document.getElementById("wpNowWatching").style.display = "none";
-  
   showToast("Left the watch party", "info");
 }
 </script>
@@ -741,10 +762,6 @@ async function leaveRoom() {
 </div>
 <script>
 (async function initWatchPage() {
-  // ── Parse URL ──────────────────────────────────────────────────────────
-  // Patterns:
-  //   /watch/movie/12345
-  //   /watch/tv/12345/season/2/episode/4
   const path = window.location.pathname;
 
   let type, tmdbId, season, episode;
@@ -766,13 +783,11 @@ async function leaveRoom() {
     return;
   }
 
-  // ── Fetch metadata ────────────────────────────────────────────────────
   const [data, credits] = await Promise.all([
     apiCall(`/${type}/${tmdbId}`),
     apiCall(`/${type}/${tmdbId}/credits`).catch(() => null),
   ]);
 
-  // Hide skeleton, show content
   document.getElementById("watch-skeleton").style.display = "none";
   document.getElementById("watch-content").style.display  = "block";
 
@@ -786,11 +801,8 @@ async function leaveRoom() {
   const genres  = data.genres?.map(g => g.name).join(" · ") || "";
   const overview = data.overview || "";
 
-  // ── Stamp history immediately so Continue Watching order is correct ──────
-  // This runs regardless of whether the source sends progress events
   try {
     const rawHistory = JSON.parse(localStorage.getItem("history") || "[]");
-    const key = type + "_" + tmdbId;
     let entry = rawHistory.find(h => {
       const hid = h.tmdbId || h.id;
       return h.type === type && String(hid) === String(tmdbId);
@@ -799,14 +811,14 @@ async function leaveRoom() {
       entry = { tmdbId, type, progress: 0, duration: 0, addedAt: Date.now() };
       rawHistory.push(entry);
     } else {
-      entry.addedAt = Date.now(); // always update timestamp on visit
+      entry.addedAt = Date.now();
     }
     if (type === "tv" && season && episode) {
       entry.season  = season;
       entry.episode = episode;
     }
     localStorage.setItem("history", JSON.stringify(rawHistory));
-  } catch(e) { /* ignore */ }
+  } catch(e) {}
 
   document.title = `${title} — CineRealm`;
   document.getElementById("watchTitle").textContent      = title;
@@ -816,18 +828,10 @@ async function leaveRoom() {
   document.getElementById("watchGenres").textContent     = genres;
   document.getElementById("watchOverview").textContent   = overview;
 
-  // Update lock screen / media session
   if (window.updateMediaSession) {
     const posterUrl = data?.poster_path ? "https://image.tmdb.org/t/p/w512" + data.poster_path : "";
     window.updateMediaSession(title, posterUrl, type);
   }
-
-  // ── Wire up player (reuse script.js infrastructure) ───────────────────
-  // Override the player div references to point to watch page elements
-  // We do this by temporarily pointing the player IDs script.js expects
-
-  // Patch: script.js loadPlayer writes into #player div by default,
-  // but on this page we use dedicated IDs. We re-implement a slim version:
 
   const media = { type, tmdbId, season, episode };
   const lastProgress = getHistoryProgress(tmdbId, type, season, episode);
@@ -849,23 +853,18 @@ async function leaveRoom() {
   if (type === "tv") {
     opts.season  = season;
     opts.episode = episode;
-    // Render season/episode selector
     await renderSeasonsDropdownInto(
       document.getElementById("watch-season-dropdown"),
       tmdbId, media, { ...opts }
     );
   }
 
-  // Render source pills
   const tabs = renderSourcePills(media, DEFAULT_SOURCE, opts);
   document.getElementById("watch-tabs-placeholder").appendChild(tabs);
 
-  // Iframe target
   const iframePlaceholder = document.getElementById("watch-iframe-placeholder");
-  // Monkey-patch insertIframe to use this page's placeholder
   const _origInsert = window.insertIframe;
   window.insertIframe = function(url) {
-    // unload previous
     iframePlaceholder.innerHTML = "";
     if (!url) {
       document.getElementById("watch-player-error").style.display = "block";
@@ -880,20 +879,16 @@ async function leaveRoom() {
     return iframe;
   };
 
-  // Click the default/saved active tab to load
   const activeBtn = tabs.querySelector(".source-tab.active") || tabs.querySelector(".source-tab");
   if (activeBtn) activeBtn.click();
 
-  // Restore after click
   window.insertIframe = _origInsert;
 
-  // Scroll player into view smoothly
   setTimeout(() => {
     document.getElementById("watch-player-container")
       .scrollIntoView({ behavior: "smooth", block: "start" });
   }, 120);
 
-  // ── Update breadcrumb ────────────────────────────────────────────────────
   const crumbTitle = document.getElementById("watchBreadcrumbTitle");
   if (crumbTitle) {
     if (type === "tv" && season && episode) {
@@ -903,7 +898,6 @@ async function leaveRoom() {
     }
   }
 
-  // ── Fullscreen button ────────────────────────────────────────────────────
   document.getElementById("watchFullscreenBtn").onclick = () => {
     const iframe = document.querySelector("#watch-iframe-placeholder iframe");
     if (!iframe) return;
@@ -912,18 +906,14 @@ async function leaveRoom() {
     else if (iframe.mozRequestFullScreen) iframe.mozRequestFullScreen();
   };
 
-  // ── Picture-in-Picture button ─────────────────────────────────────────────
   document.getElementById("watchPipBtn").onclick = async () => {
     const iframe = document.querySelector("#watch-iframe-placeholder iframe");
     if (!iframe) return;
-    // Try PiP on the iframe element itself (Chrome supports this)
     if (document.pictureInPictureEnabled) {
       try {
-        // Create a dummy video to enter PiP, then swap src
         showToast("PiP: use the fullscreen button inside the player for best results", "info");
       } catch(e) {}
     }
-    // Fallback: open source in a small popup window
     const activeTab = document.querySelector(".source-tab.active");
     if (activeTab && iframe.src) {
       const w = window.open(iframe.src, "pip_player",
@@ -932,12 +922,8 @@ async function leaveRoom() {
     }
   };
 
-  // Store context for auto-next
   window._watchContext = { type, tmdbId, season, episode, title, opts };
 
-  // ── Section 18 — Watch Page Upgrades ──────────────────────────────────
-
-  // Auto-dim + player glow
   const playerContainer = document.getElementById("watch-player-container");
   const glowEl = document.getElementById("watchPlayerGlow");
   let glowEnabled = localStorage.getItem("cr_player_glow") === "1";
@@ -954,7 +940,6 @@ async function leaveRoom() {
 
   async function extractGlowColor() {
     if (!glowEnabled) return;
-    // Use poster from data object directly — no DOM img needed
     const posterPath = data?.poster_path || data?.backdrop_path;
     const posterUrl = posterPath ? "https://image.tmdb.org/t/p/w92" + posterPath : null;
     if (!posterUrl) { applyGlow("rgba(255,44,44,0.5)"); return; }
@@ -993,7 +978,6 @@ async function leaveRoom() {
     };
   }
 
-  // Auto-dim page background when player active
   const observer = new IntersectionObserver(entries => {
     entries.forEach(e => {
       document.body.style.transition = "background 0.6s ease";
@@ -1002,7 +986,6 @@ async function leaveRoom() {
   }, { threshold: 0.5 });
   observer.observe(playerContainer);
 
-  // ── Up Next card (TV only) ───────────────────────────────────────────
   if (type === "tv") {
     const upNextEl   = document.getElementById("watchUpNext");
     const upNextLink = document.getElementById("watchUpNextLink");
@@ -1039,7 +1022,6 @@ async function leaveRoom() {
     }
   }
 
-  // ── Cast row ──────────────────────────────────────────────────────────
   const castSection = document.getElementById("watchCastSection");
   const castRow     = document.getElementById("watchCastRow");
   if (castSection && castRow && credits?.cast?.length) {
@@ -1057,7 +1039,6 @@ async function leaveRoom() {
     castSection.style.display = "block";
   }
 
-  // ── You Might Also Like ───────────────────────────────────────────────
   const simSection = document.getElementById("watchSimilarSection");
   const simRow     = document.getElementById("watchSimilarRow");
   if (simSection && simRow) {
@@ -1075,7 +1056,6 @@ async function leaveRoom() {
     } catch(e) {}
   }
 
-  // ── Report broken source ──────────────────────────────────────────────
   const reportBtn = document.getElementById("watchReportBtn");
   if (reportBtn) {
     reportBtn.onclick = async () => {
@@ -1094,7 +1074,6 @@ async function leaveRoom() {
         const activeSource = document.querySelector(".source-tab.active")?.dataset?.name || "Unknown";
         const reportKey = `${tmdbId}_${activeSource}`;
 
-        // Check how many times this source has been reported
         const countSnap = await get(ref(db, "broken_source_counts/" + reportKey));
         const currentCount = countSnap.exists() ? countSnap.val() : 0;
 
@@ -1104,14 +1083,12 @@ async function leaveRoom() {
           timestamp: Date.now(), reportKey
         });
 
-        // Increment count
         const { set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
         await set(ref(db, "broken_source_counts/" + reportKey), currentCount + 1);
 
         showToast("Source reported — thanks!", "success");
         reportBtn.textContent = "✓ Reported";
 
-        // If 3+ reports for same source, write to admin_alerts
         if (currentCount + 1 >= 3) {
           await push(ref(db, "admin_alerts"), {
             type: "broken_source",
@@ -1129,19 +1106,15 @@ async function leaveRoom() {
     };
   }
 
-  // ── Mark as HD ────────────────────────────────────────────────────────
   const hdBtn = document.getElementById("watchHDBtn");
   if (hdBtn && type === "movie") {
     hdBtn.onclick = async () => {
-      // Check if user has privileged role (owner/developer)
       if (typeof _crUser !== "undefined" && _crUser && typeof getUserRole === "function") {
         const role = await getUserRole(_crUser.uid);
         if (hasRole(role, "owner") || hasRole(role, "developer")) {
-          // Privileged — instant HD mark, can also unmark
           const key = tmdbId + "_hd_override";
           const isMarked = localStorage.getItem(key);
           if (isMarked) {
-            // Unmark
             localStorage.removeItem(key);
             try {
               const { getDatabase, ref, remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
@@ -1153,14 +1126,12 @@ async function leaveRoom() {
             hdBtn.textContent = "HD Mark as HD";
             hdBtn.style.background = "rgba(0,100,220,0.15)";
           } else {
-            // Mark instantly
             localStorage.setItem(key, "1");
             try {
               const { getDatabase, ref, set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
               const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
               const app = getApps().length ? getApps()[0] : initializeApp({ apiKey:"AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",databaseURL:"https://cinerealm-8b7b9-default-rtdb.firebaseio.com",projectId:"cinerealm-8b7b9" });
               await set(ref(getDatabase(app), "hd_override/" + tmdbId), { markedAt: Date.now(), by: _crUser.uid });
-              // Also set vote count to 3+ so badge shows
               await set(ref(getDatabase(app), "hd_votes/" + tmdbId), 3);
             } catch(e) {}
             showToast("✓ HD marked instantly — privileged", "success");
@@ -1170,18 +1141,15 @@ async function leaveRoom() {
           return;
         }
       }
-      // Normal user — use vote system
       if (typeof voteHD === "function") voteHD(tmdbId, title);
     };
   } else if (hdBtn) {
     hdBtn.style.display = "none";
   }
 
-  // ── Miniplayer — floating corner player ───────────────────────────────
   let miniActive = false;
   const miniPlayerEl = document.getElementById("watchMiniPlayer");
 
-  // Show miniplayer when user scrolls away from player
   const miniObserver = new IntersectionObserver(entries => {
     entries.forEach(e => {
       if (!e.isIntersecting && !miniActive && document.querySelector("#watch-iframe-placeholder iframe")) {
@@ -1267,7 +1235,6 @@ function playNextEpisode(season, episode) {
   window.location.href = "/watch/tv/" + ctx.tmdbId + "/season/" + season + "/episode/" + episode;
 }
 
-// Listen for episode end from player events
 window.addEventListener("message", function(event) {
   try {
     let msg = event.data;
@@ -1278,7 +1245,6 @@ window.addEventListener("message", function(event) {
     const ctx = window._watchContext;
     if (!ctx || ctx.type !== "tv") return;
 
-    // Find next episode
     const nextEp = ctx.episode + 1;
     startAutoNext(ctx.season, nextEp, "S" + ctx.season + " E" + nextEp);
   } catch(e) {}
@@ -1286,9 +1252,7 @@ window.addEventListener("message", function(event) {
 
 // ── Keyboard shortcuts ─────────────────────────────────────────────────────
 (function() {
-  // Show shortcut cheatsheet with ?
   document.addEventListener("keydown", function(e) {
-    // Don't fire if typing in an input
     if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
 
     const ctx = window._watchContext;
@@ -1336,7 +1300,6 @@ window.addEventListener("message", function(event) {
   });
 })();
 
-// Slim season dropdown that targets a specific container (watch page version)
 async function renderSeasonsDropdownInto(container, tvId, media, extraOpts) {
   if (!container) return;
   container.innerHTML = "";
@@ -1393,11 +1356,9 @@ async function renderSeasonsDropdownInto(container, tvId, media, extraOpts) {
       epDiv.className = "episode-card";
       const epProgress = getHistoryProgress(tvId, "tv", seasonNumber, ep.episode_number);
 
-      // Check if currently playing
       const isPlaying = extraOpts.season === seasonNumber && extraOpts.episode === ep.episode_number;
       if (isPlaying) epDiv.classList.add("playing-episode");
 
-      // Progress bar
       const epData = (JSON.parse(localStorage.getItem("history") || "[]"))
         .find(h => h.type === "tv" && h.tmdbId === tvId && h.season === seasonNumber && h.episode === ep.episode_number);
       const pct = epData && epData.duration ? Math.min(100, (epData.progress / epData.duration) * 100) : 0;
@@ -1416,11 +1377,9 @@ async function renderSeasonsDropdownInto(container, tvId, media, extraOpts) {
       `;
 
       epDiv.addEventListener("click", () => {
-        // Update URL without page reload
         const newUrl = "/watch/tv/" + tvId + "/season/" + seasonNumber + "/episode/" + ep.episode_number;
         history.pushState({ tvId, seasonNumber, episode: ep.episode_number }, "", newUrl);
 
-        // Update playing highlight
         episodeList.querySelectorAll(".episode-card").forEach(c => {
           c.classList.remove("playing-episode");
           const b = c.querySelector(".episode-now-playing-badge");
@@ -1430,10 +1389,8 @@ async function renderSeasonsDropdownInto(container, tvId, media, extraOpts) {
         extraOpts.season  = seasonNumber;
         extraOpts.episode = ep.episode_number;
 
-        // Update page title
         document.title = ep.name + " — CineRealm";
 
-        // Swap the iframe source instead of reloading
         const iframePlaceholder = document.getElementById("watch-iframe-placeholder");
         iframePlaceholder.innerHTML = "";
         document.getElementById("watch-player-error").style.display = "none";
@@ -1460,7 +1417,6 @@ async function renderSeasonsDropdownInto(container, tvId, media, extraOpts) {
 
       episodeList.appendChild(epDiv);
 
-      // Auto-scroll to playing episode
       if (isPlaying) {
         setTimeout(() => epDiv.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" }), 200);
       }
@@ -1492,8 +1448,6 @@ async function renderSeasonsDropdownInto(container, tvId, media, extraOpts) {
 </script>
 <script defer src="/_vercel/speed-insights/script.js"></script>
 <script src="https://uptime.betterstack.com/widgets/announcement.js" data-id="240420" async="async" type="text/javascript"></script>
-
-
 
 <nav class="mobile-bottom-nav">
   <a href="/" class="mobile-nav-item"><span class="mobile-nav-icon">🏠</span><span class="mobile-nav-label">Home</span></a>
