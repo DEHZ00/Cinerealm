@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Banned — CineRealm</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="icon" href="/favicon.ico">
+  <style>
+    body { background: #080404; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .ban-wrap {
+      width: 100%; max-width: 520px;
+      background: linear-gradient(160deg, #160202, #0a0606);
+      border: 1.5px solid rgba(255,44,44,0.3);
+      border-radius: 24px;
+      padding: 40px 36px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,44,44,0.08);
+      text-align: center;
+    }
+    .ban-icon { font-size: 64px; margin-bottom: 16px; line-height: 1; }
+    .ban-title { font-size: 26px; font-weight: 900; color: #fff; margin-bottom: 8px; }
+    .ban-sub { font-size: 14px; color: rgba(255,255,255,0.4); margin-bottom: 28px; line-height: 1.6; }
+
+    .ban-detail-box {
+      background: rgba(255,44,44,0.06);
+      border: 1px solid rgba(255,44,44,0.2);
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+    .ban-detail-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .ban-detail-row:last-child { border-bottom: none; }
+    .ban-detail-label { font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.6px; flex-shrink: 0; }
+    .ban-detail-val { font-size: 13px; color: #fff; font-weight: 600; text-align: right; word-break: break-word; }
+    .ban-detail-val.red { color: #ff6b6b; }
+    .ban-detail-val.yellow { color: #ffd700; }
+
+    .ban-countdown {
+      font-size: 28px; font-weight: 900; color: #ff2c2c;
+      background: rgba(255,44,44,0.08);
+      border: 1px solid rgba(255,44,44,0.2);
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 24px;
+      letter-spacing: 1px;
+    }
+    .ban-countdown small { display: block; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.7px; margin-top: 4px; }
+
+    /* Appeal */
+    .ban-appeal-section { margin-top: 8px; text-align: left; }
+    .ban-appeal-title { font-size: 15px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .ban-appeal-desc { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 14px; line-height: 1.6; }
+    .ban-input {
+      width: 100%; padding: 10px 14px; border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.06); color: #fff;
+      font-size: 13px; outline: none; box-sizing: border-box;
+      margin-bottom: 10px; font-family: inherit;
+    }
+    .ban-input:focus { border-color: rgba(255,44,44,0.4); }
+    .ban-textarea { resize: vertical; min-height: 100px; }
+    .ban-btn {
+      width: 100%; padding: 13px; border-radius: 12px;
+      border: none; font-size: 14px; font-weight: 800;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .ban-btn-primary { background: #ff2c2c; color: #fff; }
+    .ban-btn-primary:hover { background: #e01f1f; }
+    .ban-btn-primary:disabled { background: rgba(255,44,44,0.3); cursor: not-allowed; }
+
+    /* Appeal status */
+    .ban-appeal-status {
+      padding: 16px 18px; border-radius: 12px; margin-bottom: 20px; text-align: left;
+    }
+    .ban-appeal-status.pending { background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.2); }
+    .ban-appeal-status.accepted { background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2); }
+    .ban-appeal-status.denied { background: rgba(255,44,44,0.08); border: 1px solid rgba(255,44,44,0.2); }
+    .ban-appeal-status-title { font-size: 14px; font-weight: 800; margin-bottom: 4px; }
+    .ban-appeal-status.pending .ban-appeal-status-title { color: #ffd700; }
+    .ban-appeal-status.accepted .ban-appeal-status-title { color: #34d399; }
+    .ban-appeal-status.denied .ban-appeal-status-title { color: #ff6b6b; }
+    .ban-appeal-status-msg { font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.5; }
+
+    .ban-perm { color: #ff2c2c; font-weight: 900; }
+    #banLoading { text-align: center; padding: 40px; color: rgba(255,255,255,0.3); }
+  </style>
+</head>
+<body>
+
+<div id="banLoading">
+  <div class="games-loading-spinner" style="margin:0 auto 12px;"></div>
+  <div>Checking access…</div>
+</div>
+
+<div class="ban-wrap" id="banContent" style="display:none;">
+  <div class="ban-icon">🔨</div>
+  <div class="ban-title">You've Been Banned</div>
+  <div class="ban-sub">Your access to CineRealm has been restricted.<br>Read the details below.</div>
+
+  <!-- Ban details -->
+  <div class="ban-detail-box">
+    <div class="ban-detail-row">
+      <div class="ban-detail-label">Reason</div>
+      <div class="ban-detail-val red" id="banReason">—</div>
+    </div>
+    <div class="ban-detail-row">
+      <div class="ban-detail-label">Banned On</div>
+      <div class="ban-detail-val" id="banDate">—</div>
+    </div>
+    <div class="ban-detail-row">
+      <div class="ban-detail-label">Expires</div>
+      <div class="ban-detail-val yellow" id="banExpires">—</div>
+    </div>
+    <div class="ban-detail-row">
+      <div class="ban-detail-label">Banned By</div>
+      <div class="ban-detail-val" id="banBy">CineRealm Staff</div>
+    </div>
+  </div>
+
+  <!-- Countdown (if not permanent) -->
+  <div class="ban-countdown" id="banCountdown" style="display:none;">
+    <span id="banCountdownText">—</span>
+    <small>Time Remaining</small>
+  </div>
+
+  <!-- Appeal status (shown if already appealed) -->
+  <div id="banAppealStatus" style="display:none;"></div>
+
+  <!-- Appeal form -->
+  <div class="ban-appeal-section" id="banAppealForm">
+    <div class="ban-appeal-title">✉️ Appeal This Ban</div>
+    <div class="ban-appeal-desc">If you believe this ban was a mistake, submit an appeal below. A staff member will review it and respond here.</div>
+    <input class="ban-input" id="appealName" placeholder="Your name" maxlength="40" autocomplete="off">
+    <textarea class="ban-input ban-textarea" id="appealText" placeholder="Explain why you believe this ban should be removed…" maxlength="1000"></textarea>
+    <button class="ban-btn ban-btn-primary" id="appealSubmitBtn" onclick="submitAppeal()">Submit Appeal</button>
+    <div id="appealMsg" style="font-size:12px;margin-top:10px;text-align:center;min-height:16px;"></div>
+  </div>
+</div>
+
+<!-- Not banned — redirect -->
+<div id="notBannedMsg" style="display:none;text-align:center;color:rgba(255,255,255,0.4);padding:40px;">
+  You are not banned. <a href="/" style="color:#ff6b6b;">Go home →</a>
+</div>
+
+<!-- FingerprintJS -->
+<script src="https://openfpcdn.io/fingerprintjs/v4"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
+  authDomain: "cinerealm-8b7b9.firebaseapp.com",
+  databaseURL: "https://cinerealm-8b7b9-default-rtdb.firebaseio.com",
+  projectId: "cinerealm-8b7b9",
+  storageBucket: "cinerealm-8b7b9.firebasestorage.app",
+  messagingSenderId: "1076768481536",
+  appId: "1:1076768481536:web:4fd3bdc3f222e4850ad3e5"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+async function getFingerprint() {
+  try {
+    const fp = await FingerprintJS.load();
+    const result = await fp.get();
+    return result.visitorId;
+  } catch(e) { return null; }
+}
+
+async function getIP() {
+  try {
+    const cached = sessionStorage.getItem("cr_ip_data");
+    if (cached) return JSON.parse(cached);
+    const res = await fetch("http://ip-api.com/json/?fields=status,query,country,city,proxy,hosting");
+    const data = await res.json();
+    if (data.status === "success") {
+      sessionStorage.setItem("cr_ip_data", JSON.stringify(data));
+      return data;
+    }
+  } catch(e) {}
+  return null;
+}
+
+function formatDuration(ms) {
+  if (ms <= 0) return "Expired";
+  const s = Math.floor(ms / 1000);
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (d > 0) return `${d}d ${h}h ${m}m ${sec}s`;
+  if (h > 0) return `${h}h ${m}m ${sec}s`;
+  if (m > 0) return `${m}m ${sec}s`;
+  return `${sec}s`;
+}
+
+async function checkBan() {
+  const fp = await getFingerprint();
+  const ipData = await getIP();
+  const ip = ipData?.query;
+
+  // Get current user uid if logged in
+  let uid = null;
+  try {
+    const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+    const { initializeApp: ia, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const auth = getAuth(app);
+    uid = auth.currentUser?.uid || null;
+  } catch(e) {}
+
+  // Check bans
+  const bansSnap = await get(ref(db, "bans"));
+  if (!bansSnap.exists()) {
+    document.getElementById("banLoading").style.display = "none";
+    document.getElementById("notBannedMsg").style.display = "block";
+    return;
+  }
+
+  let matchedBan = null;
+  let matchedKey = null;
+
+  bansSnap.forEach(child => {
+    const ban = child.val();
+    if (ban.active === false) return;
+
+    // Check if expired
+    if (ban.expiresAt && ban.expiresAt < Date.now()) return;
+
+    // Match by uid, ip, or fingerprint
+    if (
+      (uid && ban.uid === uid) ||
+      (ip && ban.ip === ip) ||
+      (fp && ban.fingerprint === fp)
+    ) {
+      matchedBan = ban;
+      matchedKey = child.key;
+    }
+  });
+
+  document.getElementById("banLoading").style.display = "none";
+
+  if (!matchedBan) {
+    document.getElementById("notBannedMsg").style.display = "block";
+    return;
+  }
+
+  // Show ban page
+  document.getElementById("banContent").style.display = "block";
+  document.getElementById("banReason").textContent = matchedBan.reason || "Violation of Terms of Service";
+  document.getElementById("banDate").textContent = matchedBan.bannedAt ? new Date(matchedBan.bannedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "—";
+  document.getElementById("banBy").textContent = matchedBan.bannedByName || "CineRealm Staff";
+
+  if (!matchedBan.expiresAt) {
+    document.getElementById("banExpires").textContent = "Permanent";
+    document.getElementById("banExpires").classList.add("red");
+  } else {
+    const remaining = matchedBan.expiresAt - Date.now();
+    const expiresDate = new Date(matchedBan.expiresAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    document.getElementById("banExpires").textContent = expiresDate;
+
+    if (remaining > 0) {
+      const countdownEl = document.getElementById("banCountdown");
+      countdownEl.style.display = "block";
+      const countdownText = document.getElementById("banCountdownText");
+      countdownText.textContent = formatDuration(remaining);
+      setInterval(() => {
+        const rem = matchedBan.expiresAt - Date.now();
+        if (rem <= 0) {
+          countdownText.textContent = "Expired — refresh the page";
+        } else {
+          countdownText.textContent = formatDuration(rem);
+        }
+      }, 1000);
+    }
+  }
+
+  // Check for existing appeal
+  const appealSnap = await get(ref(db, "ban_appeals/" + matchedKey));
+  if (appealSnap.exists()) {
+    const appeal = appealSnap.val();
+    const statusEl = document.getElementById("banAppealStatus");
+    statusEl.style.display = "block";
+    document.getElementById("banAppealForm").style.display = "none";
+
+    if (appeal.status === "pending") {
+      statusEl.innerHTML = `
+        <div class="ban-appeal-status pending">
+          <div class="ban-appeal-status-title">⏳ Appeal Under Review</div>
+          <div class="ban-appeal-status-msg">Your appeal was submitted on ${new Date(appeal.submittedAt).toLocaleDateString()}. A staff member will review it soon.</div>
+        </div>`;
+    } else if (appeal.status === "accepted") {
+      statusEl.innerHTML = `
+        <div class="ban-appeal-status accepted">
+          <div class="ban-appeal-status-title">✅ Appeal Accepted</div>
+          <div class="ban-appeal-status-msg">Your appeal has been accepted. Your ban has been lifted — <a href="/" style="color:#34d399;">click here to return to CineRealm</a>.</div>
+        </div>`;
+    } else if (appeal.status === "denied") {
+      statusEl.innerHTML = `
+        <div class="ban-appeal-status denied">
+          <div class="ban-appeal-status-title">❌ Appeal Denied</div>
+          <div class="ban-appeal-status-msg">Your appeal was denied${appeal.staffNote ? ": " + appeal.staffNote : ". This decision is final."}${appeal.canReappeal ? "<br><br>You may submit a new appeal." : ""}</div>
+        </div>`;
+      if (appeal.canReappeal) {
+        document.getElementById("banAppealForm").style.display = "block";
+      }
+    }
+  }
+
+  // Wire appeal submit
+  window._banKey = matchedKey;
+  window._banFp  = fp;
+  window._banIp  = ip;
+  window._banUid = uid;
+}
+
+window.submitAppeal = async () => {
+  const name = document.getElementById("appealName").value.trim();
+  const text = document.getElementById("appealText").value.trim();
+  const msgEl = document.getElementById("appealMsg");
+  const btn   = document.getElementById("appealSubmitBtn");
+
+  if (!name) { msgEl.textContent = "Please enter your name"; msgEl.style.color = "#ff6b6b"; return; }
+  if (!text || text.length < 20) { msgEl.textContent = "Please write at least 20 characters"; msgEl.style.color = "#ff6b6b"; return; }
+
+  btn.disabled = true;
+  btn.textContent = "Submitting…";
+
+  try {
+    await set(ref(db, "ban_appeals/" + window._banKey), {
+      name,
+      message: text,
+      status: "pending",
+      submittedAt: Date.now(),
+      fingerprint: window._banFp || null,
+      ip: window._banIp || null,
+      uid: window._banUid || null,
+      banKey: window._banKey,
+    });
+    msgEl.textContent = "✓ Appeal submitted — check back here for a response";
+    msgEl.style.color = "#34d399";
+    document.getElementById("banAppealForm").style.display = "none";
+    document.getElementById("banAppealStatus").style.display = "block";
+    document.getElementById("banAppealStatus").innerHTML = `
+      <div class="ban-appeal-status pending">
+        <div class="ban-appeal-status-title">⏳ Appeal Under Review</div>
+        <div class="ban-appeal-status-msg">Your appeal was submitted. A staff member will review it soon. Check back here for a response.</div>
+      </div>`;
+  } catch(e) {
+    msgEl.textContent = "Failed to submit: " + e.message;
+    msgEl.style.color = "#ff6b6b";
+    btn.disabled = false;
+    btn.textContent = "Submit Appeal";
+  }
+};
+
+checkBan();
+</script>
+</body>
+</html>
