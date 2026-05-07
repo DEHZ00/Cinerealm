@@ -5601,15 +5601,24 @@ function initHomePage() {
 let _hdVotes = {}; // cache: movieId -> vote count
 let _myHdVotes = JSON.parse(localStorage.getItem("cr_hd_votes") || "{}"); // movies I've voted on
 
-// Load HD votes from Firebase on startup
+// Load HD votes from Firebase on startup + merge localStorage overrides
 (async function loadHDVotes() {
   try {
     const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
     const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
     const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
     const db = getDatabase(app);
-    const snap = await get(ref(db, "hd_votes"));
-    if (snap.exists()) _hdVotes = snap.val();
+    const [votesSnap, overrideSnap] = await Promise.all([
+      get(ref(db, "hd_votes")),
+      get(ref(db, "hd_override"))
+    ]);
+    if (votesSnap.exists()) _hdVotes = votesSnap.val();
+    // Merge admin overrides — these are always confirmed HD
+    if (overrideSnap.exists()) {
+      Object.keys(overrideSnap.val()).forEach(id => {
+        _hdVotes[id] = Math.max(_hdVotes[id] || 0, 3);
+      });
+    }
   } catch(e) {}
 })();
 

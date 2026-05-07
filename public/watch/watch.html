@@ -15,6 +15,31 @@
   <meta property="og:title" content="CineRealm - Watch">
   <meta property="og:image" content="https://cinerealm.online/android-chrome-512x512.png">
   <style>
+    /* LG TV / low-power device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .movie-card { will-change: auto; }
+  body::before { animation: none; }
+  .source-tab { transition: none; }
+}
+/* Hide sources incompatible with watch party when party is active */
+body.wp-active .source-tab:not([data-key="vidfast"]):not([data-key="spenEmbed"]):not([data-key="vidplus"]) {
+  opacity: 0.35;
+  pointer-events: none;
+  position: relative;
+}
+body.wp-active .source-tab:not([data-key="vidfast"]):not([data-key="spenEmbed"]):not([data-key="vidplus"])::after {
+  content: "⚠";
+  font-size: 9px;
+  position: absolute;
+  top: 2px;
+  right: 2px;
+}
+body.wp-active .source-section-label::after {
+  content: " (Watch Party: sync sources highlighted)";
+  font-size: 9px;
+  color: rgba(255,200,0,0.6);
+  font-weight: 400;
+}
     .watch-page { width:100%; padding:0; }
     .watch-info-bar { padding:14px 28px 10px; display:flex; align-items:flex-start; gap:16px; }
     .watch-back-btn {
@@ -436,11 +461,22 @@ if (urlRoom) {
 
 // Panel toggle
 document.getElementById("watchPartyBtn").onclick = () => {
+  // Require account
+  if (typeof _crUser === "undefined" || !_crUser) {
+    showToast("Sign in to use Watch Party 👥", "error");
+    if (typeof openAuthModal === "function") openAuthModal("signin");
+    return;
+  }
   const panel = document.getElementById("watchPartyPanel");
   const overlay = document.getElementById("wpOverlay");
   panel.style.display = "flex";
   overlay.style.display = "block";
   if (wpNameInput.value === "" && wpName) wpNameInput.value = wpName;
+  // Pre-fill name from profile
+  if (typeof _crProfile !== "undefined" && _crProfile && !wpNameInput.value) {
+    wpNameInput.value = _crProfile.displayName || _crProfile.username || "";
+    wpName = wpNameInput.value;
+  }
 };
 
 function closePanel() {
@@ -522,6 +558,8 @@ document.getElementById("wpJoinBtn").onclick = async () => {
 function enterRoom(code) {
   document.getElementById("wpNoRoom").style.display = "none";
   document.getElementById("wpInRoom").style.display = "block";
+  
+  document.body.classList.add("wp-active");
   document.getElementById("wpRoomCode").textContent = code;
   document.getElementById("wpRoleBadge").textContent = wpIsHost ? "👑 Host" : "👤 Guest";
 
@@ -540,11 +578,18 @@ function enterRoom(code) {
   // Sync button — push current episode to all guests
   document.getElementById("wpSyncBtn").onclick = async () => {
     const ctx = window._watchContext || {};
-    await set(ref(db, "rooms/" + code + "/sync"), {
-      type: ctx.type, tmdbId: ctx.tmdbId,
-      season: ctx.season, episode: ctx.episode,
-      title: ctx.title, ts: Date.now()
-    });
+    const syncPayload = {
+      type: ctx.type || "movie",
+      tmdbId: ctx.tmdbId || 0,
+      title: ctx.title || "",
+      ts: Date.now()
+    };
+    // Only include season/episode for TV — null causes Firebase "undefined" crash
+    if (ctx.type === "tv" && ctx.season) {
+      syncPayload.season = ctx.season;
+      syncPayload.episode = ctx.episode || 1;
+    }
+    await set(ref(db, "rooms/" + code + "/sync"), syncPayload);
     showToast("Synced to all guests ⚡", "success");
   };
 
@@ -555,11 +600,13 @@ function enterRoom(code) {
       if (!snap.exists()) return;
       const s = snap.val();
       const ctx = window._watchContext || {};
-      if (s.tmdbId && (s.tmdbId !== ctx.tmdbId || s.season !== ctx.season || s.episode !== ctx.episode)) {
+      const sameContent = s.tmdbId === ctx.tmdbId &&
+        (s.type !== "tv" || (s.season === ctx.season && s.episode === ctx.episode));
+      if (s.tmdbId && !sameContent) {
         const dest = s.type === "tv"
           ? `/watch/tv/${s.tmdbId}/season/${s.season||1}/episode/${s.episode||1}`
           : `/watch/movie/${s.tmdbId}`;
-        showToast(`Host synced: navigating to "${s.title}"`, "info");
+        showToast(`Host synced: navigating to "${s.title || "content"}"`, "info");
         setTimeout(() => window.location.href = dest + "?party=" + code, 1000);
       }
     });
@@ -652,8 +699,10 @@ async function leaveRoom() {
   wpRoomId = null; wpIsHost = false;
   document.getElementById("wpNoRoom").style.display = "block";
   document.getElementById("wpInRoom").style.display = "none";
+  document.body.classList.remove("wp-active");
   document.getElementById("wpSyncBar").style.display = "none";
   document.getElementById("wpNowWatching").style.display = "none";
+  
   showToast("Left the watch party", "info");
 }
 </script>
