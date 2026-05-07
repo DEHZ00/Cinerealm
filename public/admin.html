@@ -9,42 +9,16 @@
   <style>
     body { background: #080404; }
     .adm-page { max-width: 1200px; margin: 0 auto; padding: 20px 20px 100px; }
-
-    /* Header */
-    .adm-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
-    }
+    .adm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
     .adm-title { font-size: 22px; font-weight: 900; color: #fff; }
     .adm-title span { color: #ff2c2c; }
-    .adm-role-pill {
-      padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 800;
-      background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); color: #ffd700;
-    }
-
-    /* Tabs */
-    .adm-tabs {
-      display: flex; gap: 4px; margin-bottom: 24px;
-      border-bottom: 1px solid rgba(255,255,255,0.07); flex-wrap: wrap;
-    }
-    .adm-tab {
-      padding: 10px 18px; background: none; border: none;
-      color: rgba(255,255,255,0.4); font-size: 13px; font-weight: 700;
-      cursor: pointer; border-bottom: 2px solid transparent;
-      transition: all 0.15s; margin-bottom: -1px;
-    }
+    .adm-role-pill { padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); color: #ffd700; }
+    .adm-tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.07); flex-wrap: wrap; }
+    .adm-tab { padding: 10px 18px; background: none; border: none; color: rgba(255,255,255,0.4); font-size: 13px; font-weight: 700; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; margin-bottom: -1px; }
     .adm-tab.active { color: #fff; border-bottom-color: #ff2c2c; }
     .adm-tab:hover:not(.active) { color: rgba(255,255,255,0.7); }
-
-    /* Stat cards */
-    .adm-stats-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 12px; margin-bottom: 24px;
-    }
-    .adm-stat-card {
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 14px; padding: 16px 18px;
-    }
+    .adm-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .adm-stat-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 16px 18px; }
     .adm-stat-card.red   { border-color: rgba(255,44,44,0.2);   background: rgba(255,44,44,0.05); }
     .adm-stat-card.gold  { border-color: rgba(255,215,0,0.2);   background: rgba(255,215,0,0.05); }
     .adm-stat-card.blue  { border-color: rgba(96,165,250,0.2);  background: rgba(96,165,250,0.05); }
@@ -52,30 +26,15 @@
     .adm-stat-icon { font-size: 22px; margin-bottom: 8px; }
     .adm-stat-val  { font-size: 28px; font-weight: 900; color: #fff; line-height: 1; }
     .adm-stat-label{ font-size: 11px; color: rgba(255,255,255,0.4); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
-
-    /* Section card */
-    .adm-section {
-      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 16px; padding: 20px; margin-bottom: 16px;
-    }
-    .adm-section-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
-    }
+    .adm-section { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+    .adm-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
     .adm-section-title { font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.7px; }
-
-    /* Table */
     .adm-table { width: 100%; border-collapse: collapse; }
     .adm-table th { font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.7px; padding: 8px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.07); }
     .adm-table td { padding: 10px; font-size: 13px; color: rgba(255,255,255,0.7); border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; }
     .adm-table tr:last-child td { border-bottom: none; }
     .adm-table tr:hover td { background: rgba(255,255,255,0.03); }
-
-    /* Buttons */
-    .adm-btn {
-      padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700;
-      cursor: pointer; border: none; transition: all 0.15s;
-    }
+    .adm-btn { padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; transition: all 0.15s; }
     .adm-btn-red    { background: rgba(255,44,44,0.15);  color: #ff6b6b;  border: 1px solid rgba(255,44,44,0.25); }
     .adm-btn-red:hover { background: rgba(255,44,44,0.3); }
     .adm-btn-green  { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid rgba(52,211,153,0.25); }
@@ -84,58 +43,44 @@
     .adm-btn-blue:hover { background: rgba(96,165,250,0.3); }
     .adm-btn-primary{ background: #ff2c2c; color: #fff; }
     .adm-btn-primary:hover { background: #e01f1f; }
-
-    /* Status badges */
+    .adm-btn-gold   { background: rgba(255,215,0,0.15); color: #ffd700; border: 1px solid rgba(255,215,0,0.25); }
     .adm-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 800; }
     .adm-badge-open     { background: rgba(255,44,44,0.15);  color: #ff6b6b; }
     .adm-badge-resolved { background: rgba(52,211,153,0.15); color: #34d399; }
     .adm-badge-pending  { background: rgba(255,215,0,0.15);  color: #ffd700; }
-
-    /* Notification composer */
+    .adm-badge-banned   { background: rgba(255,44,44,0.2);   color: #ff2c2c; border: 1px solid rgba(255,44,44,0.3); }
     .adm-notif-form { display: flex; flex-direction: column; gap: 10px; }
-    .adm-input {
-      padding: 10px 14px; border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.06); color: #fff;
-      font-size: 13px; outline: none; width: 100%; box-sizing: border-box;
-    }
+    .adm-input { padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.06); color: #fff; font-size: 13px; outline: none; width: 100%; box-sizing: border-box; }
     .adm-input:focus { border-color: rgba(255,44,44,0.4); }
     .adm-select { appearance: none; cursor: pointer; }
     .adm-select option { background: #0f0606; }
     .adm-textarea { resize: vertical; min-height: 80px; font-family: inherit; }
-
-    /* Maintenance panel */
-    .adm-maintenance-status {
-      display: flex; align-items: center; gap: 12px;
-      padding: 16px; border-radius: 12px; margin-bottom: 16px;
-      border: 1.5px solid;
-    }
+    .adm-maintenance-status { display: flex; align-items: center; gap: 12px; padding: 16px; border-radius: 12px; margin-bottom: 16px; border: 1.5px solid; }
     .adm-maintenance-status.active { background: rgba(255,44,44,0.08); border-color: rgba(255,44,44,0.3); }
     .adm-maintenance-status.inactive { background: rgba(52,211,153,0.05); border-color: rgba(52,211,153,0.2); }
-
-    /* User search */
     .adm-user-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
     .adm-user-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg,#ff2c2c,#800000); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900; color: #fff; overflow: hidden; flex-shrink: 0; }
-
-    /* Tab panels */
     .adm-panel { display: none; }
     .adm-panel.active { display: block; }
-
-    /* Empty state */
     .adm-empty { text-align: center; padding: 32px; color: rgba(255,255,255,0.25); font-size: 13px; }
-
-    /* Loading */
     .adm-loading { text-align: center; padding: 32px; color: rgba(255,255,255,0.3); font-size: 13px; }
-
-    /* Review card */
     .adm-review-stars { color: #ffd700; letter-spacing: 1px; }
-
-    /* Chart bar */
     .adm-chart-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
     .adm-chart-label { font-size: 12px; color: rgba(255,255,255,0.5); width: 80px; flex-shrink: 0; }
     .adm-chart-track { flex: 1; height: 8px; background: rgba(255,255,255,0.07); border-radius: 4px; overflow: hidden; }
     .adm-chart-fill  { height: 100%; border-radius: 4px; background: #ff2c2c; transition: width 0.6s ease; }
     .adm-chart-val   { font-size: 12px; color: rgba(255,255,255,0.4); width: 30px; text-align: right; }
+
+    /* Ban modal */
+    .adm-modal-overlay { position: fixed; inset: 0; z-index: 9900; background: rgba(0,0,0,0.82); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .adm-modal { background: linear-gradient(160deg,#160202,#0a0606); border: 1px solid rgba(255,44,44,0.2); border-radius: 20px; width: 100%; max-width: 460px; padding: 24px; box-shadow: 0 24px 60px rgba(0,0,0,0.7); }
+    .adm-modal-title { font-size: 17px; font-weight: 900; color: #fff; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+    .adm-modal-close { background: none; border: none; color: rgba(255,255,255,0.4); font-size: 20px; cursor: pointer; }
+
+    /* IP flag */
+    .ip-flag { font-size: 10px; padding: 1px 6px; border-radius: 4px; font-weight: 700; }
+    .ip-flag.proxy { background: rgba(255,215,0,0.15); color: #ffd700; }
+    .ip-flag.hosting { background: rgba(96,165,250,0.15); color: #60a5fa; }
 
     @media (max-width: 600px) {
       .adm-table { font-size: 12px; }
@@ -158,8 +103,6 @@
 
 <main>
 <div class="adm-page">
-
-  <!-- Auth check overlay -->
   <div id="admAuthBlock" style="text-align:center;padding:80px 20px;display:none;">
     <div style="font-size:48px;margin-bottom:16px;">🔒</div>
     <div style="font-size:20px;font-weight:900;color:#fff;margin-bottom:8px;">Access Denied</div>
@@ -167,41 +110,17 @@
     <a href="/" style="color:#ff6b6b;">Go home</a>
   </div>
 
-  <!-- Loading state -->
   <div id="admLoading" style="text-align:center;padding:80px;">
     <div class="games-loading-spinner" style="margin:0 auto 16px;"></div>
     <p style="color:rgba(255,255,255,0.3);">Checking permissions…</p>
   </div>
 
-  <!-- Dashboard -->
   <div id="admDashboard" style="display:none;">
-    <!-- Firebase rules warning banner -->
     <div id="admRulesWarning" style="display:none;margin-bottom:16px;padding:12px 16px;background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.3);border-radius:12px;">
-      <div style="font-size:13px;font-weight:700;color:rgba(255,200,100,0.9);margin-bottom:6px;">⚠️ Firebase Rules need updating — some data is permission denied</div>
-      <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:10px;">Go to <a href="https://console.firebase.google.com/project/cinerealm-8b7b9/database/cinerealm-8b7b9-default-rtdb/rules" target="_blank" style="color:#ffd700;">Firebase Console → Realtime Database → Rules</a> and paste these rules:</div>
-      <pre id="admRulesPre" style="background:rgba(0,0,0,0.4);padding:12px;border-radius:8px;font-size:11px;color:rgba(255,255,255,0.7);overflow-x:auto;white-space:pre-wrap;margin:0 0 10px;">{
-  "rules": {
-    "users": {
-      "$uid": {
-        ".read": true,
-        ".write": "$uid === auth.uid",
-        "roles": { ".write": false }
-      }
-    },
-    "usernames":          { ".read": true,            ".write": "auth != null" },
-    "reviews":            { ".read": true,            ".write": "auth != null" },
-    "supporters":         { ".read": true,            ".write": "auth != null" },
-    "hd_votes":           { ".read": true,            ".write": "auth != null" },
-    "hd_override":        { ".read": true,            ".write": false },
-    "broken_sources":     { ".read": "auth != null",  ".write": "auth != null" },
-    "broken_source_counts":{ ".read": "auth != null", ".write": "auth != null" },
-    "admin_alerts":       { ".read": "auth != null",  ".write": "auth != null" },
-    "release_announcements":{ ".read": "auth != null",".write": "auth != null" },
-    "rooms":              { ".read": "auth != null",  ".write": "auth != null" }
-  }
-}</pre>
-      <button class="adm-btn adm-btn-blue" onclick="navigator.clipboard.writeText(document.getElementById('admRulesPre').textContent).then(()=>showToast('Copied!','success'))">📋 Copy Rules</button>
+      <div style="font-size:13px;font-weight:700;color:rgba(255,200,100,0.9);margin-bottom:6px;">⚠️ Firebase Rules need updating</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:10px;">Go to <a href="https://console.firebase.google.com/project/cinerealm-8b7b9/database/cinerealm-8b7b9-default-rtdb/rules" target="_blank" style="color:#ffd700;">Firebase Console → Realtime Database → Rules</a> and add rules for <code>bans</code>, <code>ban_appeals</code>, and <code>ip_logs</code>.</div>
     </div>
+
     <div class="adm-header">
       <div>
         <div class="adm-title">👑 <span>CineRealm</span> Admin</div>
@@ -213,46 +132,39 @@
       </div>
     </div>
 
-    <!-- Tabs -->
     <div class="adm-tabs">
       <button class="adm-tab active" data-tab="overview">📊 Overview</button>
       <button class="adm-tab" data-tab="reports">⚠️ Reports</button>
       <button class="adm-tab" data-tab="reviews">⭐ Reviews</button>
       <button class="adm-tab" data-tab="users">👥 Users</button>
+      <button class="adm-tab" data-tab="security">🔒 Security</button>
       <button class="adm-tab" data-tab="notifications">🔔 Notifications</button>
       <button class="adm-tab" data-tab="maintenance">🔧 Maintenance</button>
     </div>
 
     <!-- ── OVERVIEW ── -->
     <div class="adm-panel active" id="tab-overview">
-      <div class="adm-stats-grid" id="admStatsGrid">
+      <div class="adm-stats-grid">
         <div class="adm-stat-card red"><div class="adm-stat-icon">👥</div><div class="adm-stat-val" id="stat-users">—</div><div class="adm-stat-label">Total Users</div></div>
         <div class="adm-stat-card gold"><div class="adm-stat-icon">⭐</div><div class="adm-stat-val" id="stat-reviews">—</div><div class="adm-stat-label">Reviews</div></div>
         <div class="adm-stat-card blue"><div class="adm-stat-icon">⚠️</div><div class="adm-stat-val" id="stat-reports">—</div><div class="adm-stat-label">Open Reports</div></div>
         <div class="adm-stat-card green"><div class="adm-stat-icon">♥</div><div class="adm-stat-val" id="stat-supporters">—</div><div class="adm-stat-label">Supporters</div></div>
         <div class="adm-stat-card"><div class="adm-stat-icon">🎬</div><div class="adm-stat-val" id="stat-hd">—</div><div class="adm-stat-label">HD Marked</div></div>
-        <div class="adm-stat-card"><div class="adm-stat-icon">👥</div><div class="adm-stat-val" id="stat-rooms">—</div><div class="adm-stat-label">Active Rooms</div></div>
+        <div class="adm-stat-card"><div class="adm-stat-icon">🔨</div><div class="adm-stat-val" id="stat-bans">—</div><div class="adm-stat-label">Active Bans</div></div>
       </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" id="admOverviewGrid">
-        <!-- Recent signups -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
         <div class="adm-section">
-          <div class="adm-section-header">
-            <div class="adm-section-title">Recent Signups</div>
-          </div>
+          <div class="adm-section-header"><div class="adm-section-title">Recent Signups</div></div>
           <div id="admRecentUsers"><div class="adm-loading">Loading…</div></div>
         </div>
-        <!-- Recent reports -->
         <div class="adm-section">
           <div class="adm-section-header">
             <div class="adm-section-title">Recent Reports</div>
-            <a class="adm-btn adm-btn-blue" onclick="switchTab('reports')">See all</a>
+            <button class="adm-btn adm-btn-blue" onclick="switchTab('reports')">See all</button>
           </div>
           <div id="admRecentReports"><div class="adm-loading">Loading…</div></div>
         </div>
       </div>
-
-      <!-- Activity chart -->
       <div class="adm-section">
         <div class="adm-section-header"><div class="adm-section-title">Achievement Distribution</div></div>
         <div id="admAchChart"><div class="adm-loading">Loading…</div></div>
@@ -264,16 +176,13 @@
       <div class="adm-section">
         <div class="adm-section-header">
           <div class="adm-section-title">Broken Source Reports</div>
-          <div style="display:flex;gap:8px;">
-            <button class="adm-btn adm-btn-red" onclick="clearAllReports()">🗑 Clear All Resolved</button>
-          </div>
+          <button class="adm-btn adm-btn-red" onclick="clearAllReports()">🗑 Clear Resolved</button>
         </div>
-        <div id="admReportsTable"><div class="adm-loading">Loading reports…</div></div>
+        <div id="admReportsTable"><div class="adm-loading">Loading…</div></div>
       </div>
-
-      <div class="adm-section" style="margin-top:16px;">
-        <div class="adm-section-header"><div class="adm-section-title">Admin Alerts (notif bell)</div></div>
-        <div id="admAlertsTable"><div class="adm-loading">Loading alerts…</div></div>
+      <div class="adm-section">
+        <div class="adm-section-header"><div class="adm-section-title">Admin Alerts</div></div>
+        <div id="admAlertsTable"><div class="adm-loading">Loading…</div></div>
       </div>
     </div>
 
@@ -282,9 +191,9 @@
       <div class="adm-section">
         <div class="adm-section-header">
           <div class="adm-section-title">Community Reviews</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.3);">Click ✕ to remove a review</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.3);">Click ✕ to remove</div>
         </div>
-        <div id="admReviewsTable"><div class="adm-loading">Loading reviews…</div></div>
+        <div id="admReviewsTable"><div class="adm-loading">Loading…</div></div>
       </div>
     </div>
 
@@ -292,16 +201,16 @@
     <div class="adm-panel" id="tab-users">
       <div class="adm-section">
         <div class="adm-section-header">
-          <div class="adm-section-title">User Management</div>
+          <div class="adm-section-title">All Users</div>
+          <button class="adm-btn adm-btn-blue" onclick="loadAllUsers()">↻ Refresh</button>
         </div>
-        <div style="display:flex;gap:8px;margin-bottom:16px;">
-          <input class="adm-input" id="admUserSearch" placeholder="Search by username…" style="max-width:280px;">
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+          <input class="adm-input" id="admUserSearch" placeholder="Search username, display name, or email…" style="flex:1;min-width:200px;">
           <button class="adm-btn adm-btn-blue" onclick="admSearchUsers()">Search</button>
+          <button class="adm-btn" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.1);" onclick="loadAllUsers()">Show All</button>
         </div>
-        <div id="admUsersTable"><div class="adm-empty">Search for a user above</div></div>
+        <div id="admUsersTable"><div class="adm-loading">Loading all users…</div></div>
       </div>
-
-      <!-- Role Manager -->
       <div class="adm-section">
         <div class="adm-section-header"><div class="adm-section-title">Manage Roles</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
@@ -319,35 +228,112 @@
       </div>
     </div>
 
+    <!-- ── SECURITY ── -->
+    <div class="adm-panel" id="tab-security">
+
+      <!-- Ban a user / IP -->
+      <div class="adm-section" style="border-color:rgba(255,44,44,0.2);background:rgba(255,44,44,0.03);">
+        <div class="adm-section-header">
+          <div class="adm-section-title" style="color:#ff6b6b;">🔨 Issue a Ban</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;" id="banFormGrid">
+          <div>
+            <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Username (optional)</div>
+            <input class="adm-input" id="banUsername" placeholder="e.g. dehz_00" autocomplete="off">
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">IP Address (optional)</div>
+            <input class="adm-input" id="banIp" placeholder="e.g. 123.45.67.89" autocomplete="off">
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Fingerprint (optional)</div>
+            <input class="adm-input" id="banFingerprint" placeholder="Auto-filled from user lookup" autocomplete="off">
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Duration</div>
+            <div style="display:flex;gap:6px;">
+              <input class="adm-input" id="banDuration" placeholder="e.g. 7" type="number" min="0" style="width:80px;flex-shrink:0;">
+              <select class="adm-input adm-select" id="banDurationUnit" style="flex:1;">
+                <option value="hours">Hours</option>
+                <option value="days" selected>Days</option>
+                <option value="permanent">Permanent</option>
+              </select>
+            </div>
+          </div>
+          <div style="grid-column:1/-1;">
+            <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Reason</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+              <button class="adm-btn adm-btn-red" style="font-size:11px;" onclick="document.getElementById('banReason').value=this.textContent">Spam</button>
+              <button class="adm-btn adm-btn-red" style="font-size:11px;" onclick="document.getElementById('banReason').value=this.textContent">Harassment</button>
+              <button class="adm-btn adm-btn-red" style="font-size:11px;" onclick="document.getElementById('banReason').value=this.textContent">Abuse</button>
+              <button class="adm-btn adm-btn-red" style="font-size:11px;" onclick="document.getElementById('banReason').value=this.textContent">Cheating/Exploitation</button>
+              <button class="adm-btn adm-btn-red" style="font-size:11px;" onclick="document.getElementById('banReason').value=this.textContent">Inappropriate Content</button>
+            </div>
+            <input class="adm-input" id="banReason" placeholder="Or type a custom reason…">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="adm-btn adm-btn-primary" onclick="issueBan()">🔨 Issue Ban</button>
+          <button class="adm-btn adm-btn-blue" onclick="lookupUserForBan()">🔍 Lookup User Info</button>
+          <div id="banMsg" style="font-size:12px;min-height:18px;margin-left:8px;"></div>
+        </div>
+      </div>
+
+      <!-- Active bans -->
+      <div class="adm-section">
+        <div class="adm-section-header">
+          <div class="adm-section-title">Active Bans</div>
+          <button class="adm-btn adm-btn-blue" onclick="loadBans()">↻ Refresh</button>
+        </div>
+        <div id="admBansTable"><div class="adm-loading">Loading…</div></div>
+      </div>
+
+      <!-- Appeal tickets -->
+      <div class="adm-section">
+        <div class="adm-section-header">
+          <div class="adm-section-title">📬 Appeal Tickets</div>
+          <span style="font-size:11px;color:rgba(255,255,255,0.3);">Submitted by banned users</span>
+        </div>
+        <div id="admAppealsTable"><div class="adm-loading">Loading…</div></div>
+      </div>
+
+      <!-- IP Logs -->
+      <div class="adm-section">
+        <div class="adm-section-header">
+          <div class="adm-section-title">🌐 IP Access Logs</div>
+          <div style="display:flex;gap:8px;">
+            <button class="adm-btn adm-btn-blue" onclick="loadIPLogs()">↻ Refresh</button>
+            <button class="adm-btn adm-btn-red" onclick="clearOldIPLogs()">🗑 Clear 30d+ Old</button>
+          </div>
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:12px;">Unique IPs — logged once per device. Shows country, city, proxy/VPN flags.</div>
+        <div id="admIPLogs"><div class="adm-loading">Loading…</div></div>
+      </div>
+    </div>
+
     <!-- ── NOTIFICATIONS ── -->
     <div class="adm-panel" id="tab-notifications">
-
-      <!-- 1. Bell Notification -->
       <div class="adm-section">
         <div class="adm-section-header">
           <div class="adm-section-title">🔔 Send Bell Notification</div>
-          <span style="font-size:11px;color:rgba(255,255,255,0.3);">Shows in the 🔔 bell icon for all users</span>
+          <span style="font-size:11px;color:rgba(255,255,255,0.3);">Shows in the 🔔 bell for all users</span>
         </div>
-        <p style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:14px;">Use this to send a short message that appears in the notification bell. Good for quick announcements, maintenance notices, or updates.</p>
         <div class="adm-notif-form">
-          <input class="adm-input" id="admAlertTitle" placeholder="Title — e.g. Maintenance Tonight">
-          <textarea class="adm-input adm-textarea" id="admAlertMsg" placeholder="Message — e.g. CineRealm will be down for updates tonight at 11pm." style="min-height:60px;"></textarea>
+          <input class="adm-input" id="admAlertTitle" placeholder="Title">
+          <textarea class="adm-input adm-textarea" id="admAlertMsg" placeholder="Message" style="min-height:60px;"></textarea>
           <select class="adm-input adm-select" id="admAlertType" style="max-width:220px;">
-            <option value="info">ℹ️ Info — general announcement</option>
-            <option value="warning">⚠️ Warning — maintenance/issues</option>
-            <option value="success">✅ Resolved — something is fixed/live</option>
+            <option value="info">ℹ️ Info</option>
+            <option value="warning">⚠️ Warning</option>
+            <option value="success">✅ Resolved</option>
           </select>
           <button class="adm-btn adm-btn-primary" style="width:fit-content;" onclick="admSendAlert()">🔔 Send Bell Notification</button>
         </div>
       </div>
 
-      <!-- 2. Fullscreen Popup -->
       <div class="adm-section" style="border-color:rgba(255,44,44,0.2);background:rgba(255,44,44,0.03);">
         <div class="adm-section-header">
           <div class="adm-section-title" style="color:#ff6b6b;">🪟 Fullscreen "What's New" Popup</div>
-          <span style="font-size:11px;color:rgba(255,255,255,0.3);">The big popup that fills the screen on page load</span>
         </div>
-        <p style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:16px;">This triggers the big scrollable popup all users see when they first open the site. Fill in the version, headline, and changelog then hit Send. Each user sees it once until they dismiss it.</p>
         <div class="adm-notif-form">
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <div style="flex:0 0 120px;">
@@ -360,23 +346,13 @@
             </div>
           </div>
           <div>
-            <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;">Changelog items — one per line — format: emoji Title — description</div>
-            <textarea class="adm-input adm-textarea" id="popupChangelog" style="min-height:130px;font-size:12px;line-height:1.7;">🔐 Profiles & Login — sign in with Google or email, data syncs across devices
+            <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;">Changelog — one per line — format: emoji Title — description</div>
+            <textarea class="adm-input adm-textarea" id="popupChangelog" style="min-height:130px;font-size:12px;line-height:1.7;">🔐 Profiles & Login — sign in with Google or email
 👑 Role Badges — Owner, Developer, Verified, Moderator
-🔍 Search V2 — fullscreen overlay, voice search, filters
-⭐ Reviews & Ratings — rate and review any title
-📋 Watchlist Lists — custom folders, status tracking
-👥 Watch Party Sync — host pushes episodes to guests
-👻 Tab Cloak — disguise CineRealm as other sites
-⚡ Anime Page — powered by AniList
-🏆 Achievements — 11 badges to unlock
-📱 Mobile Upgrades — pull to refresh, swipe cards
-🔔 Notification Center — alerts in header bell
-🎨 OLED Mode — pure black theme
-♥ Donations — support the site
-🛠 Admin Dashboard — manage everything at /admin</textarea>
+👥 Watch Party Sync — real-time playback sync
+🔒 Security — ban system with appeals</textarea>
           </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="adm-btn adm-btn-primary" onclick="admTriggerPopup()">🪟 Send Popup to Everyone</button>
             <button class="adm-btn adm-btn-red" onclick="admClearPopupSeen()">🔄 Force Re-show for ALL Users</button>
           </div>
@@ -388,7 +364,6 @@
         </div>
       </div>
 
-      <!-- 3. Sent alerts history -->
       <div class="adm-section">
         <div class="adm-section-header">
           <div class="adm-section-title">📋 Bell Notifications History</div>
@@ -397,100 +372,45 @@
         <div id="admAllAlerts"><div class="adm-loading">Loading…</div></div>
       </div>
 
-      <!-- 4. Site banner -->
       <div class="adm-section">
         <div class="adm-section-header">
           <div class="adm-section-title">📢 Top-of-Page Banner</div>
-          <span style="font-size:11px;color:rgba(255,255,255,0.3);">Thin banner shown at the top of every page</span>
         </div>
         <div id="admNotifStatus"><div class="adm-loading">Checking…</div></div>
         <div style="margin-top:14px;padding:12px;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.07);">
           <div style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:8px;">How to control the banner</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.45);line-height:1.7;">
-            Edit <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:4px;">notification.json</code> in your repo root and push:
-            <pre style="background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;margin:8px 0;font-size:11px;overflow-x:auto;color:rgba(255,255,255,0.7);">{
-  "active": true,
-  "type": "info",
-  "title": "CineRealm v2 is Live!",
-  "message": "Profiles, reviews, achievements and more.",
-  "updated": "2026"
-}</pre>
-            Set <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:4px;">"active": false</code> to hide it.
-          </div>
-        </div>
-      </div>
-
-      <!-- 5. Push notifications -->
-      <div class="adm-section">
-        <div class="adm-section-header"><div class="adm-section-title">📲 Push Notifications (FCM)</div></div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.7;">
-          <ol style="margin:0 0 10px;padding-left:20px;">
-            <li>Go to <a href="https://console.firebase.google.com" target="_blank" style="color:#ff6b6b;">Firebase Console</a> → your project</li>
-            <li>Click <strong style="color:#fff;">Messaging</strong> → <strong style="color:#fff;">New Campaign</strong></li>
-            <li>Choose <strong style="color:#fff;">Firebase Notification messages</strong></li>
-            <li>Set title, body, optional click URL → Send</li>
-          </ol>
-          <p style="margin:0;color:rgba(255,255,255,0.3);">Users who clicked Allow on the notification prompt receive push notifs. iOS requires adding site to home screen first.</p>
+          <pre style="background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;margin:8px 0;font-size:11px;overflow-x:auto;color:rgba(255,255,255,0.7);">{ "active": true, "type": "info", "title": "CineRealm v2!", "message": "…", "updated": "2026" }</pre>
         </div>
       </div>
     </div>
 
-        <!-- ── MAINTENANCE ── -->
+    <!-- ── MAINTENANCE ── -->
     <div class="adm-panel" id="tab-maintenance">
       <div class="adm-section">
         <div class="adm-section-header"><div class="adm-section-title">Maintenance Mode</div></div>
-
-        <div class="adm-maintenance-status" id="admMaintStatus">
-          <div style="font-size:28px;" id="admMaintIcon">✅</div>
+        <div class="adm-maintenance-status inactive" id="admMaintStatus">
+          <div style="font-size:28px;">✅</div>
           <div>
-            <div style="font-size:15px;font-weight:800;color:#fff;" id="admMaintText">Site is Live</div>
-            <div style="font-size:12px;color:rgba(255,255,255,0.4);" id="admMaintSub">All systems operational</div>
+            <div style="font-size:15px;font-weight:800;color:#fff;">Check Vercel Dashboard for maintenance status</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.4);">MAINTENANCE_MODE env var in Vercel settings</div>
           </div>
         </div>
-
-        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:16px;margin-bottom:16px;">
-          <div style="font-size:12px;font-weight:800;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:10px;">How to Enable Maintenance Mode</div>
-          <div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.7;">
-            <p style="margin:0 0 8px;">1. Go to your <a href="https://vercel.com/dashboard" target="_blank" style="color:#ff6b6b;">Vercel Dashboard</a></p>
-            <p style="margin:0 0 8px;">2. Select your CineRealm project → <strong style="color:#fff;">Settings</strong> → <strong style="color:#fff;">Environment Variables</strong></p>
-            <p style="margin:0 0 8px;">3. Add: <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;">MAINTENANCE_MODE = true</code></p>
-            <p style="margin:0 0 8px;">4. Redeploy — users will see maintenance page</p>
-            <p style="margin:0;">5. Set back to <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;">false</code> and redeploy to go live again</p>
-          </div>
-        </div>
-
-        <!-- Maintenance update log composer -->
         <div style="margin-top:20px;">
-          <div style="font-size:12px;font-weight:800;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:12px;">Post Maintenance Update to Alert Bell</div>
+          <div style="font-size:12px;font-weight:800;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:12px;">Post Maintenance Update</div>
           <div class="adm-notif-form">
-            <input class="adm-input" id="admMaintTitle" placeholder="e.g. Maintenance Complete ✅" value="✅ Maintenance Complete">
-            <textarea class="adm-input adm-textarea" id="admMaintMsg" placeholder="What was updated/fixed…" style="min-height:60px;">CineRealm is back online. All systems operational.</textarea>
+            <input class="adm-input" id="admMaintTitle" value="✅ Maintenance Complete">
+            <textarea class="adm-input adm-textarea" id="admMaintMsg" style="min-height:60px;">CineRealm is back online.</textarea>
             <select class="adm-input adm-select" id="admMaintType">
-              <option value="success">✅ Resolved / Complete</option>
-              <option value="warning">⚠️ Ongoing / In Progress</option>
+              <option value="success">✅ Resolved</option>
+              <option value="warning">⚠️ Ongoing</option>
               <option value="info">ℹ️ Scheduled</option>
             </select>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div style="display:flex;gap:8px;">
               <button class="adm-btn adm-btn-green" onclick="admPostMaintUpdate()">Post Update</button>
-              <button class="adm-btn adm-btn-red" onclick="admClearMaintAlerts()">Clear All Maintenance Alerts</button>
+              <button class="adm-btn adm-btn-red" onclick="admClearMaintAlerts()">Clear Maintenance Alerts</button>
             </div>
           </div>
           <div id="admMaintMsg2" style="font-size:12px;margin-top:8px;min-height:18px;"></div>
-        </div>
-      </div>
-
-      <!-- Version changelog -->
-      <div class="adm-section">
-        <div class="adm-section-header"><div class="adm-section-title">Site Version</div></div>
-        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-          <div>
-            <div style="font-size:28px;font-weight:900;color:#fff;">v2.0</div>
-            <div style="font-size:12px;color:rgba(255,255,255,0.35);">Current version</div>
-          </div>
-          <div style="flex:1;min-width:200px;">
-            <p style="font-size:12px;color:rgba(255,255,255,0.4);margin:0 0 8px;">To show the changelog popup to all users again, bump the version number in script.js:</p>
-            <code style="background:rgba(255,255,255,0.06);padding:8px 12px;border-radius:8px;font-size:12px;display:block;color:rgba(255,255,255,0.7);">const CR_VERSION = "2.1"; // change this</code>
-          </div>
         </div>
       </div>
     </div>
@@ -502,11 +422,8 @@
 <script src="/cloak-config.js"></script>
 <script src="/script.js"></script>
 <script>
-// ── Admin Dashboard Logic ─────────────────────────────────────────────────
-
 let _db, _admUser, _admRoles;
 
-// Tab switching
 document.querySelectorAll(".adm-tab").forEach(tab => {
   tab.onclick = () => switchTab(tab.dataset.tab);
 });
@@ -514,15 +431,15 @@ document.querySelectorAll(".adm-tab").forEach(tab => {
 function switchTab(name) {
   document.querySelectorAll(".adm-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
   document.querySelectorAll(".adm-panel").forEach(p => p.classList.toggle("active", p.id === "tab-" + name));
-  // Load tab data
   if (name === "overview")      loadOverview();
   if (name === "reports")       loadReports();
   if (name === "reviews")       loadReviews();
+  if (name === "users")         loadAllUsers();
+  if (name === "security")      { loadBans(); loadAppeals(); loadIPLogs(); }
   if (name === "notifications") { loadNotifStatus(); loadAllAlerts(); loadActivePopups(); }
-  if (name === "maintenance")   checkMaintStatus();
+  if (name === "maintenance")   {}
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────
 window.addEventListener("load", async () => {
   try {
     const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
@@ -548,7 +465,6 @@ window.addEventListener("load", async () => {
       document.getElementById("admLoading").style.display = "none";
       if (!user) { document.getElementById("admAuthBlock").style.display = "block"; return; }
 
-      // Check roles
       const rolesSnap = await get(ref(_db, "users/" + user.uid + "/roles"));
       const roleOld   = await get(ref(_db, "users/" + user.uid + "/role"));
       let roles = [];
@@ -567,9 +483,10 @@ window.addEventListener("load", async () => {
       document.getElementById("admRolePill").textContent = topRole === "owner" ? "👑 Owner" : "🛠 Developer";
 
       loadOverview();
+      loadAllUsers();
     });
   } catch(e) {
-    document.getElementById("admLoading").innerHTML = `<p style="color:#ff6b6b;">Failed to load: ${e.message}</p>`;
+    document.getElementById("admLoading").innerHTML = `<p style="color:#ff6b6b;">Failed: ${e.message}</p>`;
   }
 });
 
@@ -577,65 +494,47 @@ window.addEventListener("load", async () => {
 async function loadOverview() {
   const { ref, get } = { ref: window._admRef, get: window._admGet };
   const db = _db;
+  const safeGet = async path => { try { return await get(ref(db, path)); } catch(e) { return null; } };
 
-  // Fetch each stat individually so one permission error doesn't kill everything
-  const safeGet = async (path) => { try { return await get(ref(db, path)); } catch(e) { return null; } };
-
-  const [usersSnap, reviewsSnap, reportsSnap, suppSnap, hdSnap, roomsSnap] = await Promise.all([
-    safeGet("usernames"),
-    safeGet("reviews"),
-    safeGet("broken_sources"),
-    safeGet("supporters"),
-    safeGet("hd_votes"),
-    safeGet("rooms"),
+  const [usersSnap, reviewsSnap, reportsSnap, suppSnap, hdSnap, bansSnap] = await Promise.all([
+    safeGet("usernames"), safeGet("reviews"), safeGet("broken_sources"),
+    safeGet("supporters"), safeGet("hd_votes"), safeGet("bans"),
   ]);
-
-  // Show rules warning if any reads failed
-  const anyFailed = [usersSnap, reviewsSnap, reportsSnap, suppSnap, hdSnap, roomsSnap].some(s => s === null);
-  document.getElementById("admRulesWarning").style.display = anyFailed ? "block" : "none";
 
   document.getElementById("stat-users").textContent      = usersSnap?.exists()   ? Object.keys(usersSnap.val()).length   : "—";
   document.getElementById("stat-reviews").textContent    = reviewsSnap?.exists() ? Object.keys(reviewsSnap.val()).length : "—";
   document.getElementById("stat-supporters").textContent = suppSnap?.exists()    ? Object.keys(suppSnap.val()).length    : "—";
   document.getElementById("stat-hd").textContent         = hdSnap?.exists()      ? Object.keys(hdSnap.val()).length      : "—";
-  document.getElementById("stat-rooms").textContent      = roomsSnap?.exists()   ? Object.keys(roomsSnap.val()).length   : "—";
 
   let openCount = 0;
-  if (reportsSnap?.exists()) {
-    Object.values(reportsSnap.val()).forEach(r => { if (r.status !== "resolved") openCount++; });
-  }
+  if (reportsSnap?.exists()) Object.values(reportsSnap.val()).forEach(r => { if (r.status !== "resolved") openCount++; });
   document.getElementById("stat-reports").textContent = openCount;
 
-  // Recent users
+  let activeBans = 0;
+  if (bansSnap?.exists()) Object.values(bansSnap.val()).forEach(b => { if (b.active !== false && (!b.expiresAt || b.expiresAt > Date.now())) activeBans++; });
+  document.getElementById("stat-bans").textContent = activeBans;
+
   const recentUsersEl = document.getElementById("admRecentUsers");
   if (usersSnap?.exists()) {
     const usernames = Object.entries(usersSnap.val()).slice(-5).reverse();
     recentUsersEl.innerHTML = usernames.map(([u, uid]) => `
       <div class="adm-user-row">
         <div class="adm-user-avatar">${u[0].toUpperCase()}</div>
-        <div>
-          <div style="font-size:13px;font-weight:700;color:#fff;">@${u}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.3);">${uid.slice(0,12)}…</div>
-        </div>
+        <div><div style="font-size:13px;font-weight:700;color:#fff;">@${u}</div></div>
         <a href="/user/${u}" target="_blank" class="adm-btn adm-btn-blue" style="margin-left:auto;">View</a>
       </div>`).join("");
-  } else {
-    recentUsersEl.innerHTML = `<div class="adm-empty">No users yet${!usersSnap ? " · <span style='color:#ff6b6b;font-size:11px;'>Check Firebase rules</span>" : ""}</div>`;
-  }
+  } else { recentUsersEl.innerHTML = `<div class="adm-empty">No users yet</div>`; }
 
-  // Recent reports
   const recentReportsEl = document.getElementById("admRecentReports");
   if (reportsSnap?.exists()) {
     const reports = Object.entries(reportsSnap.val()).slice(-4).reverse();
     recentReportsEl.innerHTML = reports.map(([key, r]) => `
       <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-        <div style="font-size:12px;font-weight:700;color:#fff;">${r.title || "Unknown"}</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.35);">${r.source || ""} · ${r.ts ? new Date(r.ts).toLocaleDateString() : ""}</div>
-        <span class="adm-badge ${r.status === 'resolved' ? 'adm-badge-resolved' : 'adm-badge-open'}">${r.status || "open"}</span>
+        <div style="font-size:12px;font-weight:700;color:#fff;">${r.title||"Unknown"}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);">${r.source||""}</div>
+        <span class="adm-badge ${r.status==="resolved"?"adm-badge-resolved":"adm-badge-open"}">${r.status||"open"}</span>
       </div>`).join("");
-  } else {
-    recentReportsEl.innerHTML = `<div class="adm-empty">${!reportsSnap ? "<span style='color:#ff6b6b;font-size:11px;'>Permission denied — update Firebase rules</span>" : "No reports 🎉"}</div>`;
-  }
+  } else { recentReportsEl.innerHTML = `<div class="adm-empty">No reports 🎉</div>`; }
 
   loadAchChart();
 }
@@ -645,43 +544,136 @@ async function loadAchChart() {
   const chartEl = document.getElementById("admAchChart");
   try {
     const snap = await get(ref(_db, "users"));
-    if (!snap.exists()) { chartEl.innerHTML = `<div class="adm-empty">No data yet</div>`; return; }
-
+    if (!snap.exists()) { chartEl.innerHTML = `<div class="adm-empty">No data</div>`; return; }
     const achCounts = {};
     const achNames  = { member:"CineRealm User", first_watch:"First Watch", ten_movies:"Movie Buff", fifty_movies:"Film Freak", binge_watcher:"Binge Watcher", ten_watchlist:"Collector", reviewer:"Critic", watchparty:"Party Host", top_reviewer:"Top Reviewer", active:"Active" };
     let total = 0;
-
     Object.values(snap.val()).forEach(u => {
-      if (!u.achievements) return;
-      total++;
-      Object.keys(u.achievements).forEach(a => { achCounts[a] = (achCounts[a] || 0) + 1; });
+      if (!u.achievements) return; total++;
+      Object.keys(u.achievements).forEach(a => { achCounts[a] = (achCounts[a]||0)+1; });
     });
-
     const sorted = Object.entries(achCounts).sort((a,b) => b[1]-a[1]);
     chartEl.innerHTML = sorted.map(([id, count]) => `
       <div class="adm-chart-bar">
-        <div class="adm-chart-label">${achNames[id] || id}</div>
-        <div class="adm-chart-track"><div class="adm-chart-fill" style="width:${total ? (count/total*100).toFixed(0) : 0}%"></div></div>
+        <div class="adm-chart-label">${achNames[id]||id}</div>
+        <div class="adm-chart-track"><div class="adm-chart-fill" style="width:${total?(count/total*100).toFixed(0):0}%"></div></div>
         <div class="adm-chart-val">${count}</div>
-      </div>`).join("") || `<div class="adm-empty">No achievement data yet</div>`;
-  } catch(e) {
-    chartEl.innerHTML = `<div class="adm-empty" style="color:#ff6b6b;">Permission denied — update Firebase rules to allow admin reads</div>`;
-  }
+      </div>`).join("") || `<div class="adm-empty">No data</div>`;
+  } catch(e) { chartEl.innerHTML = `<div class="adm-empty" style="color:#ff6b6b;">Permission denied</div>`; }
+}
+
+// ── All Users ─────────────────────────────────────────────────────────────
+async function loadAllUsers() {
+  const el = document.getElementById("admUsersTable");
+  el.innerHTML = `<div class="adm-loading">Loading all users…</div>`;
+  try {
+    const { ref, get } = { ref: window._admRef, get: window._admGet };
+    const snap = await get(ref(_db, "usernames"));
+    if (!snap.exists()) { el.innerHTML = `<div class="adm-empty">No users</div>`; return; }
+    const all = Object.entries(snap.val());
+    renderUsersTable(el, all);
+  } catch(e) { el.innerHTML = `<div class="adm-empty">Error: ${e.message}</div>`; }
+}
+
+async function admSearchUsers() {
+  const query = document.getElementById("admUserSearch").value.trim().toLowerCase();
+  const el = document.getElementById("admUsersTable");
+  if (!query) { loadAllUsers(); return; }
+  el.innerHTML = `<div class="adm-loading">Searching…</div>`;
+  try {
+    const { ref, get } = { ref: window._admRef, get: window._admGet };
+
+    // Search usernames
+    const snap = await get(ref(_db, "usernames"));
+    if (!snap.exists()) { el.innerHTML = `<div class="adm-empty">No users</div>`; return; }
+
+    // Fuzzy match on username
+    let matches = Object.entries(snap.val()).filter(([u]) => u.includes(query));
+
+    // Also search by display name — fetch profiles for all and filter
+    if (matches.length < 5) {
+      const allSnap = await get(ref(_db, "users"));
+      if (allSnap.exists()) {
+        Object.entries(allSnap.val()).forEach(([uid, userData]) => {
+          const p = userData.profile || {};
+          const dn = (p.displayName||"").toLowerCase();
+          const em = (p.email||"").toLowerCase();
+          // Check if already in matches
+          const alreadyIn = matches.some(([, u]) => u === uid);
+          if (!alreadyIn && (dn.includes(query) || em.includes(query))) {
+            // Find their username
+            const username = Object.entries(snap.val()).find(([,u]) => u === uid)?.[0];
+            if (username) matches.push([username, uid]);
+          }
+        });
+      }
+    }
+
+    if (!matches.length) { el.innerHTML = `<div class="adm-empty">No users found for "${query}"</div>`; return; }
+    renderUsersTable(el, matches.slice(0, 50));
+  } catch(e) { el.innerHTML = `<div class="adm-empty">Error: ${e.message}</div>`; }
+}
+
+async function renderUsersTable(el, usernameEntries) {
+  const { ref, get } = { ref: window._admRef, get: window._admGet };
+  const users = await Promise.all(usernameEntries.slice(0, 100).map(async ([username, uid]) => {
+    try {
+      const [pSnap, rSnap] = await Promise.all([
+        get(ref(_db, "users/" + uid + "/profile")),
+        get(ref(_db, "users/" + uid + "/roles")),
+      ]);
+      const profile = pSnap.exists() ? pSnap.val() : {};
+      const roles   = rSnap.exists() ? Object.keys(rSnap.val()).filter(r => rSnap.val()[r]) : [];
+      return { username, uid, profile, roles };
+    } catch(e) { return { username, uid, profile: {}, roles: [] }; }
+  }));
+
+  el.innerHTML = `
+    <div style="font-size:12px;color:rgba(255,255,255,0.3);margin-bottom:8px;">${users.length} user${users.length!==1?"s":""} shown</div>
+    <table class="adm-table">
+      <thead><tr><th>User</th><th>Display Name</th><th>UID</th><th>Roles</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${users.map(u => `
+          <tr>
+            <td style="font-weight:700;color:#fff;">@${u.username}</td>
+            <td style="color:rgba(255,255,255,0.6);">${u.profile.displayName||"—"}</td>
+            <td style="font-size:10px;color:rgba(255,255,255,0.3);">${u.uid.slice(0,14)}…</td>
+            <td style="font-size:12px;">${u.roles.join(", ")||"none"}</td>
+            <td style="display:flex;gap:4px;flex-wrap:wrap;">
+              <a href="/user/${u.username}" target="_blank" class="adm-btn adm-btn-blue" style="font-size:11px;">Profile</a>
+              <button class="adm-btn adm-btn-red" style="font-size:11px;" onclick="prefillBanFromUser('${u.username}','${u.uid}')">🔨 Ban</button>
+            </td>
+          </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+document.getElementById("admUserSearch").addEventListener("keydown", e => { if (e.key === "Enter") admSearchUsers(); });
+
+async function prefillBanFromUser(username, uid) {
+  switchTab("security");
+  document.getElementById("banUsername").value = username;
+  // Try to get their IP from logs
+  try {
+    const { ref, get } = { ref: window._admRef, get: window._admGet };
+    const logsSnap = await get(ref(_db, "ip_logs"));
+    if (logsSnap.exists()) {
+      const match = Object.values(logsSnap.val()).find(l => l.uid === uid);
+      if (match) document.getElementById("banIp").value = match.ip || "";
+    }
+  } catch(e) {}
+  document.getElementById("banMsg").textContent = `Pre-filled from @${username} — add reason and duration`;
+  document.getElementById("banMsg").style.color = "#60a5fa";
 }
 
 // ── Reports ───────────────────────────────────────────────────────────────
 async function loadReports() {
-  const { ref, get, set } = { ref: window._admRef, get: window._admGet, set: window._admSet };
-  const db = _db;
-
   const reportsEl = document.getElementById("admReportsTable");
   const alertsEl  = document.getElementById("admAlertsTable");
-  reportsEl.innerHTML = `<div class="adm-loading">Loading…</div>`;
-  alertsEl.innerHTML  = `<div class="adm-loading">Loading…</div>`;
-
+  reportsEl.innerHTML = alertsEl.innerHTML = `<div class="adm-loading">Loading…</div>`;
   try {
-    const { set, remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-
+    const { ref, get, set, remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const db = _db;
     const [repSnap, alertSnap] = await Promise.all([
       get(ref(db, "broken_sources")),
       get(ref(db, "admin_alerts")),
@@ -691,22 +683,18 @@ async function loadReports() {
       const rows = Object.entries(repSnap.val()).reverse().slice(0, 50);
       reportsEl.innerHTML = `
         <table class="adm-table">
-          <thead><tr>
-            <th>Title</th><th>Source</th><th>Reported</th><th>Status</th><th>Action</th>
-          </tr></thead>
-          <tbody>
-            ${rows.map(([key, r]) => `
-              <tr id="rep-${key}">
-                <td style="font-weight:700;color:#fff;">${r.title || "Unknown"}</td>
-                <td style="color:rgba(255,255,255,0.5);">${r.source || "—"}</td>
-                <td style="color:rgba(255,255,255,0.35);font-size:11px;">${r.ts ? new Date(r.ts).toLocaleDateString() : "—"}</td>
-                <td><span class="adm-badge ${r.status==='resolved'?'adm-badge-resolved':'adm-badge-open'}">${r.status||"open"}</span></td>
-                <td style="display:flex;gap:6px;">
-                  <button class="adm-btn adm-btn-green" onclick="resolveReport('${key}')">✓ Resolve</button>
-                  <button class="adm-btn adm-btn-red"   onclick="deleteReport('${key}')">✕</button>
-                </td>
-              </tr>`).join("")}
-          </tbody>
+          <thead><tr><th>Title</th><th>Source</th><th>Reported</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>${rows.map(([key, r]) => `
+            <tr id="rep-${key}">
+              <td style="font-weight:700;color:#fff;">${r.title||"Unknown"}</td>
+              <td>${r.source||"—"}</td>
+              <td style="font-size:11px;color:rgba(255,255,255,0.35);">${r.ts?new Date(r.ts).toLocaleDateString():"—"}</td>
+              <td><span class="adm-badge ${r.status==="resolved"?"adm-badge-resolved":"adm-badge-open"}">${r.status||"open"}</span></td>
+              <td style="display:flex;gap:4px;">
+                <button class="adm-btn adm-btn-green" onclick="resolveReport('${key}')">✓</button>
+                <button class="adm-btn adm-btn-red" onclick="deleteReport('${key}')">✕</button>
+              </td>
+            </tr>`).join("")}</tbody>
         </table>`;
     } else { reportsEl.innerHTML = `<div class="adm-empty">No reports 🎉</div>`; }
 
@@ -715,37 +703,30 @@ async function loadReports() {
       alertsEl.innerHTML = `
         <table class="adm-table">
           <thead><tr><th>Message</th><th>Type</th><th>Time</th><th>Action</th></tr></thead>
-          <tbody>
-            ${alerts.map(([key, a]) => `
-              <tr>
-                <td style="color:#fff;">${a.message || a.title || "—"}</td>
-                <td><span class="adm-badge adm-badge-pending">${a.type || "info"}</span></td>
-                <td style="font-size:11px;color:rgba(255,255,255,0.3);">${a.timestamp ? new Date(a.timestamp).toLocaleString() : "—"}</td>
-                <td><button class="adm-btn adm-btn-red" onclick="deleteAlert('${key}')">✕ Delete</button></td>
-              </tr>`).join("")}
-          </tbody>
+          <tbody>${alerts.map(([key, a]) => `
+            <tr>
+              <td style="color:#fff;">${a.message||a.title||"—"}</td>
+              <td><span class="adm-badge adm-badge-pending">${a.type||"info"}</span></td>
+              <td style="font-size:11px;color:rgba(255,255,255,0.3);">${a.timestamp?new Date(a.timestamp).toLocaleString():"—"}</td>
+              <td><button class="adm-btn adm-btn-red" onclick="deleteAlert('${key}')">✕</button></td>
+            </tr>`).join("")}</tbody>
         </table>`;
     } else { alertsEl.innerHTML = `<div class="adm-empty">No alerts</div>`; }
 
-    // Wire resolve/delete
     window.resolveReport = async key => {
       await set(ref(db, "broken_sources/" + key + "/status"), "resolved");
-      document.querySelector(`#rep-${key} .adm-badge`).textContent = "resolved";
-      document.querySelector(`#rep-${key} .adm-badge`).className = "adm-badge adm-badge-resolved";
+      loadReports();
     };
     window.deleteReport = async key => {
-      const { remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
       await remove(ref(db, "broken_sources/" + key));
-      document.getElementById("rep-" + key)?.remove();
+      loadReports();
     };
     window.deleteAlert = async key => {
-      const { remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
       await remove(ref(db, "admin_alerts/" + key));
       loadReports();
     };
     window.clearAllReports = async () => {
       if (!confirm("Delete all resolved reports?")) return;
-      const { remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
       const snap = await get(ref(db, "broken_sources"));
       if (!snap.exists()) return;
       for (const [k, v] of Object.entries(snap.val())) {
@@ -759,36 +740,29 @@ async function loadReports() {
 // ── Reviews ───────────────────────────────────────────────────────────────
 async function loadReviews() {
   const el = document.getElementById("admReviewsTable");
-  el.innerHTML = `<div class="adm-loading">Loading reviews…</div>`;
+  el.innerHTML = `<div class="adm-loading">Loading…</div>`;
   try {
     const { ref, get } = { ref: window._admRef, get: window._admGet };
     const snap = await get(ref(_db, "reviews"));
     if (!snap.exists()) { el.innerHTML = `<div class="adm-empty">No reviews yet</div>`; return; }
-
     const allReviews = [];
     Object.entries(snap.val()).forEach(([titleKey, reviews]) => {
-      Object.entries(reviews).forEach(([deviceId, r]) => {
-        allReviews.push({ titleKey, deviceId, ...r });
-      });
+      Object.entries(reviews).forEach(([deviceId, r]) => allReviews.push({ titleKey, deviceId, ...r }));
     });
     allReviews.sort((a,b) => (b.ts||0)-(a.ts||0));
-
     el.innerHTML = `
       <table class="adm-table">
         <thead><tr><th>Title Key</th><th>Stars</th><th>Review</th><th>User</th><th>Date</th><th>Action</th></tr></thead>
-        <tbody>
-          ${allReviews.slice(0,100).map(r => `
-            <tr id="rev-${r.titleKey}-${r.deviceId}">
-              <td style="font-size:11px;color:rgba(255,255,255,0.5);">${r.titleKey}</td>
-              <td><span class="adm-review-stars">${"★".repeat(r.stars||0)}</span></td>
-              <td style="max-width:200px;font-size:12px;">${r.text ? '"'+r.text.slice(0,80)+'"' : '<span style="opacity:0.3">No text</span>'}</td>
-              <td style="font-size:12px;">${r.name||"Anon"}</td>
-              <td style="font-size:11px;color:rgba(255,255,255,0.3);">${r.ts?new Date(r.ts).toLocaleDateString():""}</td>
-              <td><button class="adm-btn adm-btn-red" onclick="deleteReviewAdmin('${r.titleKey}','${r.deviceId}')">✕</button></td>
-            </tr>`).join("")}
-        </tbody>
+        <tbody>${allReviews.slice(0,100).map(r => `
+          <tr id="rev-${r.titleKey}-${r.deviceId}">
+            <td style="font-size:11px;color:rgba(255,255,255,0.5);">${r.titleKey}</td>
+            <td><span class="adm-review-stars">${"★".repeat(r.stars||0)}</span></td>
+            <td style="max-width:200px;font-size:12px;">${r.text?'"'+r.text.slice(0,80)+'"':'<span style="opacity:0.3">—</span>'}</td>
+            <td>${r.name||"Anon"}</td>
+            <td style="font-size:11px;color:rgba(255,255,255,0.3);">${r.ts?new Date(r.ts).toLocaleDateString():""}</td>
+            <td><button class="adm-btn adm-btn-red" onclick="deleteReviewAdmin('${r.titleKey}','${r.deviceId}')">✕</button></td>
+          </tr>`).join("")}</tbody>
       </table>`;
-
     window.deleteReviewAdmin = async (titleKey, deviceId) => {
       if (!confirm("Delete this review?")) return;
       const { remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
@@ -798,65 +772,18 @@ async function loadReviews() {
   } catch(e) { el.innerHTML = `<div class="adm-empty">Error: ${e.message}</div>`; }
 }
 
-// ── Users ─────────────────────────────────────────────────────────────────
-async function admSearchUsers() {
-  const query = document.getElementById("admUserSearch").value.trim().toLowerCase();
-  const el = document.getElementById("admUsersTable");
-  if (!query) return;
-  el.innerHTML = `<div class="adm-loading">Searching…</div>`;
-  try {
-    const { ref, get } = { ref: window._admRef, get: window._admGet };
-    const snap = await get(ref(_db, "usernames"));
-    if (!snap.exists()) { el.innerHTML = `<div class="adm-empty">No users</div>`; return; }
-    const matches = Object.entries(snap.val()).filter(([u]) => u.includes(query)).slice(0, 20);
-    if (!matches.length) { el.innerHTML = `<div class="adm-empty">No users found</div>`; return; }
-
-    const users = await Promise.all(matches.map(async ([username, uid]) => {
-      const [pSnap, rSnap] = await Promise.all([
-        get(ref(_db, "users/" + uid + "/profile")),
-        get(ref(_db, "users/" + uid + "/roles")),
-      ]);
-      const profile = pSnap.exists() ? pSnap.val() : {};
-      const roles   = rSnap.exists() ? Object.keys(rSnap.val()).filter(r => rSnap.val()[r]) : [];
-      return { username, uid, profile, roles };
-    }));
-
-    el.innerHTML = `
-      <table class="adm-table">
-        <thead><tr><th>User</th><th>UID</th><th>Roles</th><th>Actions</th></tr></thead>
-        <tbody>
-          ${users.map(u => `
-            <tr>
-              <td>
-                <div style="font-weight:700;color:#fff;">@${u.username}</div>
-                <div style="font-size:11px;color:rgba(255,255,255,0.3);">${u.profile.displayName||""}</div>
-              </td>
-              <td style="font-size:10px;color:rgba(255,255,255,0.3);">${u.uid.slice(0,16)}…</td>
-              <td style="font-size:12px;">${u.roles.join(", ") || "none"}</td>
-              <td style="display:flex;gap:6px;">
-                <a href="/user/${u.username}" target="_blank" class="adm-btn adm-btn-blue">Profile</a>
-              </td>
-            </tr>`).join("")}
-        </tbody>
-      </table>`;
-  } catch(e) { el.innerHTML = `<div class="adm-empty">Error: ${e.message}</div>`; }
-}
-
-document.getElementById("admUserSearch").addEventListener("keydown", e => { if (e.key === "Enter") admSearchUsers(); });
-
+// ── Roles ─────────────────────────────────────────────────────────────────
 async function admGrantRole() {
   const username = document.getElementById("admRoleUsername").value.trim().toLowerCase();
   const role     = document.getElementById("admRoleSelect").value;
   const msg      = document.getElementById("admRoleMsg");
   if (!username) { msg.textContent = "Enter a username"; msg.style.color = "#ff6b6b"; return; }
   try {
-    const { ref, get, set } = { ref: window._admRef, get: window._admGet, set: (await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js")).set };
-    const uidSnap = await get(ref(_db, "usernames/" + username));
+    const { set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const uidSnap = await window._admGet(window._admRef(_db, "usernames/" + username));
     if (!uidSnap.exists()) { msg.textContent = "User not found"; msg.style.color = "#ff6b6b"; return; }
-    const uid = uidSnap.val();
-    await set(ref(_db, "users/" + uid + "/roles/" + role), true);
-    msg.textContent = `✓ Granted ${role} to @${username}`;
-    msg.style.color = "#34d399";
+    await set(window._admRef(_db, "users/" + uidSnap.val() + "/roles/" + role), true);
+    msg.textContent = `✓ Granted ${role} to @${username}`; msg.style.color = "#34d399";
   } catch(e) { msg.textContent = "Error: " + e.message; msg.style.color = "#ff6b6b"; }
 }
 
@@ -870,9 +797,239 @@ async function admRevokeRole() {
     const uidSnap = await window._admGet(window._admRef(_db, "usernames/" + username));
     if (!uidSnap.exists()) { msg.textContent = "User not found"; msg.style.color = "#ff6b6b"; return; }
     await remove(window._admRef(_db, "users/" + uidSnap.val() + "/roles/" + role));
-    msg.textContent = `✓ Revoked ${role} from @${username}`;
-    msg.style.color = "#ffd700";
+    msg.textContent = `✓ Revoked ${role} from @${username}`; msg.style.color = "#ffd700";
   } catch(e) { msg.textContent = "Error: " + e.message; msg.style.color = "#ff6b6b"; }
+}
+
+// ── Security / Bans ───────────────────────────────────────────────────────
+async function lookupUserForBan() {
+  const username = document.getElementById("banUsername").value.trim().toLowerCase();
+  const msgEl = document.getElementById("banMsg");
+  if (!username) { msgEl.textContent = "Enter a username first"; msgEl.style.color = "#ff6b6b"; return; }
+  try {
+    const { ref, get } = { ref: window._admRef, get: window._admGet };
+    const uidSnap = await get(ref(_db, "usernames/" + username));
+    if (!uidSnap.exists()) { msgEl.textContent = "User not found"; msgEl.style.color = "#ff6b6b"; return; }
+    const uid = uidSnap.val();
+    // Look for their IP in logs
+    const logsSnap = await get(ref(_db, "ip_logs"));
+    if (logsSnap.exists()) {
+      const match = Object.values(logsSnap.val()).find(l => l.uid === uid);
+      if (match) {
+        document.getElementById("banIp").value = match.ip || "";
+        document.getElementById("banFingerprint").value = match.fingerprint || "";
+        msgEl.textContent = `✓ Found: IP ${match.ip||"unknown"}, ${match.country||""} ${match.city||""}`;
+        msgEl.style.color = "#34d399";
+        return;
+      }
+    }
+    msgEl.textContent = "User found but no IP log yet (they may not have visited)"; msgEl.style.color = "#ffd700";
+  } catch(e) { msgEl.textContent = "Error: " + e.message; msgEl.style.color = "#ff6b6b"; }
+}
+
+async function issueBan() {
+  const username    = document.getElementById("banUsername").value.trim().toLowerCase();
+  const ip          = document.getElementById("banIp").value.trim();
+  const fingerprint = document.getElementById("banFingerprint").value.trim();
+  const reason      = document.getElementById("banReason").value.trim();
+  const duration    = document.getElementById("banDuration").value;
+  const unit        = document.getElementById("banDurationUnit").value;
+  const msgEl       = document.getElementById("banMsg");
+
+  if (!reason) { msgEl.textContent = "Enter a reason"; msgEl.style.color = "#ff6b6b"; return; }
+  if (!username && !ip && !fingerprint) { msgEl.textContent = "Enter at least a username, IP, or fingerprint"; msgEl.style.color = "#ff6b6b"; return; }
+
+  try {
+    const { push, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+
+    let uid = null;
+    if (username) {
+      const uidSnap = await window._admGet(window._admRef(_db, "usernames/" + username));
+      if (uidSnap.exists()) uid = uidSnap.val();
+    }
+
+    let expiresAt = null;
+    if (unit !== "permanent" && duration) {
+      const ms = unit === "hours" ? parseInt(duration) * 3600000 : parseInt(duration) * 86400000;
+      expiresAt = Date.now() + ms;
+    }
+
+    const ban = {
+      uid: uid || null,
+      username: username || null,
+      ip: ip || null,
+      fingerprint: fingerprint || null,
+      reason,
+      expiresAt,
+      bannedAt: Date.now(),
+      bannedBy: _admUser.uid,
+      bannedByName: _admUser.displayName || _admUser.email,
+      active: true,
+    };
+
+    await push(window._admRef(_db, "bans"), ban);
+
+    msgEl.textContent = `✓ Ban issued${username ? " for @" + username : ""}${ip ? " / IP: " + ip : ""}`;
+    msgEl.style.color = "#34d399";
+
+    // Clear fields
+    document.getElementById("banUsername").value = "";
+    document.getElementById("banIp").value = "";
+    document.getElementById("banFingerprint").value = "";
+    document.getElementById("banReason").value = "";
+    document.getElementById("banDuration").value = "";
+
+    loadBans();
+  } catch(e) { msgEl.textContent = "Error: " + e.message; msgEl.style.color = "#ff6b6b"; }
+}
+
+async function loadBans() {
+  const el = document.getElementById("admBansTable");
+  el.innerHTML = `<div class="adm-loading">Loading…</div>`;
+  try {
+    const { ref, get, set, remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const snap = await get(ref(_db, "bans"));
+    if (!snap.exists()) { el.innerHTML = `<div class="adm-empty">No bans 🎉</div>`; return; }
+
+    const bans = Object.entries(snap.val()).sort((a,b) => (b[1].bannedAt||0)-(a[1].bannedAt||0));
+
+    el.innerHTML = `
+      <table class="adm-table">
+        <thead><tr><th>User / IP</th><th>Reason</th><th>Expires</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>${bans.map(([key, b]) => {
+          const expired = b.expiresAt && b.expiresAt < Date.now();
+          const active  = b.active !== false && !expired;
+          return `
+          <tr>
+            <td>
+              ${b.username ? `<div style="font-weight:700;color:#fff;">@${b.username}</div>` : ""}
+              ${b.ip ? `<div style="font-size:11px;color:rgba(255,255,255,0.4);">IP: ${b.ip}</div>` : ""}
+              ${b.uid ? `<div style="font-size:10px;color:rgba(255,255,255,0.25);">${b.uid.slice(0,14)}…</div>` : ""}
+            </td>
+            <td style="font-size:12px;max-width:150px;">${b.reason||"—"}</td>
+            <td style="font-size:11px;">${b.expiresAt ? new Date(b.expiresAt).toLocaleDateString() : "Permanent"}</td>
+            <td><span class="adm-badge ${active?"adm-badge-banned":"adm-badge-resolved"}">${active?"Active":expired?"Expired":"Inactive"}</span></td>
+            <td style="display:flex;gap:4px;">
+              <button class="adm-btn adm-btn-green" onclick="liftBan('${key}')">Lift</button>
+              <button class="adm-btn adm-btn-red" onclick="deleteBan('${key}')">✕</button>
+            </td>
+          </tr>`;
+        }).join("")}</tbody>
+      </table>`;
+
+    window.liftBan = async key => {
+      await set(ref(_db, "bans/" + key + "/active"), false);
+      showToast("Ban lifted ✓", "success");
+      loadBans();
+    };
+    window.deleteBan = async key => {
+      if (!confirm("Permanently delete this ban record?")) return;
+      await remove(ref(_db, "bans/" + key));
+      loadBans();
+    };
+  } catch(e) { el.innerHTML = `<div class="adm-empty">Error: ${e.message}</div>`; }
+}
+
+async function loadAppeals() {
+  const el = document.getElementById("admAppealsTable");
+  el.innerHTML = `<div class="adm-loading">Loading…</div>`;
+  try {
+    const { ref, get, set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const snap = await get(ref(_db, "ban_appeals"));
+    if (!snap.exists()) { el.innerHTML = `<div class="adm-empty">No appeals yet</div>`; return; }
+
+    const appeals = Object.entries(snap.val()).sort((a,b) => (b[1].submittedAt||0)-(a[1].submittedAt||0));
+
+    el.innerHTML = `
+      <table class="adm-table">
+        <thead><tr><th>Name</th><th>Message</th><th>IP</th><th>Submitted</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>${appeals.map(([key, a]) => `
+          <tr id="appeal-${key}">
+            <td style="font-weight:700;color:#fff;">${a.name||"—"}</td>
+            <td style="font-size:12px;max-width:200px;">${(a.message||"").slice(0,80)}${a.message?.length>80?"…":""}</td>
+            <td style="font-size:11px;color:rgba(255,255,255,0.4);">${a.ip||"—"}</td>
+            <td style="font-size:11px;color:rgba(255,255,255,0.3);">${a.submittedAt?new Date(a.submittedAt).toLocaleDateString():"—"}</td>
+            <td><span class="adm-badge ${a.status==="accepted"?"adm-badge-resolved":a.status==="denied"?"adm-badge-open":"adm-badge-pending"}">${a.status||"pending"}</span></td>
+            <td style="display:flex;gap:4px;flex-wrap:wrap;">
+              <button class="adm-btn adm-btn-green" style="font-size:11px;" onclick="resolveAppeal('${key}','${a.banKey}','accepted')">✓ Accept</button>
+              <button class="adm-btn adm-btn-red" style="font-size:11px;" onclick="resolveAppeal('${key}','${a.banKey}','denied')">✕ Deny</button>
+            </td>
+          </tr>`).join("")}</tbody>
+      </table>`;
+
+    window.resolveAppeal = async (appealKey, banKey, decision) => {
+      const note = decision === "denied" ? prompt("Optional: reason for denial (shown to user)") : null;
+      await set(ref(_db, "ban_appeals/" + appealKey + "/status"), decision);
+      await set(ref(_db, "ban_appeals/" + appealKey + "/reviewedAt"), Date.now());
+      await set(ref(_db, "ban_appeals/" + appealKey + "/reviewedBy"), _admUser.uid);
+      if (note) await set(ref(_db, "ban_appeals/" + appealKey + "/staffNote"), note);
+      if (decision === "accepted" && banKey) {
+        await set(ref(_db, "bans/" + banKey + "/active"), false);
+        showToast("Appeal accepted — ban lifted ✓", "success");
+      } else {
+        showToast("Appeal " + decision, decision === "accepted" ? "success" : "info");
+      }
+      loadAppeals();
+      loadBans();
+    };
+  } catch(e) { el.innerHTML = `<div class="adm-empty">Error: ${e.message}</div>`; }
+}
+
+async function loadIPLogs() {
+  const el = document.getElementById("admIPLogs");
+  el.innerHTML = `<div class="adm-loading">Loading…</div>`;
+  try {
+    const { ref, get } = { ref: window._admRef, get: window._admGet };
+    const snap = await get(ref(_db, "ip_logs"));
+    if (!snap.exists()) { el.innerHTML = `<div class="adm-empty">No IP logs yet — users need to visit the site</div>`; return; }
+
+    const logs = Object.entries(snap.val()).sort((a,b) => (b[1].firstSeen||0)-(a[1].firstSeen||0));
+
+    el.innerHTML = `
+      <div style="font-size:12px;color:rgba(255,255,255,0.3);margin-bottom:8px;">${logs.length} unique IP${logs.length!==1?"s":""} logged</div>
+      <table class="adm-table">
+        <thead><tr><th>IP</th><th>Location</th><th>Flags</th><th>User</th><th>First Seen</th><th>Action</th></tr></thead>
+        <tbody>${logs.map(([key, l]) => `
+          <tr>
+            <td style="font-weight:700;color:#fff;font-family:monospace;">${l.ip||"—"}</td>
+            <td style="font-size:12px;">${[l.city, l.country].filter(Boolean).join(", ")||"—"}</td>
+            <td>
+              ${l.proxy ? '<span class="ip-flag proxy">VPN/Proxy</span>' : ""}
+              ${l.hosting ? '<span class="ip-flag hosting">Hosting</span>' : ""}
+              ${!l.proxy && !l.hosting ? '<span style="font-size:11px;color:rgba(255,255,255,0.25);">Clean</span>' : ""}
+            </td>
+            <td style="font-size:12px;">${l.username ? "@"+l.username : l.uid ? l.uid.slice(0,10)+"…" : "Guest"}</td>
+            <td style="font-size:11px;color:rgba(255,255,255,0.3);">${l.firstSeen?new Date(l.firstSeen).toLocaleDateString():"—"}</td>
+            <td>
+              <button class="adm-btn adm-btn-red" style="font-size:11px;" onclick="banFromIPLog('${l.ip||""}','${l.fingerprint||""}','${l.username||""}')">🔨 Ban</button>
+            </td>
+          </tr>`).join("")}</tbody>
+      </table>`;
+
+    window.banFromIPLog = (ip, fp, username) => {
+      document.getElementById("banIp").value = ip;
+      document.getElementById("banFingerprint").value = fp;
+      document.getElementById("banUsername").value = username;
+      document.getElementById("banFormGrid").scrollIntoView({ behavior: "smooth" });
+      showToast("Pre-filled ban form from IP log", "info");
+    };
+  } catch(e) { el.innerHTML = `<div class="adm-empty">Error: ${e.message}</div>`; }
+}
+
+async function clearOldIPLogs() {
+  if (!confirm("Delete all IP logs older than 30 days?")) return;
+  try {
+    const { ref, get, remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const snap = await get(ref(_db, "ip_logs"));
+    if (!snap.exists()) { showToast("No logs to clear", "info"); return; }
+    let count = 0;
+    for (const [k, v] of Object.entries(snap.val())) {
+      if ((v.firstSeen||0) < cutoff) { await remove(ref(_db, "ip_logs/" + k)); count++; }
+    }
+    showToast(`Cleared ${count} old IP logs ✓`, "success");
+    loadIPLogs();
+  } catch(e) { showToast("Error: " + e.message, "error"); }
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────
@@ -881,45 +1038,75 @@ async function loadNotifStatus() {
     const res  = await fetch("/notification.json?t=" + Date.now());
     const data = await res.json();
     const el   = document.getElementById("admNotifStatus");
-    if (data.active) {
-      el.innerHTML = `
-        <div style="padding:12px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:10px;">
-          <div style="font-size:12px;font-weight:800;color:#ffd700;margin-bottom:6px;">🟡 Banner Active</div>
-          <div style="font-size:13px;font-weight:700;color:#fff;">${data.title || ""}</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.5);">${data.message || ""}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;">Type: ${data.type} · Updated: ${data.updated}</div>
-          <p style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:8px;">To disable: set "active": false in notification.json in your repo and push.</p>
-        </div>`;
-    } else {
-      el.innerHTML = `<div style="font-size:13px;color:rgba(255,255,255,0.3);">🟢 No active banner. Edit notification.json in your repo to show one.</div>`;
-    }
+    el.innerHTML = data.active
+      ? `<div style="padding:12px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:10px;">
+          <div style="font-size:12px;font-weight:800;color:#ffd700;margin-bottom:4px;">🟡 Banner Active</div>
+          <div style="font-size:13px;color:#fff;">${data.title||""}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.5);">${data.message||""}</div>
+        </div>`
+      : `<div style="font-size:13px;color:rgba(255,255,255,0.3);">🟢 No active banner.</div>`;
   } catch(e) { document.getElementById("admNotifStatus").textContent = "Could not fetch notification.json"; }
 }
 
 async function admTriggerPopup() {
-  const version  = document.getElementById("popupVersion").value.trim();
-  const title    = document.getElementById("popupTitle").value.trim();
-  const changelog= document.getElementById("popupChangelog").value.trim();
-  const msgEl    = document.getElementById("popupMsg");
+  const version   = document.getElementById("popupVersion").value.trim();
+  const title     = document.getElementById("popupTitle").value.trim();
+  const changelog = document.getElementById("popupChangelog").value.trim();
+  const msgEl     = document.getElementById("popupMsg");
   if (!version || !changelog) { msgEl.textContent = "Fill in version and changelog"; msgEl.style.color = "#ff6b6b"; return; }
-
   try {
     const { push } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-    // Save to release_announcements — script.js checks this on every page load
-    await push(window._admRef(_db, "release_announcements"), {
-      version, title, changelog,
-      timestamp: Date.now(),
-      active: true,
-      sentBy: _admUser.uid,
-      popupOnly: true, // no bell notification
-    });
-    msgEl.textContent = "✓ Popup will show for all users on their next visit";
-    msgEl.style.color = "#34d399";
+    await push(window._admRef(_db, "release_announcements"), { version, title, changelog, timestamp: Date.now(), active: true, sentBy: _admUser.uid });
+    msgEl.textContent = "✓ Popup will show for all users on next visit"; msgEl.style.color = "#34d399";
     loadActivePopups();
   } catch(e) { msgEl.textContent = "Error: " + e.message; msgEl.style.color = "#ff6b6b"; }
 }
 
+async function loadActivePopups() {
+  const el = document.getElementById("admActivePopups");
+  if (!el) return;
+  try {
+    const snap = await window._admGet(window._admRef(_db, "release_announcements"));
+    if (!snap.exists()) { el.innerHTML = `<div class="adm-empty">No active popups</div>`; return; }
+    const popups = Object.entries(snap.val()).reverse().slice(0, 10);
+    el.innerHTML = `
+      <table class="adm-table">
+        <thead><tr><th>Version</th><th>Title</th><th>Sent</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>${popups.map(([key, p]) => `
+          <tr>
+            <td style="font-weight:700;color:#fff;">${p.version||"—"}</td>
+            <td style="font-size:12px;">${p.title||"—"}</td>
+            <td style="font-size:11px;color:rgba(255,255,255,0.3);">${p.timestamp?new Date(p.timestamp).toLocaleString():""}</td>
+            <td><span class="adm-badge ${p.active!==false?"adm-badge-open":"adm-badge-resolved"}">${p.active!==false?"active":"inactive"}</span></td>
+            <td style="display:flex;gap:4px;">
+              <button class="adm-btn adm-btn-red" style="font-size:11px;" onclick="admDeactivatePopup('${key}')">Deactivate</button>
+              <button class="adm-btn adm-btn-red" style="font-size:11px;" onclick="admDeletePopup('${key}')">✕</button>
+            </td>
+          </tr>`).join("")}</tbody>
+      </table>`;
+    window.admDeactivatePopup = async key => {
+      const { set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+      await set(window._admRef(_db, "release_announcements/" + key + "/active"), false);
+      showToast("Popup deactivated", "info"); loadActivePopups();
+    };
+    window.admDeletePopup = async key => {
+      if (!confirm("Delete popup?")) return;
+      const { remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+      await remove(window._admRef(_db, "release_announcements/" + key));
+      showToast("Deleted", "info"); loadActivePopups();
+    };
+  } catch(e) { el.innerHTML = `<div class="adm-empty">Error: ${e.message}</div>`; }
+}
 
+async function admClearPopupSeen() {
+  if (!confirm("Force ALL users to see the popup again?")) return;
+  try {
+    const { set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    await set(window._admRef(_db, "popup_force_reset"), { ts: Date.now(), by: _admUser.uid });
+    showToast("✓ All users will see the popup again", "success");
+    document.getElementById("popupMsg").textContent = "✓ Force re-show triggered"; document.getElementById("popupMsg").style.color = "#34d399";
+  } catch(e) { showToast("Error: " + e.message, "error"); }
+}
 
 async function admSendAlert() {
   const title = document.getElementById("admAlertTitle").value.trim();
@@ -928,69 +1115,12 @@ async function admSendAlert() {
   if (!title || !msg) { showToast("Fill in title and message", "error"); return; }
   try {
     const { push } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-    await push(window._admRef(_db, "admin_alerts"), {
-      title, message: msg, type, timestamp: Date.now(), sentBy: _admUser.uid,
-    });
+    await push(window._admRef(_db, "admin_alerts"), { title, message: msg, type, timestamp: Date.now(), sentBy: _admUser.uid });
     showToast("Alert sent ✓", "success");
     document.getElementById("admAlertTitle").value = "";
     document.getElementById("admAlertMsg").value   = "";
     loadAllAlerts();
   } catch(e) { showToast("Failed: " + e.message, "error"); }
-}
-
-
-
-
-
-
-
-async function admSendCustomPopup() {
-  const version   = document.getElementById("admPopupVersion").value.trim();
-  const changelog = document.getElementById("admPopupChangelog").value.trim();
-  const msgEl     = document.getElementById("admPopupMsg");
-  if (!version || !changelog) { msgEl.textContent = "Fill in version and changelog"; msgEl.style.color = "#ff6b6b"; return; }
-  try {
-    const { set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-    await set(window._admRef(_db, "release_announcements/popup_custom"), {
-      version, changelog, timestamp: Date.now(), active: true, sentBy: _admUser.uid,
-    });
-    msgEl.textContent = `✓ Custom popup for ${version} will show for everyone on next visit`;
-    msgEl.style.color = "#34d399";
-    document.getElementById("admCustomPopupForm").style.display = "none";
-  } catch(e) { msgEl.textContent = "Error: " + e.message; msgEl.style.color = "#ff6b6b"; }
-}
-async function admSendRelease() {
-  const version  = document.getElementById("relVersion")?.value.trim();
-  const title    = document.getElementById("relTitle")?.value.trim();
-  const changelog= document.getElementById("relChangelog")?.value.trim();
-  const msgEl    = document.getElementById("relMsg");
-  if (!version || !title) { if(msgEl){msgEl.textContent = "Fill in version and headline"; msgEl.style.color = "#ff6b6b";} return; }
-
-  try {
-    const { push } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-
-    // 1. Post to bell as a release alert
-    await push(window._admRef(_db, "admin_alerts"), {
-      title: `🚀 ${title}`,
-      message: changelog.split("\n").filter(Boolean).slice(0,3).join(" · ") + (changelog.split("\n").length > 3 ? " · and more" : ""),
-      type: "success",
-      isRelease: true,
-      version,
-      fullChangelog: changelog,
-      timestamp: Date.now(),
-      sentBy: _admUser.uid,
-    });
-
-    // 2. Store as active release announcement in Firebase
-    // Users who haven't dismissed this version will see the popup
-    await push(window._admRef(_db, "release_announcements"), {
-      version, title, changelog, timestamp: Date.now(), sentBy: _admUser.uid, active: true,
-    });
-
-    msgEl.textContent = `✓ Release announcement sent for ${version}! Users will see it in their 🔔 bell.`;
-    msgEl.style.color = "#34d399";
-    loadAllAlerts();
-  } catch(e) { msgEl.textContent = "Error: " + e.message; msgEl.style.color = "#ff6b6b"; }
 }
 
 async function loadAllAlerts() {
@@ -1003,16 +1133,14 @@ async function loadAllAlerts() {
     el.innerHTML = `
       <table class="adm-table">
         <thead><tr><th>Title</th><th>Message</th><th>Type</th><th>Sent</th><th>Action</th></tr></thead>
-        <tbody>
-          ${alerts.map(([key, a]) => `
-            <tr>
-              <td style="font-weight:700;color:#fff;font-size:12px;">${a.title||"—"}</td>
-              <td style="font-size:11px;color:rgba(255,255,255,0.4);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.message||"—"}</td>
-              <td><span class="adm-badge ${a.type==="success"?"adm-badge-resolved":a.type==="warning"?"adm-badge-pending":"adm-badge-open"}">${a.type||"info"}</span></td>
-              <td style="font-size:10px;color:rgba(255,255,255,0.3);">${a.timestamp?new Date(a.timestamp).toLocaleString():""}</td>
-              <td><button class="adm-btn adm-btn-red" onclick="admDeleteAlert('${key}')">✕</button></td>
-            </tr>`).join("")}
-        </tbody>
+        <tbody>${alerts.map(([key, a]) => `
+          <tr>
+            <td style="font-weight:700;color:#fff;font-size:12px;">${a.title||"—"}</td>
+            <td style="font-size:11px;color:rgba(255,255,255,0.4);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.message||"—"}</td>
+            <td><span class="adm-badge ${a.type==="success"?"adm-badge-resolved":a.type==="warning"?"adm-badge-pending":"adm-badge-open"}">${a.type||"info"}</span></td>
+            <td style="font-size:10px;color:rgba(255,255,255,0.3);">${a.timestamp?new Date(a.timestamp).toLocaleString():""}</td>
+            <td><button class="adm-btn adm-btn-red" onclick="admDeleteAlert('${key}')">✕</button></td>
+          </tr>`).join("")}</tbody>
       </table>`;
     window.admDeleteAlert = async key => {
       const { remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
@@ -1021,80 +1149,17 @@ async function loadAllAlerts() {
     };
   } catch(e) { el.innerHTML = `<div class="adm-empty">Error loading alerts</div>`; }
 }
-async function loadActivePopups() {
-  const el = document.getElementById("admActivePopups");
-  if (!el) return;
-  try {
-    const snap = await window._admGet(window._admRef(_db, "release_announcements"));
-    if (!snap.exists()) { el.innerHTML = `<div class="adm-empty">No active popups</div>`; return; }
-    const popups = Object.entries(snap.val()).reverse().slice(0, 10);
-    el.innerHTML = `
-      <table class="adm-table">
-        <thead><tr><th>Version</th><th>Title</th><th>Sent</th><th>Status</th><th>Action</th></tr></thead>
-        <tbody>
-          ${popups.map(([key, p]) => `
-            <tr>
-              <td style="font-weight:700;color:#fff;">${p.version||"—"}</td>
-              <td style="font-size:12px;color:rgba(255,255,255,0.6);">${p.title||"—"}</td>
-              <td style="font-size:11px;color:rgba(255,255,255,0.3);">${p.timestamp?new Date(p.timestamp).toLocaleString():""}</td>
-              <td><span class="adm-badge ${p.active!==false?"adm-badge-open":"adm-badge-resolved"}">${p.active!==false?"active":"inactive"}</span></td>
-              <td style="display:flex;gap:6px;">
-                <button class="adm-btn adm-btn-red" onclick="admDeactivatePopup('${key}')">Deactivate</button>
-                <button class="adm-btn adm-btn-red" onclick="admDeletePopup('${key}')">✕ Delete</button>
-              </td>
-            </tr>`).join("")}
-        </tbody>
-      </table>`;
 
-    window.admDeactivatePopup = async key => {
-      const { set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-      await set(window._admRef(_db, "release_announcements/" + key + "/active"), false);
-      showToast("Popup deactivated", "info");
-      loadActivePopups();
-    };
-    window.admDeletePopup = async key => {
-      if (!confirm("Delete this popup?")) return;
-      const { remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-      await remove(window._admRef(_db, "release_announcements/" + key));
-      showToast("Popup deleted", "info");
-      loadActivePopups();
-    };
-  } catch(e) { el.innerHTML = `<div class="adm-empty">Error: ${e.message}</div>`; }
-}
-
-async function admClearPopupSeen() {
-  if (!confirm("This will force ALL users to see the popup again on their next visit. Continue?")) return;
-  try {
-    const { set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-    await set(window._admRef(_db, "popup_force_reset"), { ts: Date.now(), by: _admUser.uid });
-    showToast("✓ All users will see the popup again on next visit", "success");
-    document.getElementById("popupMsg").textContent = "✓ Force re-show triggered for all users";
-    document.getElementById("popupMsg").style.color = "#34d399";
-  } catch(e) { showToast("Error: " + e.message, "error"); }
-}
 async function admClearAllAlerts() {
-  if (!confirm("Delete all bell alerts? This cannot be undone.")) return;
+  if (!confirm("Delete all bell alerts?")) return;
   try {
     const { remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
     await remove(window._admRef(_db, "admin_alerts"));
-    showToast("All alerts cleared ✓", "success");
-    loadAllAlerts();
+    showToast("All alerts cleared ✓", "success"); loadAllAlerts();
   } catch(e) { showToast("Error: " + e.message, "error"); }
 }
 
 // ── Maintenance ───────────────────────────────────────────────────────────
-function checkMaintStatus() {
-  const statusEl = document.getElementById("admMaintStatus");
-  const iconEl   = document.getElementById("admMaintIcon");
-  const textEl   = document.getElementById("admMaintText");
-  const subEl    = document.getElementById("admMaintSub");
-  // We can't check server env vars from client — just show static info
-  statusEl.className = "adm-maintenance-status inactive";
-  iconEl.textContent = "✅";
-  textEl.textContent = "Check Vercel Dashboard for maintenance status";
-  subEl.textContent  = "MAINTENANCE_MODE env var controls this — set in Vercel settings";
-}
-
 async function admPostMaintUpdate() {
   const title = document.getElementById("admMaintTitle").value.trim();
   const msg   = document.getElementById("admMaintMsg").value.trim();
@@ -1103,25 +1168,21 @@ async function admPostMaintUpdate() {
   if (!title || !msg) { msgEl.textContent = "Fill in title and message"; msgEl.style.color = "#ff6b6b"; return; }
   try {
     const { push } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-    await push(window._admRef(_db, "admin_alerts"), {
-      title, message: msg, type, timestamp: Date.now(),
-      isMaintenance: true, sentBy: _admUser.uid,
-    });
-    msgEl.textContent = "✓ Maintenance update posted to notification bell";
-    msgEl.style.color = "#34d399";
+    await push(window._admRef(_db, "admin_alerts"), { title, message: msg, type, timestamp: Date.now(), isMaintenance: true, sentBy: _admUser.uid });
+    msgEl.textContent = "✓ Posted"; msgEl.style.color = "#34d399";
   } catch(e) { msgEl.textContent = "Error: " + e.message; msgEl.style.color = "#ff6b6b"; }
 }
 
 async function admClearMaintAlerts() {
-  if (!confirm("Clear all maintenance alerts from the notification bell?")) return;
+  if (!confirm("Clear all maintenance alerts?")) return;
   try {
-    const { remove, get } = { remove: (await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js")).remove, get: window._admGet };
+    const { remove, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
     const snap = await get(window._admRef(_db, "admin_alerts"));
-    if (!snap.exists()) { showToast("No alerts to clear", "info"); return; }
+    if (!snap.exists()) { showToast("No alerts", "info"); return; }
     for (const [k, v] of Object.entries(snap.val())) {
       if (v.isMaintenance) await remove(window._admRef(_db, "admin_alerts/" + k));
     }
-    showToast("Maintenance alerts cleared ✓", "success");
+    showToast("Cleared ✓", "success");
   } catch(e) { showToast("Error: " + e.message, "error"); }
 }
 </script>
