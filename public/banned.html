@@ -20,7 +20,6 @@
     .ban-icon { font-size: 64px; margin-bottom: 16px; line-height: 1; }
     .ban-title { font-size: 26px; font-weight: 900; color: #fff; margin-bottom: 8px; }
     .ban-sub { font-size: 14px; color: rgba(255,255,255,0.4); margin-bottom: 28px; line-height: 1.6; }
-
     .ban-detail-box {
       background: rgba(255,44,44,0.06);
       border: 1px solid rgba(255,44,44,0.2);
@@ -35,7 +34,6 @@
     .ban-detail-val { font-size: 13px; color: #fff; font-weight: 600; text-align: right; word-break: break-word; }
     .ban-detail-val.red { color: #ff6b6b; }
     .ban-detail-val.yellow { color: #ffd700; }
-
     .ban-countdown {
       font-size: 28px; font-weight: 900; color: #ff2c2c;
       background: rgba(255,44,44,0.08);
@@ -46,8 +44,6 @@
       letter-spacing: 1px;
     }
     .ban-countdown small { display: block; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.7px; margin-top: 4px; }
-
-    /* Appeal */
     .ban-appeal-section { margin-top: 8px; text-align: left; }
     .ban-appeal-title { font-size: 15px; font-weight: 800; color: #fff; margin-bottom: 6px; }
     .ban-appeal-desc { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 14px; line-height: 1.6; }
@@ -68,8 +64,6 @@
     .ban-btn-primary { background: #ff2c2c; color: #fff; }
     .ban-btn-primary:hover { background: #e01f1f; }
     .ban-btn-primary:disabled { background: rgba(255,44,44,0.3); cursor: not-allowed; }
-
-    /* Appeal status */
     .ban-appeal-status {
       padding: 16px 18px; border-radius: 12px; margin-bottom: 20px; text-align: left;
     }
@@ -81,7 +75,6 @@
     .ban-appeal-status.accepted .ban-appeal-status-title { color: #34d399; }
     .ban-appeal-status.denied .ban-appeal-status-title { color: #ff6b6b; }
     .ban-appeal-status-msg { font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.5; }
-
     .ban-perm { color: #ff2c2c; font-weight: 900; }
     #banLoading { text-align: center; padding: 40px; color: rgba(255,255,255,0.3); }
   </style>
@@ -97,8 +90,6 @@
   <div class="ban-icon">🔨</div>
   <div class="ban-title">You've Been Banned</div>
   <div class="ban-sub">Your access to CineRealm has been restricted.<br>Read the details below.</div>
-
-  <!-- Ban details -->
   <div class="ban-detail-box">
     <div class="ban-detail-row">
       <div class="ban-detail-label">Reason</div>
@@ -117,17 +108,11 @@
       <div class="ban-detail-val" id="banBy">CineRealm Staff</div>
     </div>
   </div>
-
-  <!-- Countdown (if not permanent) -->
   <div class="ban-countdown" id="banCountdown" style="display:none;">
     <span id="banCountdownText">—</span>
     <small>Time Remaining</small>
   </div>
-
-  <!-- Appeal status (shown if already appealed) -->
   <div id="banAppealStatus" style="display:none;"></div>
-
-  <!-- Appeal form -->
   <div class="ban-appeal-section" id="banAppealForm">
     <div class="ban-appeal-title">✉️ Appeal This Ban</div>
     <div class="ban-appeal-desc">If you believe this ban was a mistake, submit an appeal below. A staff member will review it and respond here.</div>
@@ -138,16 +123,16 @@
   </div>
 </div>
 
-<!-- Not banned — redirect -->
 <div id="notBannedMsg" style="display:none;text-align:center;color:rgba(255,255,255,0.4);padding:40px;">
   You are not banned. <a href="/" style="color:#ff6b6b;">Go home →</a>
 </div>
 
-<!-- FingerprintJS -->
-<script src="https://openfpcdn.io/fingerprintjs/v4"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, get, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const fpModule = await import("https://openfpcdn.io/fingerprintjs/v4/esm.js");
+const FingerprintJS = fpModule.default;
 
 const firebaseConfig = {
   apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
@@ -184,11 +169,12 @@ async function getIP() {
       proxy: false,
       hosting: false,
     };
-    sessionStorage.setItem("cr_ip_data", JSON.stringify(data)); // cache it
+    sessionStorage.setItem("cr_ip_data", JSON.stringify(data));
     return data;
   } catch(e) {}
   return null;
 }
+
 function formatDuration(ms) {
   if (ms <= 0) return "Expired";
   const s = Math.floor(ms / 1000);
@@ -207,16 +193,13 @@ async function checkBan() {
   const ipData = await getIP();
   const ip = ipData?.query;
 
-  // Get current user uid if logged in
   let uid = null;
   try {
     const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-    const { initializeApp: ia, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
     const auth = getAuth(app);
     uid = auth.currentUser?.uid || null;
   } catch(e) {}
 
-  // Check bans
   const bansSnap = await get(ref(db, "bans"));
   if (!bansSnap.exists()) {
     document.getElementById("banLoading").style.display = "none";
@@ -230,11 +213,7 @@ async function checkBan() {
   bansSnap.forEach(child => {
     const ban = child.val();
     if (ban.active === false) return;
-
-    // Check if expired
     if (ban.expiresAt && ban.expiresAt < Date.now()) return;
-
-    // Match by uid, ip, or fingerprint
     if (
       (uid && ban.uid === uid) ||
       (ip && ban.ip === ip) ||
@@ -252,7 +231,6 @@ async function checkBan() {
     return;
   }
 
-  // Show ban page
   document.getElementById("banContent").style.display = "block";
   document.getElementById("banReason").textContent = matchedBan.reason || "Violation of Terms of Service";
   document.getElementById("banDate").textContent = matchedBan.bannedAt ? new Date(matchedBan.bannedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "—";
@@ -265,7 +243,6 @@ async function checkBan() {
     const remaining = matchedBan.expiresAt - Date.now();
     const expiresDate = new Date(matchedBan.expiresAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
     document.getElementById("banExpires").textContent = expiresDate;
-
     if (remaining > 0) {
       const countdownEl = document.getElementById("banCountdown");
       countdownEl.style.display = "block";
@@ -273,16 +250,11 @@ async function checkBan() {
       countdownText.textContent = formatDuration(remaining);
       setInterval(() => {
         const rem = matchedBan.expiresAt - Date.now();
-        if (rem <= 0) {
-          countdownText.textContent = "Expired — refresh the page";
-        } else {
-          countdownText.textContent = formatDuration(rem);
-        }
+        countdownText.textContent = rem <= 0 ? "Expired — refresh the page" : formatDuration(rem);
       }, 1000);
     }
   }
 
-  // Check for existing appeal
   const appealSnap = await get(ref(db, "ban_appeals/" + matchedKey));
   if (appealSnap.exists()) {
     const appeal = appealSnap.val();
@@ -291,30 +263,15 @@ async function checkBan() {
     document.getElementById("banAppealForm").style.display = "none";
 
     if (appeal.status === "pending") {
-      statusEl.innerHTML = `
-        <div class="ban-appeal-status pending">
-          <div class="ban-appeal-status-title">⏳ Appeal Under Review</div>
-          <div class="ban-appeal-status-msg">Your appeal was submitted on ${new Date(appeal.submittedAt).toLocaleDateString()}. A staff member will review it soon.</div>
-        </div>`;
+      statusEl.innerHTML = `<div class="ban-appeal-status pending"><div class="ban-appeal-status-title">⏳ Appeal Under Review</div><div class="ban-appeal-status-msg">Your appeal was submitted on ${new Date(appeal.submittedAt).toLocaleDateString()}. A staff member will review it soon.</div></div>`;
     } else if (appeal.status === "accepted") {
-      statusEl.innerHTML = `
-        <div class="ban-appeal-status accepted">
-          <div class="ban-appeal-status-title">✅ Appeal Accepted</div>
-          <div class="ban-appeal-status-msg">Your appeal has been accepted. Your ban has been lifted — <a href="/" style="color:#34d399;">click here to return to CineRealm</a>.</div>
-        </div>`;
+      statusEl.innerHTML = `<div class="ban-appeal-status accepted"><div class="ban-appeal-status-title">✅ Appeal Accepted</div><div class="ban-appeal-status-msg">Your appeal has been accepted. Your ban has been lifted — <a href="/" style="color:#34d399;">click here to return to CineRealm</a>.</div></div>`;
     } else if (appeal.status === "denied") {
-      statusEl.innerHTML = `
-        <div class="ban-appeal-status denied">
-          <div class="ban-appeal-status-title">❌ Appeal Denied</div>
-          <div class="ban-appeal-status-msg">Your appeal was denied${appeal.staffNote ? ": " + appeal.staffNote : ". This decision is final."}${appeal.canReappeal ? "<br><br>You may submit a new appeal." : ""}</div>
-        </div>`;
-      if (appeal.canReappeal) {
-        document.getElementById("banAppealForm").style.display = "block";
-      }
+      statusEl.innerHTML = `<div class="ban-appeal-status denied"><div class="ban-appeal-status-title">❌ Appeal Denied</div><div class="ban-appeal-status-msg">Your appeal was denied${appeal.staffNote ? ": " + appeal.staffNote : ". This decision is final."}${appeal.canReappeal ? "<br><br>You may submit a new appeal." : ""}</div></div>`;
+      if (appeal.canReappeal) document.getElementById("banAppealForm").style.display = "block";
     }
   }
 
-  // Wire appeal submit
   window._banKey = matchedKey;
   window._banFp  = fp;
   window._banIp  = ip;
@@ -348,11 +305,7 @@ window.submitAppeal = async () => {
     msgEl.style.color = "#34d399";
     document.getElementById("banAppealForm").style.display = "none";
     document.getElementById("banAppealStatus").style.display = "block";
-    document.getElementById("banAppealStatus").innerHTML = `
-      <div class="ban-appeal-status pending">
-        <div class="ban-appeal-status-title">⏳ Appeal Under Review</div>
-        <div class="ban-appeal-status-msg">Your appeal was submitted. A staff member will review it soon. Check back here for a response.</div>
-      </div>`;
+    document.getElementById("banAppealStatus").innerHTML = `<div class="ban-appeal-status pending"><div class="ban-appeal-status-title">⏳ Appeal Under Review</div><div class="ban-appeal-status-msg">Your appeal was submitted. A staff member will review it soon. Check back here for a response.</div></div>`;
   } catch(e) {
     msgEl.textContent = "Failed to submit: " + e.message;
     msgEl.style.color = "#ff6b6b";
