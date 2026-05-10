@@ -39,7 +39,7 @@ async function _getIPData() {
   try {
     const cached = sessionStorage.getItem("cr_ip_data");
     if (cached) return JSON.parse(cached);
-    const res = await fetch("http://ip-api.com/json/?fields=status,query,country,city,proxy,hosting", { signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined });
+    const res = await fetch("https://ip-api.com/json/?fields=status,query,country,city,proxy,hosting", { signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined });
     const data = await res.json();
     if (data.status === "success") {
       sessionStorage.setItem("cr_ip_data", JSON.stringify(data));
@@ -52,7 +52,7 @@ async function _getIPData() {
 // ── Ban check — runs on every page load ──────────────────────────────────
 // Skip on the banned page itself to avoid redirect loop
 if (!window.location.pathname.startsWith("/banned")) {
-  (async function checkBanOnLoad() {
+  window.addEventListener("load", async function checkBanOnLoad() {
     try {
       const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
       const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");

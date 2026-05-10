@@ -174,7 +174,7 @@ async function getIP() {
   try {
     const cached = sessionStorage.getItem("cr_ip_data");
     if (cached) return JSON.parse(cached);
-    const res = await fetch("http://ip-api.com/json/?fields=status,query,country,city,proxy,hosting");
+    const res = await fetch("https://ip-api.com/json/?fields=status,query,country,city,proxy,hosting");
     const data = await res.json();
     if (data.status === "success") {
       sessionStorage.setItem("cr_ip_data", JSON.stringify(data));
