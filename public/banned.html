@@ -189,7 +189,7 @@ function formatDuration(ms) {
 
 async function checkBan() {
   const fp = await getFingerprint();
-  const ipData = await getIP();
+  const ipData = await _getIPData();
   const ip = ipData?.query;
 
   let uid = null;

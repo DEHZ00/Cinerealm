@@ -101,41 +101,29 @@ try {
 // ── IP Logging — logs unique IPs once per device ─────────────────────────
 // Only runs once per device (cached in localStorage)
 if (!window.location.pathname.startsWith("/banned") && !window.location.pathname.startsWith("/admin")) {
-  (async function logIPOnFirstVisit() {
+  window.addEventListener("load", async function() {
     const LOG_KEY = "cr_ip_logged";
-    if (localStorage.getItem(LOG_KEY)) return; // already logged this device
- 
+    if (localStorage.getItem(LOG_KEY)) return;
     try {
       const [fp, ipData] = await Promise.all([_getVisitorFingerprint(), _getIPData()]);
       if (!ipData?.query) return;
- 
       const { getDatabase, ref, push, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
       const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
       const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
-      const db  = getDatabase(app);
- 
-      // Check if IP already logged
+      const db = getDatabase(app);
       const logsSnap = await get(ref(db, "ip_logs"));
       if (logsSnap.exists()) {
         const exists = Object.values(logsSnap.val()).some(l => l.ip === ipData.query);
-        if (exists) {
-          localStorage.setItem(LOG_KEY, "1");
-          return;
-        }
+        if (exists) { localStorage.setItem(LOG_KEY, "1"); return; }
       }
- 
-      // Get username if logged in
-      let uid = null, username = null;
-      try {
-        const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-        const auth = getAuth(app);
-        uid = auth.currentUser?.uid || null;
-        if (uid) {
-          const pSnap = await get(ref(db, "users/" + uid + "/profile"));
-          if (pSnap.exists()) username = pSnap.val().username || null;
-        }
-      } catch(e) {}
- 
+      const { getAuth, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+      const auth = getAuth(app);
+      const uid = await new Promise(resolve => { const u = onAuthStateChanged(auth, user => { u(); resolve(user?.uid || null); }); });
+      let username = null;
+      if (uid) {
+        const pSnap = await get(ref(db, "users/" + uid + "/profile"));
+        if (pSnap.exists()) username = pSnap.val().username || null;
+      }
       await push(ref(db, "ip_logs"), {
         ip: ipData.query,
         country: ipData.country || null,
@@ -147,12 +135,9 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
         username,
         firstSeen: Date.now(),
       });
- 
       localStorage.setItem(LOG_KEY, "1");
-    } catch(e) {
-      // Silent fail
-    }
-  })();
+    } catch(e) {}
+  });
 }
  
 // ── Followers / Following fix ─────────────────────────────────────────────
