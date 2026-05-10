@@ -262,6 +262,7 @@ const routes = {
   "/admin":     "admin.html",
   "/browser":   "browser.html",
   "/games-proxy": "games-proxy.html",
+   "/banned":   "banned.html",
 };
 
 app.get("/user/:username", (req, res) => sendHTML(res, path.join(__dirname, "public", "profile.html")));
