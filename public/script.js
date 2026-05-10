@@ -11,13 +11,11 @@ const FB_CONFIG = {
   
 };
 // ── FingerprintJS ─────────────────────────────────────────────────────────
-// Load FingerprintJS from CDN (open source, no account needed)
-(function() {
-  const s = document.createElement("script");
-  s.src = "https://openfpcdn.io/fingerprintjs/v4";
-  s.async = true;
-  document.head.appendChild(s);
-})();
+
+let FingerprintJS = null;
+import("https://unpkg.com/@fingerprintjs/fingerprintjs@4/dist/fp.esm.js").then(m => {
+  FingerprintJS = m.default;
+}).catch(() => {});
  
 async function _getVisitorFingerprint() {
   try {
