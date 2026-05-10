@@ -174,16 +174,21 @@ async function getIP() {
   try {
     const cached = sessionStorage.getItem("cr_ip_data");
     if (cached) return JSON.parse(cached);
-    const res = await fetch("https://ip-api.com/json/?fields=status,query,country,city,proxy,hosting");
-    const data = await res.json();
-    if (data.status === "success") {
-      sessionStorage.setItem("cr_ip_data", JSON.stringify(data));
-      return data;
-    }
+    const res = await fetch("https://freeipapi.com/api/json", { signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined });
+    const raw = await res.json();
+    const data = {
+      status: "success",
+      query: raw.ipAddress,
+      country: raw.countryName,
+      city: raw.cityName,
+      proxy: false,
+      hosting: false,
+    };
+    sessionStorage.setItem("cr_ip_data", JSON.stringify(data)); // cache it
+    return data;
   } catch(e) {}
   return null;
 }
-
 function formatDuration(ms) {
   if (ms <= 0) return "Expired";
   const s = Math.floor(ms / 1000);

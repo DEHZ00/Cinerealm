@@ -34,17 +34,22 @@ async function _getVisitorFingerprint() {
   } catch(e) { return null; }
 }
  
-async function _getIPData() {
-  // Cache in sessionStorage so we only call ip-api once per session
+async function getIP() {
   try {
     const cached = sessionStorage.getItem("cr_ip_data");
     if (cached) return JSON.parse(cached);
-    const res = await fetch("https://ip-api.com/json/?fields=status,query,country,city,proxy,hosting", { signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined });
-    const data = await res.json();
-    if (data.status === "success") {
-      sessionStorage.setItem("cr_ip_data", JSON.stringify(data));
-      return data;
-    }
+    const res = await fetch("https://freeipapi.com/api/json", { signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined });
+    const raw = await res.json();
+    const data = {
+      status: "success",
+      query: raw.ipAddress,
+      country: raw.countryName,
+      city: raw.cityName,
+      proxy: false,
+      hosting: false,
+    };
+    sessionStorage.setItem("cr_ip_data", JSON.stringify(data)); // cache
+    return data; 
   } catch(e) {}
   return null;
 }
@@ -89,7 +94,7 @@ if (!window.location.pathname.startsWith("/banned")) {
     } catch(e) {
       // Silent fail — don't block site if ban check errors
     }
-  })();
+  });
 }
  
 // ── IP Logging — logs unique IPs once per device ─────────────────────────
