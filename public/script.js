@@ -32,26 +32,25 @@ async function _getVisitorFingerprint() {
   } catch(e) { return null; }
 }
  
-async function getIP() {
+async function _getIPData() {
   try {
     const cached = sessionStorage.getItem("cr_ip_data");
     if (cached) return JSON.parse(cached);
-    const res = await fetch("https://freeipapi.com/api/json", { signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined });
+    const res = await fetch("https://ipapi.co/json/");
     const raw = await res.json();
     const data = {
       status: "success",
-      query: raw.ipAddress,
-      country: raw.countryName,
-      city: raw.cityName,
+      query: raw.ip,
+      country: raw.country_name,
+      city: raw.city,
       proxy: false,
       hosting: false,
     };
-    sessionStorage.setItem("cr_ip_data", JSON.stringify(data)); // cache
-    return data; 
+    sessionStorage.setItem("cr_ip_data", JSON.stringify(data));
+    return data;
   } catch(e) {}
   return null;
 }
- 
 // ── Ban check — runs on every page load ──────────────────────────────────
 // Skip on the banned page itself to avoid redirect loop
 if (!window.location.pathname.startsWith("/banned")) {
@@ -69,13 +68,17 @@ if (!window.location.pathname.startsWith("/banned")) {
       if (!bansSnap.exists()) return;
  
       // Get current user UID if logged in
-      let uid = null;
-      try {
-        const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-        const auth = getAuth(app);
-        uid = auth.currentUser?.uid || null;
-      } catch(e) {}
- 
+let uid = null;
+try {
+  const { getAuth, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+  const auth = getAuth(app);
+  uid = await new Promise(resolve => {
+    const unsub = onAuthStateChanged(auth, user => {
+      unsub();
+      resolve(user?.uid || null);
+    });
+  });
+} catch(e) {}
       let isBanned = false;
       bansSnap.forEach(child => {
         const ban = child.val();

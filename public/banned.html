@@ -155,17 +155,17 @@ async function getFingerprint() {
   } catch(e) { return null; }
 }
 
-async function getIP() {
+async function _getIPData() {
   try {
     const cached = sessionStorage.getItem("cr_ip_data");
     if (cached) return JSON.parse(cached);
-    const res = await fetch("https://freeipapi.com/api/json", { signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined });
+    const res = await fetch("https://ipapi.co/json/");
     const raw = await res.json();
     const data = {
       status: "success",
-      query: raw.ipAddress,
-      country: raw.countryName,
-      city: raw.cityName,
+      query: raw.ip,
+      country: raw.country_name,
+      city: raw.city,
       proxy: false,
       hosting: false,
     };
@@ -174,7 +174,6 @@ async function getIP() {
   } catch(e) {}
   return null;
 }
-
 function formatDuration(ms) {
   if (ms <= 0) return "Expired";
   const s = Math.floor(ms / 1000);
