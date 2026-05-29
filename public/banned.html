@@ -2,6 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <script type="importmap">
+{
+  "imports": {
+    "tslib": "https://cdn.jsdelivr.net/npm/tslib@2.6.2/tslib.es6.mjs"
+  }
+}
+</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Banned — CineRealm</title>
   <link rel="stylesheet" href="/style.css">
@@ -192,12 +199,14 @@ async function checkBan() {
   const ipData = await _getIPData();
   const ip = ipData?.query;
 
-  let uid = null;
-  try {
-    const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-    const auth = getAuth(app);
-    uid = auth.currentUser?.uid || null;
-  } catch(e) {}
+ let uid = null;
+try {
+  const { getAuth, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+  const auth = getAuth(app);
+  uid = await new Promise(resolve => {
+    const unsub = onAuthStateChanged(auth, user => { unsub(); resolve(user?.uid || null); });
+  });
+} catch(e) {}
 
   const bansSnap = await get(ref(db, "bans"));
   if (!bansSnap.exists()) {

@@ -98,52 +98,54 @@ try {
   });
 }
  
-// ── IP Logging — logs unique IPs once per device ─────────────────────────
-// Only runs once per device (cached in localStorage)
+// ── IP ──────────────────────────────────────────────────────────────────────────
+
 if (!window.location.pathname.startsWith("/banned") && !window.location.pathname.startsWith("/admin")) {
   window.addEventListener("load", async function() {
-    const LOG_KEY = "cr_ip_logged";
-    if (localStorage.getItem(LOG_KEY)) return;
     try {
       const [fp, ipData] = await Promise.all([_getVisitorFingerprint(), _getIPData()]);
       if (!ipData?.query) return;
+
       const { getDatabase, ref, push, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
       const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
       const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
       const db = getDatabase(app);
-      const logsSnap = await get(ref(db, "ip_logs"));
-      if (logsSnap.exists()) {
-        const exists = Object.values(logsSnap.val()).some(l => l.ip === ipData.query);
-        if (exists) { localStorage.setItem(LOG_KEY, "1"); return; }
+
+      // Dedup by fingerprint only
+      if (fp) {
+        const logsSnap = await get(ref(db, "ip_logs"));
+        if (logsSnap.exists()) {
+          const alreadyLogged = Object.values(logsSnap.val()).some(l => l.fingerprint === fp);
+          if (alreadyLogged) return;
+        }
       }
+
       const { getAuth, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
       const auth = getAuth(app);
-      const uid = await new Promise(resolve => { const u = onAuthStateChanged(auth, user => { u(); resolve(user?.uid || null); }); });
+      const uid = await new Promise(resolve => {
+        const u = onAuthStateChanged(auth, user => { u(); resolve(user?.uid || null); });
+      });
+
       let username = null;
       if (uid) {
         const pSnap = await get(ref(db, "users/" + uid + "/profile"));
         if (pSnap.exists()) username = pSnap.val().username || null;
       }
+
       await push(ref(db, "ip_logs"), {
         ip: ipData.query,
         country: ipData.country || null,
         city: ipData.city || null,
-        proxy: ipData.proxy || false,
-        hosting: ipData.hosting || false,
         fingerprint: fp || null,
         uid,
         username,
         firstSeen: Date.now(),
       });
-      localStorage.setItem(LOG_KEY, "1");
     } catch(e) {}
   });
 }
- 
 // ── Followers / Following fix ─────────────────────────────────────────────
-// The original followUser had a bug — it was incrementing the current user's
-// follower count instead of the target user's. This patches the function.
-// or replace them entirely.
+
  
 async function followUser(targetUid) {
   if (!_crUser) { openAuthModal("signin"); return; }
@@ -155,13 +157,13 @@ async function followUser(targetUid) {
     const db  = getDatabase(app);
     const myUid = _crUser.uid;
  
-    // Write follow relationship
+  
     await Promise.all([
       set(ref(db, "users/" + myUid + "/following/" + targetUid), { followedAt: Date.now() }),
       set(ref(db, "users/" + targetUid + "/followers/" + myUid), { followedAt: Date.now() }),
     ]);
  
-    // Get actual current counts from DB (don't rely on _crProfile cache)
+  
     const [myFollowingSnap, targetFollowersSnap] = await Promise.all([
       get(ref(db, "users/" + myUid + "/following")),
       get(ref(db, "users/" + targetUid + "/followers")),
@@ -175,7 +177,7 @@ async function followUser(targetUid) {
       set(ref(db, "users/" + targetUid + "/profile/followers"),  targetFollowerCount),
     ]);
  
-    // Update local profile cache
+  
     if (_crProfile) _crProfile.following = myFollowingCount;
  
     showToast("Following! 👥", "success");
@@ -196,7 +198,7 @@ async function unfollowUser(targetUid) {
       remove(ref(db, "users/" + targetUid + "/followers/" + myUid)),
     ]);
  
-    // Recalculate counts from actual data
+   
     const [myFollowingSnap, targetFollowersSnap] = await Promise.all([
       get(ref(db, "users/" + myUid + "/following")),
       get(ref(db, "users/" + targetUid + "/followers")),
@@ -259,13 +261,12 @@ let heroTimer = null;
 function loadHistory() {
   const raw = JSON.parse(localStorage.getItem("history") || "[]");
 
-  // Deduplicate — keep only the most recent entry per show/movie
-  // Key: type + tmdbId/id + (for TV: season+episode)
+
   const map = new Map();
   for (const entry of raw) {
     const id = entry.tmdbId || entry.id;
     if (!id || !entry.type) continue;
-    // For TV, key per show (not per episode) so we track the latest episode watched
+
     const key = entry.type + "_" + id;
     const existing = map.get(key);
     if (!existing || (entry.addedAt || 0) > (existing.addedAt || 0)) {
@@ -275,7 +276,7 @@ function loadHistory() {
 
   historyData = Array.from(map.values());
 
-  // If we cleaned up a lot, save the deduplicated version back
+
   if (raw.length > historyData.length) {
 
     saveHistory();
@@ -301,13 +302,13 @@ function saveWatchlist() {
 
   const isHome = window.location.pathname === "/";
 
-  // Add home class so CSS can show the progress bar on home only
+
   if (isHome) intro.classList.add("intro-home");
 
-  // Remove hidden so it shows
+
   intro.classList.remove("hidden");
 
-  // Home page = longer (2.6s), anime page = even longer (5.5s for animation), others = 1.6s
+
   const isAnime = window.location.pathname === "/anime";
   const duration = isHome ? 2600 : isAnime ? 5500 : 1600;
 
@@ -1528,7 +1529,7 @@ function renderSourcePills(media, defaultName, opts) {
 
 
 // Unified loadPlayer you call from cards
-function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
+async function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
   const media = {
     type,
     tmdbId: id,
@@ -1557,9 +1558,9 @@ function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
   `;
 
   // render season dropdown for TV
-  if (type === "tv") {
-    renderSeasonsDropdown(id, media, extraOpts);
-  }
+ if (type === "tv") {
+    await renderSeasonsDropdown(id, media, extraOpts);
+}
 
   // Build options object for provider mapping
   // For anime — read dub preference from localStorage and use anime-priority sources
