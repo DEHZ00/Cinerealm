@@ -51,52 +51,7 @@ async function _getIPData() {
   } catch(e) {}
   return null;
 }
-// ── Ban check — runs on every page load ──────────────────────────────────
-// Skip on the banned page itself to avoid redirect loop
-if (!window.location.pathname.startsWith("/banned")) {
-  window.addEventListener("load", async function checkBanOnLoad() {
-    try {
-      const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-      const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-      const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
-      const db  = getDatabase(app);
- 
-      const [fp, ipData] = await Promise.all([_getVisitorFingerprint(), _getIPData()]);
-      const ip = ipData?.query;
- 
-      const bansSnap = await get(ref(db, "bans"));
-      if (!bansSnap.exists()) return;
- 
-      // Get current user UID if logged in
-let uid = null;
-try {
-  const { getAuth, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-  const auth = getAuth(app);
-  uid = await new Promise(resolve => {
-    const unsub = onAuthStateChanged(auth, user => {
-      unsub();
-      resolve(user?.uid || null);
-    });
-  });
-} catch(e) {}
-      let isBanned = false;
-      bansSnap.forEach(child => {
-        const ban = child.val();
-        if (ban.active === false) return;
-        if (ban.expiresAt && ban.expiresAt < Date.now()) return;
-        if (
-          (uid && ban.uid === uid) ||
-          (ip && ban.ip === ip) ||
-          (fp && ban.fingerprint === fp)
-        ) { isBanned = true; }
-      });
- 
-      if (isBanned) window.location.href = "/banned";
-    } catch(e) {
-      // Silent fail — don't block site if ban check errors
-    }
-  });
-}
+
  
 // ── IP ──────────────────────────────────────────────────────────────────────────
 
@@ -1853,12 +1808,25 @@ async function renderSeasonsDropdown(tvId, media, extraOpts = {}) {
         extraOpts.season  = seasonNumber;
         extraOpts.episode = ep.episode_number;
 
-        loadPlayer(tvId, "tv", media.title || media.name || "", {
-          ...extraOpts,
-          season: seasonNumber,
-          episode: ep.episode_number,
-          progress: lastProgress
-        });
+   
+if (window._watchContext) {
+  window._watchContext.season  = seasonNumber;
+  window._watchContext.episode = ep.episode_number;
+}
+
+
+const activeBtn = document.querySelector(".source-tab.active");
+if (activeBtn) {
+  activeBtn.click();
+} else {
+  
+  loadPlayer(tvId, "tv", media.title || media.name || "", {
+    ...extraOpts,
+    season: seasonNumber,
+    episode: ep.episode_number,
+    progress: lastProgress
+  });
+}
       });
 
       episodeList.appendChild(epDiv);
@@ -4490,17 +4458,38 @@ async function _getFirebase() {
   window._fbHelpers = { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword,
     signOut, updateProfile, GoogleAuthProvider, sendPasswordResetEmail,
     ref, set, get, update, push, onValue, off, remove, increment };
+onAuthStateChanged(_fbAuth, async user => {
+  _crUser = user;
 
-  // Auth state listener
-  onAuthStateChanged(_fbAuth, async user => {
-    _crUser = user;
-    if (user) {
+  // Ban check — runs after auth resolves so uid is always correct
+  if (!window.location.pathname.startsWith("/banned") && !window.location.pathname.startsWith("/admin")) {
+    try {
+      const uid = user?.uid || null;
+      const [fp, ipData] = await Promise.all([_getVisitorFingerprint(), _getIPData()]);
+      const ip = ipData?.query;
+      const bansSnap = await get(ref(_fbDb, "bans"));
+      if (bansSnap.exists()) {
+        let isBanned = false;
+        bansSnap.forEach(child => {
+          const ban = child.val();
+          if (ban.active === false) return;
+          if (ban.expiresAt && ban.expiresAt < Date.now()) return;
+          if ((uid && ban.uid === uid) || (ip && ban.ip === ip) || (fp && ban.fingerprint === fp)) {
+            isBanned = true;
+          }
+        });
+        if (isBanned) window.location.href = "/banned";
+      }
+    } catch(e) {}
+  }
+
+  if (user) {
       _crProfile = await _loadProfile(user.uid);
       if (!_crProfile) {
         // First time — create profile
         _crProfile = await _createProfile(user);
       }
-      _syncLocalToCloud(); // push any local data to cloud
+      _syncLocalToCloud();
     } else {
       _crProfile = null;
     }

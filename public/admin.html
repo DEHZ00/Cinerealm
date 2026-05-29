@@ -704,14 +704,48 @@ async function loadReports() {
         <table class="adm-table">
           <thead><tr><th>Message</th><th>Type</th><th>Time</th><th>Action</th></tr></thead>
           <tbody>${alerts.map(([key, a]) => `
-            <tr>
-              <td style="color:#fff;">${a.message||a.title||"—"}</td>
+            <tr style="${a.isAppeal ? 'background:rgba(255,215,0,0.05);' : ''}">
+              <td style="color:#fff;">
+                ${a.isAppeal ? '<span class="adm-badge adm-badge-pending" style="margin-right:6px;">⚖️ Appeal</span>' : ''}
+                ${a.message||a.title||"—"}
+                ${a.appealName ? `<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;">From: ${a.appealName} · Ban ID: ${a.banKey||"—"}</div>` : ''}
+              </td>
               <td><span class="adm-badge adm-badge-pending">${a.type||"info"}</span></td>
               <td style="font-size:11px;color:rgba(255,255,255,0.3);">${a.timestamp?new Date(a.timestamp).toLocaleString():"—"}</td>
-              <td><button class="adm-btn adm-btn-red" onclick="deleteAlert('${key}')">✕</button></td>
+              <td style="display:flex;gap:4px;flex-wrap:wrap;">
+                ${a.isAppeal && a.banKey ? `
+                  <button class="adm-btn adm-btn-green" style="font-size:11px;" onclick="resolveAppealFromAlert('${a.banKey}','accepted','${key}')">✓ Accept</button>
+                  <button class="adm-btn adm-btn-red" style="font-size:11px;" onclick="resolveAppealFromAlert('${a.banKey}','denied','${key}')">✕ Deny</button>
+                ` : ''}
+                <button class="adm-btn adm-btn-red" onclick="deleteAlert('${key}')">🗑</button>
+              </td>
             </tr>`).join("")}</tbody>
         </table>`;
     } else { alertsEl.innerHTML = `<div class="adm-empty">No alerts</div>`; }
+
+    window.resolveAppealFromAlert = async (banKey, decision, alertKey) => {
+      try {
+        const note = decision === "denied" ? prompt("Optional: reason for denial (shown to user)") : null;
+        const appealsSnap = await get(ref(db, "ban_appeals"));
+        if (appealsSnap.exists()) {
+          for (const [appealKey, a] of Object.entries(appealsSnap.val())) {
+            if (a.banKey === banKey) {
+              await set(ref(db, "ban_appeals/" + appealKey + "/status"), decision);
+              await set(ref(db, "ban_appeals/" + appealKey + "/reviewedAt"), Date.now());
+              if (note) await set(ref(db, "ban_appeals/" + appealKey + "/staffNote"), note);
+            }
+          }
+        }
+        if (decision === "accepted") {
+          await set(ref(db, "bans/" + banKey + "/active"), false);
+          showToast("Appeal accepted — ban lifted ✓", "success");
+        } else {
+          showToast("Appeal denied", "info");
+        }
+        await remove(ref(db, "admin_alerts/" + alertKey));
+        loadReports();
+      } catch(e) { showToast("Error: " + e.message, "error"); }
+    };
 
     window.resolveReport = async key => {
       await set(ref(db, "broken_sources/" + key + "/status"), "resolved");

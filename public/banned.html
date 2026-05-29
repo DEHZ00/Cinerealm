@@ -309,6 +309,18 @@ window.submitAppeal = async () => {
       uid: window._banUid || null,
       banKey: window._banKey,
     });
+    // Notify admins
+const { push: _push } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+await _push(ref(db, "admin_alerts"), {
+  type: "warning",
+  title: "New Ban Appeal",
+  message: `${name} submitted an appeal — Ban ID: ${window._banKey}`,
+  banKey: window._banKey,
+  appealName: name,
+  timestamp: Date.now(),
+  isAppeal: true,
+  status: "pending"
+});
     msgEl.textContent = "✓ Appeal submitted — check back here for a response";
     msgEl.style.color = "#34d399";
     document.getElementById("banAppealForm").style.display = "none";
