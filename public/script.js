@@ -1207,7 +1207,7 @@ const PROVIDERS = [
   { name: "MoviesAPI", key: "moviesapi",  tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "111Movies", key: "111movies",  tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "King",      key: "vidking",    tier: "premium", chromebook: false, sandbox: false,  supports: { movie: true, tv: true, anime: false } },
-  { name: "Jupiter",   key: "VidZen",     tier: "premium", chromebook: true, sandbox: true,  supports: { movie: true, tv: true, anime: true  } },
+  { name: "Jupiter",   key: "VidZen",     tier: "premium", chromebook: true, sandbox: false,  supports: { movie: true, tv: true, anime: true  } },
 ];
 
 
@@ -1379,10 +1379,12 @@ function buildProviderUrl(providerKey, media, opts = {}) {
 let currentIframe = null;
 function unloadIframe() {
   if (!currentIframe) return;
-  try { currentIframe.src = "about:blank"; } catch(e){/*ignore*/ }
+  try { currentIframe.src = "about:blank"; } catch(e) {}
+  try { currentIframe.removeAttribute("sandbox"); } catch(e) {}
   if (currentIframe.parentNode) currentIframe.parentNode.removeChild(currentIframe);
   currentIframe = null;
 }
+
 function insertIframe(url, useSandbox = false) {
   unloadIframe();
   if (!url) {
@@ -1392,8 +1394,6 @@ function insertIframe(url, useSandbox = false) {
   const iframe = document.createElement("iframe");
   iframe.id = "active-player-iframe";
   iframe.src = url;
-
-  // Only apply sandbox on sources that support it
   if (useSandbox) {
     iframe.setAttribute("sandbox",
       "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
@@ -1408,7 +1408,7 @@ function insertIframe(url, useSandbox = false) {
     const err = document.getElementById("player-error") || document.getElementById("watch-player-error");
     if (err) err.style.display = "block";
   });
-  const placeholder = 
+  const placeholder =
     document.getElementById("player-iframe-placeholder") ||
     document.getElementById("watch-iframe-placeholder") ||
     playerDiv;
@@ -1416,7 +1416,7 @@ function insertIframe(url, useSandbox = false) {
     showError("Player container not found.");
     return null;
   }
-  placeholder.innerHTML = ""; // clear previous iframe
+  placeholder.innerHTML = "";
   placeholder.appendChild(iframe);
   currentIframe = iframe;
   return iframe;
@@ -5872,17 +5872,24 @@ async function loadUpNext() {
       const data = await apiCall("/tv/" + id);
       if (!data) continue;
 
-      // Figure out next episode
-      let nextSeason  = h.season;
-      let nextEpisode = h.episode + 1;
 
-      const seasonData = data.seasons?.find(s => s.season_number === h.season);
-      if (seasonData && h.episode >= seasonData.episode_count) {
-        // End of season — go to next
-        nextSeason  = h.season + 1;
-        nextEpisode = 1;
-        if (nextSeason > (data.number_of_seasons || 1)) continue; // finished show
-      }
+const allWatched = historyData.filter(x =>
+  x.type === "tv" && (x.tmdbId || x.id) == id && x.season && x.episode
+);
+const latest = allWatched.sort((a,b) => {
+  if (b.season !== a.season) return b.season - a.season;
+  return b.episode - a.episode;
+})[0] || h;
+
+let nextSeason  = latest.season;
+let nextEpisode = latest.episode + 1;
+
+const seasonData = data.seasons?.find(s => s.season_number === latest.season);
+if (seasonData && latest.episode >= seasonData.episode_count) {
+  nextSeason  = latest.season + 1;
+  nextEpisode = 1;
+  if (nextSeason > (data.number_of_seasons || 1)) continue;
+}
 
       nextEps.push({ data, id, nextSeason, nextEpisode });
     } catch(e) {}
