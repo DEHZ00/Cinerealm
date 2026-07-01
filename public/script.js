@@ -1154,12 +1154,13 @@ const PROVIDERS = [
   { name: "Ez",        key: "videasy",    tier: "standard", chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: true  } },
   { name: "Saturn",    key: "VidSrc",     tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "Mars",      key: "vidlink",    tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
-
+  { name: "ceenima", key: "vidcore", tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "XP",   key: "xpass",   tier: "premium",  chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "Aero", key: "airflix", tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
 
 
   // ── Premium Sources ───────────────────────────────────────────────────────
   { name: "VidUp",     key: "vidup",      tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
-  { name: "MoviesAPI", key: "moviesapi",  tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "111Movies", key: "111movies",  tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "King",      key: "vidking",    tier: "premium", chromebook: false, sandbox: false,  supports: { movie: true, tv: true, anime: false } },
   { name: "Jupiter",   key: "VidZen",     tier: "premium", chromebook: true, sandbox: false,  supports: { movie: true, tv: true, anime: true  } },
@@ -1327,6 +1328,34 @@ function buildProviderUrl(providerKey, media, opts = {}) {
     return base;
   }
 
+
+  if (providerKey === 'vidcore') {
+  let base = '';
+  if (t === 'movie') base = 'https://vidcore.net/movie/' + id;
+  if (t === 'tv')    base = 'https://vidcore.net/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
+  if (!base) return '';
+  const params = {};
+  if (opts.autoplay !== undefined) params.autoPlay = opts.autoplay ? 'true' : 'false';
+  return base + buildQuery(params);
+}
+
+if (providerKey === 'xpass') {
+  let base = '';
+  if (t === 'movie') base = 'https://play.xpass.top/e/movie/' + id;
+  if (t === 'tv')    base = 'https://play.xpass.top/e/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
+  if (!base) return '';
+  const params = { autostart: 'false' };
+  return base + buildQuery(params);
+}
+
+if (providerKey === 'airflix') {
+  let base = '';
+  if (t === 'movie') base = 'https://airflix1.com/embed/movie/' + id;
+  if (t === 'tv')    base = 'https://airflix1.com/embed/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
+  if (!base) return '';
+  return base;
+}
+
   return '';
 }
 
@@ -1354,11 +1383,10 @@ function insertIframe(url, useSandbox = false) {
       "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
     );
   }
-  iframe.setAttribute("allow", "autoplay; encrypted-media; fullscreen; picture-in-picture");
-  iframe.style.width = "100%";
-  iframe.style.height = "600px";
-  iframe.style.border = "none";
-  iframe.loading = "lazy";
+  iframe.setAttribute("allow", "autoplay; encrypted-media; fullscreen; picture-in-picture; clipboard-write");
+iframe.style.width = "100%";
+iframe.style.height = "600px";
+iframe.style.border = "none";
   iframe.addEventListener("error", () => {
     const err = document.getElementById("player-error") || document.getElementById("watch-player-error");
     if (err) err.style.display = "block";
