@@ -6253,3 +6253,37 @@ if (document.readyState === "loading") {
   if (window.location.pathname === "/") initHomePage();
 }
 
+// ── Floating Lite Mode Toggle Button ─────────────────────────────────────
+(function() {
+  // Don't show button on admin page
+  if (window.location.pathname.startsWith("/admin")) return;
+
+  const btn = document.createElement("button");
+  btn.id = "crLiteToggleBtn";
+  btn.style.cssText = "position:fixed;bottom:20px;left:20px;z-index:8500;background:rgba(8,4,4,0.9);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.55);padding:8px 14px;border-radius:999px;font-size:12px;font-weight:700;cursor:pointer;backdrop-filter:blur(12px);display:flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,0.4);transition:all 0.2s;";
+  
+  function updateUI() {
+    if (window._crLite) {
+      btn.innerHTML = "⚡ Optimize: ON";
+      btn.style.borderColor = "rgba(255,44,44,0.5)";
+      btn.style.color = "#ff6b6b";
+      btn.style.background = "rgba(255,44,44,0.1)";
+    } else {
+      btn.innerHTML = "⚡ Optimize: OFF";
+      btn.style.borderColor = "rgba(255,255,255,0.12)";
+      btn.style.color = "rgba(255,255,255,0.55)";
+      btn.style.background = "rgba(8,4,4,0.9)";
+    }
+  }
+  
+  updateUI();
+  btn.onclick = () => {
+    if (typeof window.toggleLiteMode === "function") {
+      window.toggleLiteMode();
+    }
+  };
+  
+  window.addEventListener("load", () => {
+    document.body.appendChild(btn);
+  });
+})();

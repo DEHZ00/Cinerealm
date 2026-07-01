@@ -762,6 +762,15 @@ async function leaveRoom() {
   </div>
 </div>
 <script>
+
+function waitForApiCall() {
+  if (typeof apiCall !== 'undefined' && typeof createMovieCard !== 'undefined') {
+    initWatchPage();
+  } else {
+    setTimeout(waitForApiCall, 50);
+  }
+}
+
 (async function initWatchPage() {
   const path = window.location.pathname;
 
@@ -1437,6 +1446,7 @@ async function renderSeasonsDropdownInto(container, tvId, media, extraOpts) {
   seasonSelect.value = initialSeason;
   loadEpisodes(initialSeason);
 }
+waitForApiCall();
 </script>
 
 <!-- Vercel Web Analytics -->
