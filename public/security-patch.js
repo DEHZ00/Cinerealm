@@ -28,20 +28,26 @@ async function _getVisitorFingerprint() {
 }
 
 async function _getIPData() {
-
+ 
   try {
     const cached = sessionStorage.getItem("cr_ip_data");
     if (cached) return JSON.parse(cached);
 const res = await fetch("http://ip-api.com/json/?fields=status,query,country,city,proxy,hosting", { signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined });
     const data = await res.json();
     if (data.status === "success") {
+      
+    
+      if (data.query && data.query.includes(":")) {
+        const parts = data.query.split(":");
+        data.query = parts.slice(0, 4).join(":") + "::";
+      }
+      
       sessionStorage.setItem("cr_ip_data", JSON.stringify(data));
       return data;
     }
   } catch(e) {}
   return null;
 }
-
 // ── Ban check — runs on every page load ──────────────────────────────────
 
 if (!window.location.pathname.startsWith("/banned")) {
@@ -91,7 +97,7 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
     const LOG_KEY = "cr_ip_logged";
     const LOG_KEY_TIME = "cr_ip_logged_time";
     const lastLogged = parseInt(localStorage.getItem(LOG_KEY_TIME) || "0");
-    const oneWeek = 7 * 24 * 60 * 60 * 1000; 
+    const oneWeek = 7 * 24 * 60 * 60 * 1000; // Log at most once per week per device
 
     if (localStorage.getItem(LOG_KEY) && (Date.now() - lastLogged < oneWeek)) return;
 
@@ -104,7 +110,7 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
       const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
       const db  = getDatabase(app);
 
-     
+      // Check if FINGERPRINT already exists in DB
       const logsSnap = await get(ref(db, "ip_logs"));
       let existingKey = null;
       if (logsSnap.exists()) {
@@ -127,7 +133,7 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
       if (existingKey) {
         // Device exists, just update their latest IP and timestamp
         await update(ref(db, "ip_logs/" + existingKey), {
-          ip: ipData.query,
+          ip: ipData.query, // This is now the truncated IPv6 or normal IPv4
           country: ipData.country || null,
           city: ipData.city || null,
           uid: uid || null,
@@ -153,15 +159,12 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
       localStorage.setItem(LOG_KEY, "1");
       localStorage.setItem(LOG_KEY_TIME, Date.now().toString());
     } catch(e) {
-      
+      // Silent fail
     }
   })();
 }
 // ── Followers / Following fix ─────────────────────────────────────────────
-// The original followUser had a bug — it was incrementing the current user's
-// follower count instead of the target user's. This patches the function.
-// Paste this AFTER the original followUser / unfollowUser functions in script.js,
-// or replace them entirely.
+
 
 async function followUser(targetUid) {
   if (!_crUser) { openAuthModal("signin"); return; }
