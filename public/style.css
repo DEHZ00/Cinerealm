@@ -7862,3 +7862,138 @@ body.theater-mode #watch-content {
 .mobile-drawer-item:hover,
 .mobile-drawer-item:active { background: rgba(255,44,44,0.1); color: #fff; }
 .mobile-drawer-item span { font-size: 22px; line-height: 1; }
+/* ════════════════════════════════════════════════════════════════════════════
+   LITE MODE — TV & weak device optimizations
+   Disables: backdrop-filter, blur, infinite animations, heavy shadows
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* 1. Kill ALL backdrop-filters — the #1 TV killer */
+.cr-lite *,
+.cr-lite *::before,
+.cr-lite *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 2. Remove blur filters from hero, panel, card images */
+.cr-lite .hero-bg,
+.cr-lite .panel-backdrop,
+.cr-lite .card-img-blur,
+.cr-lite .card-watched-overlay,
+.cr-lite .episode-now-playing-badge {
+  filter: none !important;
+  transform: none !important;
+}
+
+/* 3. Stop all infinite animations */
+.cr-lite body::before,
+.cr-lite .trending-ticker-track,
+.cr-lite #appIntro::before,
+.cr-lite #appIntro::after,
+.cr-lite .erick-spin,
+.cr-lite .spinner,
+.cr-lite .skeleton-card-img,
+.cr-lite .skeleton-card-title,
+.cr-lite .panel-skel,
+.cr-lite .panel-skeleton-backdrop {
+  animation: none !important;
+}
+
+/* 4. Reduce heavy box-shadows to simple ones */
+.cr-lite .movie-card:hover,
+.cr-lite .details-panel,
+.cr-lite .person-panel,
+.cr-lite .cr-cloak-panel,
+.cr-lite .modal-content,
+.cr-lite .player-wrapper,
+.cr-lite .hero-inner,
+.cr-lite .source-tab.active,
+.cr-lite .cr-profile-dropdown,
+.cr-lite .search-overlay-bar {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+}
+
+/* 5. Disable hover transforms (TVs use D-pad, no real hover) */
+.cr-lite .movie-card:hover {
+  transform: none !important;
+}
+.cr-lite .movie-card:hover .card-image-wrapper img {
+  transform: none !important;
+}
+.cr-lite .source-tab:hover,
+.cr-lite .source-tab.active {
+  transform: none !important;
+}
+
+/* 6. Shorten ALL transitions to near-zero */
+.cr-lite *,
+.cr-lite *::before,
+.cr-lite *::after {
+  transition-duration: 0.05s !important;
+  animation-duration: 0.05s !important;
+}
+
+/* 7. Skeletons: solid color instead of shimmer */
+.cr-lite .skeleton-card-img,
+.cr-lite .skeleton-card-title,
+.cr-lite .panel-skel,
+.cr-lite .panel-skeleton-backdrop {
+  background: rgba(255,255,255,0.06) !important;
+  background-size: auto !important;
+}
+
+/* 8. Simplify body background — no animated radial gradients */
+.cr-lite body {
+  background: #0a0606 !important;
+}
+.cr-lite body::before {
+  background: radial-gradient(ellipse at 20% -10%, rgba(80,0,0,0.3) 0%, transparent 60%) !important;
+  animation: none !important;
+}
+
+/* 9. Splash screen: static, no glow pulse */
+.cr-lite #appIntro {
+  background: #050303 !important;
+}
+.cr-lite #appIntro::before,
+.cr-lite #appIntro::after {
+  animation: none !important;
+  opacity: 0.5 !important;
+}
+.cr-lite .intro-logo::after {
+  animation: none !important;
+  opacity: 1 !important;
+}
+.cr-lite .intro-tagline,
+.cr-lite .intro-bar-wrap {
+  animation: none !important;
+  opacity: 1 !important;
+}
+
+/* 10. Hide trending ticker animation track (show static if needed) */
+.cr-lite .trending-ticker-track {
+  animation: none !important;
+  flex-wrap: wrap !important;
+  white-space: normal !important;
+}
+
+/* 11. Card entrance: no animation */
+.cr-lite .movie-card {
+  animation: none !important;
+  opacity: 1 !important;
+}
+
+/* 12. Page fade: instant */
+.cr-lite .page.active {
+  animation: none !important;
+}
+
+/* 13. Scroll-top button: simpler shadow */
+.cr-lite .scroll-top-btn {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+}
+
+/* 14. Force GPU layer off for static elements */
+.cr-lite .movie-row {
+  will-change: auto !important;
+}

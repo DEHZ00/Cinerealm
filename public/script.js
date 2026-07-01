@@ -1,5 +1,52 @@
 // CineRealm script.js — v2.2
 
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// LITE MODE — TV & weak device detection 
+// ════════════════════════════════════════════════════════════════════════════
+(function () {
+  const LITE_KEY = "cr_lite_mode";
+  let lite = localStorage.getItem(LITE_KEY);
+
+  // Auto-detect on first visit
+  if (lite === null) {
+    const ua = navigator.userAgent || "";
+    const isTV = /tv|smarttv|smart-tv|hbbtv|pov_tv|netcast|viera|nettv|roku|dlna|googletv|aftt|aftm|brenda|tegra|ce-html/i.test(ua);
+    const isLowMem = (navigator.deviceMemory || 99) <= 2;
+    const isLowCpu = (navigator.hardwareConcurrency || 99) <= 4;
+    const isBigScreenNoTouch = window.innerWidth >= 1280 && !("ontouchstart" in window);
+    const isOldWebview = /web0s|tizen|android 4|android 5|android 6/i.test(ua);
+
+    if (isTV || isOldWebview || (isLowMem && isLowCpu) || (isBigScreenNoTouch && isLowCpu)) {
+      lite = "1";
+    } else {
+      lite = "0";
+    }
+    localStorage.setItem(LITE_KEY, lite);
+  }
+
+  if (lite === "1") {
+    document.documentElement.classList.add("cr-lite");
+    window._crLite = true;
+  } else {
+    window._crLite = false;
+  }
+
+  // Manual toggle (wire to a button later if you want)
+  window.toggleLiteMode = function () {
+    const now = localStorage.getItem(LITE_KEY) === "1" ? "0" : "1";
+    localStorage.setItem(LITE_KEY, now);
+    location.reload();
+  };
+})();
+
+
+
+
+
+
+
 const FB_CONFIG = {
   apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
   authDomain: "cinerealm-8b7b9.firebaseapp.com",
@@ -751,7 +798,13 @@ function createMovieCard(movie, type = "movie") {
   `;
 
   // Blur-up
-  const img = card.querySelector("img");
+// Blur-up
+const img = card.querySelector("img");
+if (window._crLite) {
+  img.src = fullSrc;
+  img.classList.remove("card-img-blur");
+  img.classList.add("card-img-loaded");
+} else {
   const fullImg = new Image();
   fullImg.onload = () => {
     img.src = fullSrc;
@@ -759,8 +812,10 @@ function createMovieCard(movie, type = "movie") {
     img.classList.add("card-img-loaded");
   };
   fullImg.src = fullSrc;
+}
 
-  // Preload on hover
+
+if (!window._crLite) {
   let hoverTimer = null;
   card.addEventListener("mouseenter", () => {
     hoverTimer = setTimeout(() => {
@@ -768,15 +823,16 @@ function createMovieCard(movie, type = "movie") {
     }, 300);
   });
   card.addEventListener("mouseleave", () => clearTimeout(hoverTimer));
+}
 
-  card.addEventListener("click", () => showMovieDetails(movie, type));
+card.addEventListener("click", () => showMovieDetails(movie, type));
 
-  // Store data for swipe gestures (Section 23)
-  card._movieData  = movie;
-  card._mediaType  = type;
-  if (window._initCardSwipe) window._initCardSwipe(card, movie, type);
 
-  return card;
+card._movieData  = movie;
+card._mediaType  = type;
+if (window._initCardSwipe) window._initCardSwipe(card, movie, type);
+
+return card;
 }
 
 // ── Details Fullscreen Overlay ────────────────────────────────────────────
@@ -1155,11 +1211,12 @@ const PROVIDERS = [
   { name: "Saturn",    key: "VidSrc",     tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "Mars",      key: "vidlink",    tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "ceenima", key: "vidcore", tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
-  { name: "XP",   key: "xpass",   tier: "premium",  chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
-  { name: "Aero", key: "airflix", tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "XP",   key: "xpass",   tier: "standard",  chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
+  
 
 
   // ── Premium Sources ───────────────────────────────────────────────────────
+  { name: "Aero", key: "airflix", tier: "premium", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "VidUp",     key: "vidup",      tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "111Movies", key: "111movies",  tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "King",      key: "vidking",    tier: "premium", chromebook: false, sandbox: false,  supports: { movie: true, tv: true, anime: false } },
@@ -2517,7 +2574,7 @@ function buildHeroDots() {
       showHeroSlide(heroIndex);
       if (heroTimer) {
         clearInterval(heroTimer);
-        heroTimer = setInterval(nextHeroSlide, 12000);
+        heroTimer = setInterval(nextHeroSlide, window._crLite ? 20000 : 12000);
       }
     });
     dotsContainer.appendChild(dot);
@@ -2805,39 +2862,90 @@ if (document.getElementById("heroSection")) {
 
 // ── Section 13 — Extra Premium Polish ────────────────────────────────────
 
-// ── 1. Favicon animation ──────────────────────────────────────────────────
+// ── 1. Favicon animation (lite-mode aware) ────────────────────────────────
 let _faviconInterval = null;
+let _faviconCanvas = null;
+let _faviconCtx = null;
+
+function _drawFaviconFrame() {
+  if (!_faviconCtx) return;
+  const ctx = _faviconCtx;
+  ctx.clearRect(0, 0, 32, 32);
+  ctx.fillStyle = "#ff2c2c";
+  ctx.beginPath();
+  ctx.arc(16, 16, 15, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#fff";
+  ctx.beginPath();
+  ctx.moveTo(12, 9);
+  ctx.lineTo(12, 23);
+  ctx.lineTo(24, 16);
+  ctx.closePath();
+  ctx.fill();
+  const link = document.querySelector("link[rel*='icon']");
+  if (link) link.href = _faviconCanvas.toDataURL("image/png");
+}
 
 function startFaviconAnimation() {
-  const link = document.querySelector("link[rel*='icon']") || (() => {
-    const l = document.createElement("link"); l.rel = "icon"; document.head.appendChild(l); return l;
-  })();
-  const canvas = document.createElement("canvas");
-  canvas.width = 32; canvas.height = 32;
-  const ctx = canvas.getContext("2d");
-  let frame = 0;
+  // LITE MODE
+  if (window._crLite) {
+    const link = document.querySelector("link[rel*='icon']") || (() => {
+      const l = document.createElement("link");
+      l.rel = "icon";
+      document.head.appendChild(l);
+      return l;
+    })();
+    link.href = "/favicon.ico";
+    return;
+  }
+
   if (_faviconInterval) clearInterval(_faviconInterval);
+  if (!_faviconCanvas) {
+    _faviconCanvas = document.createElement("canvas");
+    _faviconCanvas.width = 32;
+    _faviconCanvas.height = 32;
+    _faviconCtx = _faviconCanvas.getContext("2d");
+  }
+
+  let frame = 0;
+  // Normal mode
   _faviconInterval = setInterval(() => {
+    const ctx = _faviconCtx;
     ctx.clearRect(0, 0, 32, 32);
     const alpha = 0.7 + Math.sin(frame * 0.15) * 0.3;
-    ctx.fillStyle = `rgba(255,44,44,${alpha})`;
-    ctx.beginPath(); ctx.arc(16, 16, 15, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "rgba(255,44,44," + alpha + ")";
+    ctx.beginPath();
+    ctx.arc(16, 16, 15, 0, Math.PI * 2);
+    ctx.fill();
     ctx.fillStyle = "#fff";
-    ctx.beginPath(); ctx.moveTo(12,9); ctx.lineTo(12,23); ctx.lineTo(24,16); ctx.closePath(); ctx.fill();
-    link.href = canvas.toDataURL("image/png");
+    ctx.beginPath();
+    ctx.moveTo(12, 9);
+    ctx.lineTo(12, 23);
+    ctx.lineTo(24, 16);
+    ctx.closePath();
+    ctx.fill();
+    const link = document.querySelector("link[rel*='icon']");
+    if (link) link.href = _faviconCanvas.toDataURL("image/png");
     frame++;
-  }, 1000);
+  }, 2000);
 }
 
 function stopFaviconAnimation() {
-  if (_faviconInterval) { clearInterval(_faviconInterval); _faviconInterval = null; }
+  if (_faviconInterval) {
+    clearInterval(_faviconInterval);
+    _faviconInterval = null;
+  }
   const link = document.querySelector("link[rel*='icon']");
   if (link) link.href = "/favicon.ico";
 }
 
+
+
 if (window.location.pathname.startsWith("/watch")) {
   window.addEventListener("load", () => setTimeout(startFaviconAnimation, 2000));
   document.addEventListener("visibilitychange", () => {
+    // Lite mode: no animation at all, just static icon
+    if (window._crLite) return;
     if (document.hidden) startFaviconAnimation();
     else stopFaviconAnimation();
   });
@@ -3715,7 +3823,7 @@ function updateReviewBadgeInPanel(id, type) {
 (function initMobileUpgrades() {
 
   // 1. Pull to Refresh
-  if (window.location.pathname === "/" && "ontouchstart" in window) {
+   if (!window._crLite && window.location.pathname === "/" && "ontouchstart" in window) {
     let _pullStart = 0, _pullDist = 0, _pulling = false, _indicator = null;
     function getPullIndicator() {
       if (_indicator) return _indicator;
@@ -3765,6 +3873,10 @@ function updateReviewBadgeInPanel(id, type) {
   window._initCardSwipe = function(card, movie, type) {
     if (card._swipeInit) return;
     card._swipeInit = true;
+   
+    // Skip swipe gestures in lite mode (TVs don't have touch)
+    if (window._crLite) return;
+    
     let sx = 0, sy = 0, moved = false;
     card.addEventListener("touchstart", e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; moved = false; }, { passive: true });
     card.addEventListener("touchmove", e => {
@@ -3927,13 +4039,20 @@ function updateReviewBadgeInPanel(id, type) {
   }, { passive: true });
 })();
 
-// 5. Periodically clean stale cache entries
+// Only run cleanup when tab is visible
+let _cacheCleanupRunning = false;
 setInterval(() => {
-  const now = Date.now();
-  for (const [key, val] of _apiCache) {
-    if (now - val.ts > API_CACHE_TTL) _apiCache.delete(key);
+  if (document.hidden || _cacheCleanupRunning) return;
+  _cacheCleanupRunning = true;
+  try {
+    const now = Date.now();
+    for (const [key, val] of _apiCache) {
+      if (now - val.ts > API_CACHE_TTL) _apiCache.delete(key);
+    }
+  } finally {
+    _cacheCleanupRunning = false;
   }
-}, 5 * 60 * 1000);
+}, 10 * 60 * 1000); // 10 min instead of 5
 
 // ── Section 30 — Extra Polish ────────────────────────────────────────────
 
