@@ -103,7 +103,8 @@ async function _getIPData() {
 
 // ── IP Logging — runs once per browser session ───────────────────────────
 if (!window.location.pathname.startsWith("/banned") && !window.location.pathname.startsWith("/admin")) {
-  (async function logIPOnFirstVisit() {
+  // 🛑 SEO FIX: Run on 'load' so it doesn't block Googlebot from rendering the page
+  window.addEventListener("load", async function logIPOnFirstVisit() {
     const LOG_KEY = "cr_ip_logged";
 
     if (sessionStorage.getItem(LOG_KEY)) {
@@ -141,9 +142,9 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
       const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
       const db  = getDatabase(app);
 
-      // Wait up to 2 seconds for Firebase Auth to load so we know who is logged in
+      // 🛑 FIX GUEST BUG: Wait for _crAuthReady instead of typeof _crUser
       let authAttempts = 0;
-      while (typeof _crUser === 'undefined' && authAttempts < 10) {
+      while (!_crAuthReady && authAttempts < 15) {
         await new Promise(r => setTimeout(r, 200));
         authAttempts++;
       }
@@ -157,32 +158,49 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
         } catch(e) {}
       }
 
-           const logRef = ref(db, "ip_logs/" + fp);
+      const logRef = ref(db, "ip_logs/" + fp);
       
-      // Check if the log already exists (catch prevents crash if guest permission denied)
-      const logSnap = await get(logRef).catch(() => null);
-      
-      if (logSnap && logSnap.exists()) {
-        // Log exists! Only update lastSeen and dynamic info, preserving firstSeen
-        console.log("🔒 IP Log: Device exists. Updating lastSeen...");
+      // 🛑 FIX FIRST SEEN OVERWRITE: Guests don't have read permission, so get() fails for them.
+      // We handle logged-in users and guests differently.
+      if (uid) {
+        // Logged in user: has read permission, so we can check if they exist
+        const logSnap = await get(logRef).catch(() => null);
+        
+        if (logSnap && logSnap.exists()) {
+          const existingData = logSnap.val();
+          console.log("🔒 IP Log: Device exists. Updating lastSeen...");
+          await update(logRef, {
+            ip: ipData.query,
+            country: ipData.country || null,
+            city: ipData.city || null,
+            uid: uid,
+            username: username,
+            lastSeen: Date.now(),
+            // Preserve firstSeen if it exists, otherwise set it now
+            firstSeen: existingData.firstSeen || Date.now()
+          });
+        } else {
+          // Logged in, but brand new device
+          console.log("🔒 IP Log: Writing to Firebase -> ip_logs/" + fp);
+          await set(logRef, {
+            ip: ipData.query,
+            country: ipData.country || null,
+            city: ipData.city || null,
+            uid: uid,
+            username: username,
+            firstSeen: Date.now(),
+            lastSeen: Date.now()
+          });
+        }
+      } else {
+        // Guest: No read permission. We just use update() so we don't overwrite firstSeen if they are a returning visitor.
+        console.log("🔒 IP Log: Guest user. Updating lastSeen...");
         await update(logRef, {
           ip: ipData.query,
           country: ipData.country || null,
           city: ipData.city || null,
-          uid: uid,
-          username: username,
-          lastSeen: Date.now()
-        });
-      } else {
-        // New device! Create the record with firstSeen and lastSeen
-        console.log("🔒 IP Log: Writing to Firebase -> ip_logs/" + fp);
-        await set(logRef, {
-          ip: ipData.query,
-          country: ipData.country || null,
-          city: ipData.city || null,
-          uid: uid,
-          username: username,
-          firstSeen: Date.now(),
+          uid: null,
+          username: null,
           lastSeen: Date.now()
         });
       }
@@ -192,7 +210,7 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
     } catch(e) {
       console.error("❌ IP Log: FIREBASE WRITE FAILED:", e);
     }
-  })();
+  });
 }
 // ── Followers / Following fix ─────────────────────────────────────────────
 
