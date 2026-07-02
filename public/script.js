@@ -56,29 +56,14 @@ const FB_CONFIG = {
   messagingSenderId: "1076768481536",
   appId: "1:1076768481536:web:4fd3bdc3f222e4850ad3e5"
   
-};
-// ── Bulletproof IP Logging & Fingerprinting ──────────────────────────────
-let _fpLoader = null;
-
+};// ── Bulletproof IP Logging & Fingerprinting ──────────────────────────────
 async function _getVisitorFingerprint() {
-  try {
-    if (!_fpLoader) {
-   
-      _fpLoader = (await import("https://unpkg.com/@fingerprintjs/fingerprintjs@4/dist/fp.esm.js")).default;
-    }
-    if (!_fpLoader) throw new Error("Fingerprint loader failed");
-    const fp = await _fpLoader.load();
-    const result = await fp.get();
-    return result.visitorId;
-  } catch(e) { 
-    console.warn("FingerprintJS blocked, using fallback ID.");
-    let fallbackId = localStorage.getItem("cr_fallback_fp");
-    if (!fallbackId) {
-      fallbackId = "fallback_" + Math.random().toString(36).slice(2, 15);
-      localStorage.setItem("cr_fallback_fp", fallbackId);
-    }
-    return fallbackId;
+  let fp = localStorage.getItem("cr_device_fp");
+  if (!fp) {
+    fp = "fp_" + (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
+    localStorage.setItem("cr_device_fp", fp);
   }
+  return fp;
 }
 
 async function _getIPData() {
@@ -119,46 +104,57 @@ async function _getIPData() {
 if (!window.location.pathname.startsWith("/banned") && !window.location.pathname.startsWith("/admin")) {
   (async function logIPOnFirstVisit() {
     const LOG_KEY = "cr_ip_logged";
-    if (sessionStorage.getItem(LOG_KEY)) return;
+    if (sessionStorage.getItem(LOG_KEY)) {
+      console.log("🔒 IP Log: Skipped (already logged this session).");
+      return;
+    }
 
     try {
-      const [fp, ipData] = await Promise.all([_getVisitorFingerprint(), _getIPData()]);
-      if (!ipData?.query || !fp) return;
+      const fp = await _getVisitorFingerprint();
+      console.log("🔒 IP Log: Fingerprint generated ->", fp);
 
-      const { getDatabase, ref, get, set, update } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+      let ipData = null;
+      try {
+        console.log("🔒 IP Log: Fetching from ipapi.co...");
+        const res = await fetch("https://ipapi.co/json/");
+        const raw = await res.json();
+        if (raw.ip) {
+          ipData = { query: raw.ip, country: raw.country_name, city: raw.city };
+          console.log("🔒 IP Log: IP Fetched successfully ->", ipData.query);
+        } else {
+          console.warn("🔒 IP Log: ipapi.co did not return an IP. Raw:", raw);
+        }
+      } catch(e) {
+        console.error("🔒 IP Log: ipapi.co fetch failed:", e);
+      }
+
+      if (!ipData) {
+        console.log("🔒 IP Log: Using fallback IP data.");
+        ipData = { query: "Unknown_IP", country: "Unknown", city: "Unknown" };
+      }
+
+      console.log("🔒 IP Log: Connecting to Firebase...");
+      const { getDatabase, ref, set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
       const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
       const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
       const db  = getDatabase(app);
 
-      const logId = fp || ("ip_" + ipData.query.replace(/[.:]/g, "_"));
-      const logRef = ref(db, "ip_logs/" + logId);
-      const logSnap = await get(logRef);
+      const logRef = ref(db, "ip_logs/" + fp);
+      
+      console.log("🔒 IP Log: Writing to Firebase -> ip_logs/" + fp);
+      await set(logRef, {
+        ip: ipData.query,
+        country: ipData.country || null,
+        city: ipData.city || null,
+        firstSeen: Date.now(),
+        lastSeen: Date.now()
+      });
 
-      let uid = null, username = null;
-      try {
-        const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-        const auth = getAuth(app);
-        uid = auth.currentUser?.uid || null;
-        if (uid) {
-          const pSnap = await get(ref(db, "users/" + uid + "/profile"));
-          if (pSnap.exists()) username = pSnap.val().username || null;
-        }
-      } catch(e) {}
-
-      if (logSnap.exists()) {
-        await update(logRef, {
-          ip: ipData.query, country: ipData.country || null, city: ipData.city || null,
-          uid: uid || null, username: username || null, lastSeen: Date.now()
-        });
-      } else {
-        await set(logRef, {
-          ip: ipData.query, country: ipData.country || null, city: ipData.city || null,
-          proxy: ipData.proxy || false, hosting: ipData.hosting || false,
-          uid, username, firstSeen: Date.now(), lastSeen: Date.now()
-        });
-      }
+      console.log("✅ IP Log: SUCCESS! Written to database.");
       sessionStorage.setItem(LOG_KEY, "1");
-    } catch(e) {}
+    } catch(e) {
+      console.error("❌ IP Log: FIREBASE WRITE FAILED:", e);
+    }
   })();
 }
 
