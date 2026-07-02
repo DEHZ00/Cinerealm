@@ -771,7 +771,15 @@ function waitForApiCall() {
   }
 }
 
-(async function initWatchPage() {
+function waitForApiCall() {
+  if (typeof apiCall !== 'undefined' && typeof createMovieCard !== 'undefined') {
+    initWatchPage();
+  } else {
+    setTimeout(waitForApiCall, 50);
+  }
+}
+
+async function initWatchPage() {
   const path = window.location.pathname;
 
   let type, tmdbId, season, episode;
@@ -1195,7 +1203,7 @@ function waitForApiCall() {
     };
   }
 
-})();
+}
 
 // ── Auto-next episode countdown ───────────────────────────────────────────
 let _autoNextTimer = null;

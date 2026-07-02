@@ -179,19 +179,19 @@
 <main class="genres-page">
   <h2 style="margin-bottom:20px;">Browse by Genre</h2>
 
-  <!-- Movie / TV toggle -->
+
   <div class="genre-type-toggle">
     <button class="genre-type-btn active" data-type="movie">🎬 Movies</button>
     <button class="genre-type-btn" data-type="tv">📺 TV Shows</button>
   </div>
 
-  <!-- Genre chips -->
+
   <div class="genre-chips" id="genreChips">
-    <!-- Skeleton placeholders while loading -->
+  
     ${Array(12).fill('<span class="genre-chip-skeleton"></span>').join("")}
   </div>
 
-  <!-- Results -->
+
   <div class="genre-results-header" id="resultsHeader" style="display:none;">
     <h3 class="genre-results-title" id="resultsTitle">All Movies</h3>
     <select class="genre-sort-select" id="sortSelect">
@@ -206,7 +206,7 @@
   <button class="load-more-btn" id="loadMoreBtn" style="display:none;">Load More</button>
 </main>
 
-<!-- Details Modal -->
+
 <!-- Details Side Panel -->
 <div id="detailsOverlay" class="details-overlay" onclick="closeDetailsPanel()"></div>
 <div id="detailsPanel" class="details-panel" style="display:none;">
@@ -240,7 +240,15 @@
 <script src="/cloak-config.js"></script>
 <script src="/script.min.js" defer></script>
 <script>
-(async function initGenresPage() {
+function waitForApiCallGenres() {
+  if (typeof apiCall !== 'undefined' && typeof createMovieCard !== 'undefined') {
+    initGenresPage();
+  } else {
+    setTimeout(waitForApiCallGenres, 50);
+  }
+}
+
+async function initGenresPage() {
   let currentType    = "movie";
   let currentGenreId = null;
   let currentGenreName = "All";
@@ -255,7 +263,7 @@
   const loadMoreBtn    = document.getElementById("loadMoreBtn");
   const sortSelect     = document.getElementById("sortSelect");
 
-  // ── Load genre list ───────────────────────────────────────────────────
+
   async function loadGenres(type) {
     chipsContainer.innerHTML = Array(12).fill('<span class="genre-chip-skeleton"></span>').join("");
 
@@ -264,7 +272,7 @@
 
     chipsContainer.innerHTML = "";
 
-    // "All" chip
+
     const allChip = document.createElement("span");
     allChip.className = "genre-chip" + (currentGenreId === null ? " active" : "");
     allChip.textContent = "All";
@@ -280,7 +288,7 @@
       chipsContainer.appendChild(chip);
     });
 
-    // Delegate click
+
     chipsContainer.onclick = (e) => {
       const chip = e.target.closest(".genre-chip");
       if (!chip) return;
@@ -293,7 +301,7 @@
     };
   }
 
-  // ── Load results ──────────────────────────────────────────────────────
+
   async function loadResults(reset = false) {
     if (reset) {
       resultsGrid.innerHTML = "";
@@ -326,7 +334,7 @@
     loadMoreBtn.disabled = false;
   }
 
-  // ── Load more ─────────────────────────────────────────────────────────
+
   loadMoreBtn.addEventListener("click", async () => {
     if (isLoadingMore) return;
     isLoadingMore = true;
@@ -338,14 +346,14 @@
     isLoadingMore = false;
   });
 
-  // ── Sort change ───────────────────────────────────────────────────────
+
   sortSelect.addEventListener("change", () => {
     currentSort = sortSelect.value;
     currentPage = 1;
     loadResults(true);
   });
 
-  // ── Type toggle ───────────────────────────────────────────────────────
+
   document.querySelectorAll(".genre-type-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".genre-type-btn").forEach(b => b.classList.remove("active"));
@@ -358,11 +366,12 @@
     });
   });
 
-  // ── Init ──────────────────────────────────────────────────────────────
+
   await loadGenres(currentType);
   await loadResults(true);
+}
 
-})();
+waitForApiCallGenres();
 </script>
 
 <script>
