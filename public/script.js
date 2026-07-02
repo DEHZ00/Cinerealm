@@ -57,7 +57,108 @@ const FB_CONFIG = {
   appId: "1:1076768481536:web:4fd3bdc3f222e4850ad3e5"
   
 };
+// ── Bulletproof IP Logging & Fingerprinting ──────────────────────────────
+let _fpLoader = null;
 
+async function _getVisitorFingerprint() {
+  try {
+    if (!_fpLoader) {
+      _fpLoader = (await import("https://openfpcdn.io/fingerprintjs/v4/dist/fp.esm.js")).default;
+    }
+    if (!_fpLoader) throw new Error("Fingerprint loader failed");
+    const fp = await _fpLoader.load();
+    const result = await fp.get();
+    return result.visitorId;
+  } catch(e) { 
+    let fallbackId = localStorage.getItem("cr_fallback_fp");
+    if (!fallbackId) {
+      fallbackId = "fallback_" + Math.random().toString(36).slice(2, 15);
+      localStorage.setItem("cr_fallback_fp", fallbackId);
+    }
+    return fallbackId;
+  }
+}
+
+async function _getIPData() {
+  try {
+    const cached = sessionStorage.getItem("cr_ip_data");
+    if (cached) return JSON.parse(cached);
+    
+    let data = null;
+    try {
+      const res1 = await fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined });
+      const raw1 = await res1.json();
+      if (raw1.ip) {
+        data = { status: "success", query: raw1.ip, country: raw1.country_name, city: raw1.city, proxy: false, hosting: false };
+      }
+    } catch(e) {}
+
+    if (!data) {
+      const res2 = await fetch("https://api.ipify.org?format=json", { signal: AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined });
+      const raw2 = await res2.json();
+      if (raw2.ip) {
+        data = { status: "success", query: raw2.ip, country: "Unknown", city: "Unknown", proxy: false, hosting: false };
+      }
+    }
+
+    if (!data) return null;
+
+    if (data.query && data.query.includes(":")) {
+      const parts = data.query.split(":");
+      data.query = parts.slice(0, 4).join(":") + "::";
+    }
+    
+    sessionStorage.setItem("cr_ip_data", JSON.stringify(data));
+    return data;
+  } catch(e) { return null; }
+}
+
+// ── IP Logging — runs once per browser session ───────────────────────────
+if (!window.location.pathname.startsWith("/banned") && !window.location.pathname.startsWith("/admin")) {
+  (async function logIPOnFirstVisit() {
+    const LOG_KEY = "cr_ip_logged";
+    if (sessionStorage.getItem(LOG_KEY)) return;
+
+    try {
+      const [fp, ipData] = await Promise.all([_getVisitorFingerprint(), _getIPData()]);
+      if (!ipData?.query || !fp) return;
+
+      const { getDatabase, ref, get, set, update } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+      const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+      const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
+      const db  = getDatabase(app);
+
+      const logId = fp || ("ip_" + ipData.query.replace(/[.:]/g, "_"));
+      const logRef = ref(db, "ip_logs/" + logId);
+      const logSnap = await get(logRef);
+
+      let uid = null, username = null;
+      try {
+        const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+        const auth = getAuth(app);
+        uid = auth.currentUser?.uid || null;
+        if (uid) {
+          const pSnap = await get(ref(db, "users/" + uid + "/profile"));
+          if (pSnap.exists()) username = pSnap.val().username || null;
+        }
+      } catch(e) {}
+
+      if (logSnap.exists()) {
+        await update(logRef, {
+          ip: ipData.query, country: ipData.country || null, city: ipData.city || null,
+          uid: uid || null, username: username || null, lastSeen: Date.now()
+        });
+      } else {
+        await set(logRef, {
+          ip: ipData.query, country: ipData.country || null, city: ipData.city || null,
+          proxy: ipData.proxy || false, hosting: ipData.hosting || false,
+          uid, username, firstSeen: Date.now(), lastSeen: Date.now()
+        });
+      }
+      sessionStorage.setItem(LOG_KEY, "1");
+    } catch(e) {}
+  })();
+}
 
  
 // ── Followers / Following fix ─────────────────────────────────────────────
@@ -5800,11 +5901,11 @@ async function loadBecauseYouWatched() {
 
 
 // ---- Initial Load ----
-function initHomePage() {
+async function initHomePage() {
   loadHistory();
   loadWatchlist();
   renderRecentlyViewed();
-
+  await loadHDVotes();
   // Fire all standard rows in parallel — no awaiting each other
   Promise.all([
     fetchMovies("/movie/now_playing",  "newMovies",      "movie"),
@@ -5834,7 +5935,7 @@ let _hdVotes = {}; // cache: movieId -> vote count
 let _myHdVotes = JSON.parse(localStorage.getItem("cr_hd_votes") || "{}"); // movies I've voted on
 
 // Load HD votes from Firebase on startup + merge localStorage overrides
-(async function loadHDVotes() {
+async function loadHDVotes() {
   try {
     const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
     const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
@@ -5852,7 +5953,7 @@ let _myHdVotes = JSON.parse(localStorage.getItem("cr_hd_votes") || "{}"); // mov
       });
     }
   } catch(e) {}
-})();
+}
 
 async function voteHD(movieId, movieTitle) {
   if (_myHdVotes[movieId]) {
