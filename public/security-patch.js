@@ -99,29 +99,26 @@ if (!window.location.pathname.startsWith("/banned")) {
 // ── IP Logging — logs unique IPs once per device ─────────────────────────
 if (!window.location.pathname.startsWith("/banned") && !window.location.pathname.startsWith("/admin")) {
   (async function logIPOnFirstVisit() {
+
     const LOG_KEY = "cr_ip_logged";
     const LOG_KEY_TIME = "cr_ip_logged_time";
     const lastLogged = parseInt(localStorage.getItem(LOG_KEY_TIME) || "0");
-    const oneWeek = 7 * 24 * 60 * 60 * 1000;
+    const oneDay = 24 * 60 * 60 * 1000; 
 
-    if (localStorage.getItem(LOG_KEY) && (Date.now() - lastLogged < oneWeek)) return;
+    if (localStorage.getItem(LOG_KEY) && (Date.now() - lastLogged < oneDay)) return;
 
     try {
       const [fp, ipData] = await Promise.all([_getVisitorFingerprint(), _getIPData()]);
       if (!ipData?.query || !fp) return;
 
-      const { getDatabase, ref, push, get, update } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+      const { getDatabase, ref, get, set, update } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
       const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
       const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
       const db  = getDatabase(app);
 
-      const logsSnap = await get(ref(db, "ip_logs"));
-      let existingKey = null;
-      if (logsSnap.exists()) {
-        logsSnap.forEach(child => {
-          if (child.val().fingerprint === fp) existingKey = child.key;
-        });
-      }
+
+      const logRef = ref(db, "ip_logs/" + fp);
+      const logSnap = await get(logRef);
 
       let uid = null, username = null;
       try {
@@ -134,8 +131,9 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
         }
       } catch(e) {}
 
-      if (existingKey) {
-        await update(ref(db, "ip_logs/" + existingKey), {
+      if (logSnap.exists()) {
+    
+        await update(logRef, {
           ip: ipData.query,
           country: ipData.country || null,
           city: ipData.city || null,
@@ -144,13 +142,13 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
           lastSeen: Date.now()
         });
       } else {
-        await push(ref(db, "ip_logs"), {
+        
+        await set(logRef, {
           ip: ipData.query,
           country: ipData.country || null,
           city: ipData.city || null,
           proxy: ipData.proxy || false,
           hosting: ipData.hosting || false,
-          fingerprint: fp,
           uid,
           username,
           firstSeen: Date.now(),
