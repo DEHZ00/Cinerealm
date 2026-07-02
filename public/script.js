@@ -63,13 +63,15 @@ let _fpLoader = null;
 async function _getVisitorFingerprint() {
   try {
     if (!_fpLoader) {
-      _fpLoader = (await import("https://openfpcdn.io/fingerprintjs/v4/dist/fp.esm.js")).default;
+   
+      _fpLoader = (await import("https://unpkg.com/@fingerprintjs/fingerprintjs@4/dist/fp.esm.js")).default;
     }
     if (!_fpLoader) throw new Error("Fingerprint loader failed");
     const fp = await _fpLoader.load();
     const result = await fp.get();
     return result.visitorId;
   } catch(e) { 
+    console.warn("FingerprintJS blocked, using fallback ID.");
     let fallbackId = localStorage.getItem("cr_fallback_fp");
     if (!fallbackId) {
       fallbackId = "fallback_" + Math.random().toString(36).slice(2, 15);
