@@ -99,13 +99,11 @@ if (!window.location.pathname.startsWith("/banned")) {
 // ── IP Logging — logs unique IPs once per device ─────────────────────────
 if (!window.location.pathname.startsWith("/banned") && !window.location.pathname.startsWith("/admin")) {
   (async function logIPOnFirstVisit() {
-
+    // 🛑 CHANGED: Use sessionStorage so it logs on every new browser session
+    // instead of skipping forever. This allows admins to clear the DB and see logs repopulate.
     const LOG_KEY = "cr_ip_logged";
-    const LOG_KEY_TIME = "cr_ip_logged_time";
-    const lastLogged = parseInt(localStorage.getItem(LOG_KEY_TIME) || "0");
-    const oneDay = 24 * 60 * 60 * 1000; 
 
-    if (localStorage.getItem(LOG_KEY) && (Date.now() - lastLogged < oneDay)) return;
+    if (sessionStorage.getItem(LOG_KEY)) return;
 
     try {
       const [fp, ipData] = await Promise.all([_getVisitorFingerprint(), _getIPData()]);
@@ -116,7 +114,7 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
       const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
       const db  = getDatabase(app);
 
-
+      // 🛑 OPTIMIZED: Use the fingerprint as the ID! No more downloading the whole list.
       const logRef = ref(db, "ip_logs/" + fp);
       const logSnap = await get(logRef);
 
@@ -132,7 +130,7 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
       } catch(e) {}
 
       if (logSnap.exists()) {
-    
+        // Device exists in DB, just update their latest IP and timestamp
         await update(logRef, {
           ip: ipData.query,
           country: ipData.country || null,
@@ -142,7 +140,7 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
           lastSeen: Date.now()
         });
       } else {
-        
+        // 🛑 DB WAS CLEARED OR NEW DEVICE: Create new log, keyed by fingerprint!
         await set(logRef, {
           ip: ipData.query,
           country: ipData.country || null,
@@ -156,8 +154,8 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
         });
       }
 
-      localStorage.setItem(LOG_KEY, "1");
-      localStorage.setItem(LOG_KEY_TIME, Date.now().toString());
+      // Save in sessionStorage so it doesn't spam on every page click this session
+      sessionStorage.setItem(LOG_KEY, "1");
     } catch(e) {}
   })();
 }
