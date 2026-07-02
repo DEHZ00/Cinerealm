@@ -138,9 +138,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-const fpModule = await import("https://unpkg.com/@fingerprintjs/fingerprintjs@4/dist/fp.esm.js");
-const FingerprintJS = fpModule.default;
-
 const firebaseConfig = {
   apiKey: "AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",
   authDomain: "cinerealm-8b7b9.firebaseapp.com",
@@ -155,11 +152,13 @@ const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
 
 async function getFingerprint() {
-  try {
-    const fp = await FingerprintJS.load();
-    const result = await fp.get();
-    return result.visitorId;
-  } catch(e) { return null; }
+  // Use the exact same UUID logic as script.js so they match perfectly!
+  let fp = localStorage.getItem("cr_device_fp");
+  if (!fp) {
+    fp = "fp_" + (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
+    localStorage.setItem("cr_device_fp", fp);
+  }
+  return fp;
 }
 
 async function _getIPData() {
@@ -181,6 +180,7 @@ async function _getIPData() {
   } catch(e) {}
   return null;
 }
+
 function formatDuration(ms) {
   if (ms <= 0) return "Expired";
   const s = Math.floor(ms / 1000);
@@ -199,14 +199,14 @@ async function checkBan() {
   const ipData = await _getIPData();
   const ip = ipData?.query;
 
- let uid = null;
-try {
-  const { getAuth, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-  const auth = getAuth(app);
-  uid = await new Promise(resolve => {
-    const unsub = onAuthStateChanged(auth, user => { unsub(); resolve(user?.uid || null); });
-  });
-} catch(e) {}
+  let uid = null;
+  try {
+    const { getAuth, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+    const auth = getAuth(app);
+    uid = await new Promise(resolve => {
+      const unsub = onAuthStateChanged(auth, user => { unsub(); resolve(user?.uid || null); });
+    });
+  } catch(e) {}
 
   const bansSnap = await get(ref(db, "bans"));
   if (!bansSnap.exists()) {
@@ -309,18 +309,17 @@ window.submitAppeal = async () => {
       uid: window._banUid || null,
       banKey: window._banKey,
     });
-    // Notify admins
-const { push: _push } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-await _push(ref(db, "admin_alerts"), {
-  type: "warning",
-  title: "New Ban Appeal",
-  message: `${name} submitted an appeal — Ban ID: ${window._banKey}`,
-  banKey: window._banKey,
-  appealName: name,
-  timestamp: Date.now(),
-  isAppeal: true,
-  status: "pending"
-});
+    const { push: _push } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    await _push(ref(db, "admin_alerts"), {
+      type: "warning",
+      title: "New Ban Appeal",
+      message: `${name} submitted an appeal — Ban ID: ${window._banKey}`,
+      banKey: window._banKey,
+      appealName: name,
+      timestamp: Date.now(),
+      isAppeal: true,
+      status: "pending"
+    });
     msgEl.textContent = "✓ Appeal submitted — check back here for a response";
     msgEl.style.color = "#34d399";
     document.getElementById("banAppealForm").style.display = "none";

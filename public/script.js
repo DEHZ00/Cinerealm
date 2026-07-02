@@ -136,7 +136,7 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
       }
 
       console.log("🔒 IP Log: Connecting to Firebase...");
-      const { getDatabase, ref, set, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+      const { getDatabase, ref, set, get, update } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
       const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
       const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
       const db  = getDatabase(app);
@@ -157,18 +157,35 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
         } catch(e) {}
       }
 
-      const logRef = ref(db, "ip_logs/" + fp);
+           const logRef = ref(db, "ip_logs/" + fp);
       
-      console.log("🔒 IP Log: Writing to Firebase -> ip_logs/" + fp);
-      await set(logRef, {
-        ip: ipData.query,
-        country: ipData.country || null,
-        city: ipData.city || null,
-        uid: uid,
-        username: username,
-        firstSeen: Date.now(),
-        lastSeen: Date.now()
-      });
+      // Check if the log already exists (catch prevents crash if guest permission denied)
+      const logSnap = await get(logRef).catch(() => null);
+      
+      if (logSnap && logSnap.exists()) {
+        // Log exists! Only update lastSeen and dynamic info, preserving firstSeen
+        console.log("🔒 IP Log: Device exists. Updating lastSeen...");
+        await update(logRef, {
+          ip: ipData.query,
+          country: ipData.country || null,
+          city: ipData.city || null,
+          uid: uid,
+          username: username,
+          lastSeen: Date.now()
+        });
+      } else {
+        // New device! Create the record with firstSeen and lastSeen
+        console.log("🔒 IP Log: Writing to Firebase -> ip_logs/" + fp);
+        await set(logRef, {
+          ip: ipData.query,
+          country: ipData.country || null,
+          city: ipData.city || null,
+          uid: uid,
+          username: username,
+          firstSeen: Date.now(),
+          lastSeen: Date.now()
+        });
+      }
 
       console.log("✅ IP Log: SUCCESS! Written to database.");
       sessionStorage.setItem(LOG_KEY, "1");
