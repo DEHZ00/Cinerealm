@@ -56,7 +56,8 @@ const FB_CONFIG = {
   messagingSenderId: "1076768481536",
   appId: "1:1076768481536:web:4fd3bdc3f222e4850ad3e5"
   
-};// ── Bulletproof IP Logging & Fingerprinting ──────────────────────────────
+};
+// ── Bulletproof IP Logging & Fingerprinting ──────────────────────────────
 async function _getVisitorFingerprint() {
   let fp = localStorage.getItem("cr_device_fp");
   if (!fp) {
@@ -104,6 +105,7 @@ async function _getIPData() {
 if (!window.location.pathname.startsWith("/banned") && !window.location.pathname.startsWith("/admin")) {
   (async function logIPOnFirstVisit() {
     const LOG_KEY = "cr_ip_logged";
+
     if (sessionStorage.getItem(LOG_KEY)) {
       console.log("🔒 IP Log: Skipped (already logged this session).");
       return;
@@ -134,10 +136,26 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
       }
 
       console.log("🔒 IP Log: Connecting to Firebase...");
-      const { getDatabase, ref, set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+      const { getDatabase, ref, set, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
       const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
       const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
       const db  = getDatabase(app);
+
+      // Wait up to 2 seconds for Firebase Auth to load so we know who is logged in
+      let authAttempts = 0;
+      while (typeof _crUser === 'undefined' && authAttempts < 10) {
+        await new Promise(r => setTimeout(r, 200));
+        authAttempts++;
+      }
+      
+      let uid = null, username = null;
+      if (typeof _crUser !== 'undefined' && _crUser) {
+        uid = _crUser.uid;
+        try {
+          const pSnap = await get(ref(db, "users/" + uid + "/profile"));
+          if (pSnap.exists()) username = pSnap.val().username || null;
+        } catch(e) {}
+      }
 
       const logRef = ref(db, "ip_logs/" + fp);
       
@@ -146,6 +164,8 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
         ip: ipData.query,
         country: ipData.country || null,
         city: ipData.city || null,
+        uid: uid,
+        username: username,
         firstSeen: Date.now(),
         lastSeen: Date.now()
       });
@@ -157,8 +177,6 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
     }
   })();
 }
-
- 
 // ── Followers / Following fix ─────────────────────────────────────────────
 
  
