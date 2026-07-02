@@ -57,47 +57,7 @@ const FB_CONFIG = {
   appId: "1:1076768481536:web:4fd3bdc3f222e4850ad3e5"
   
 };
-// ── FingerprintJS ─────────────────────────────────────────────────────────
 
-let FingerprintJS = null;
-import("https://unpkg.com/@fingerprintjs/fingerprintjs@4/dist/fp.esm.js").then(m => {
-  FingerprintJS = m.default;
-}).catch(() => {});
- 
-async function _getVisitorFingerprint() {
-  try {
-    // Wait for FingerprintJS to load
-    let attempts = 0;
-    while (typeof FingerprintJS === "undefined" && attempts < 20) {
-      await new Promise(r => setTimeout(r, 200));
-      attempts++;
-    }
-    if (typeof FingerprintJS === "undefined") return null;
-    const fp = await FingerprintJS.load();
-    const result = await fp.get();
-    return result.visitorId;
-  } catch(e) { return null; }
-}
- 
-async function _getIPData() {
-  try {
-    const cached = sessionStorage.getItem("cr_ip_data");
-    if (cached) return JSON.parse(cached);
-    const res = await fetch("https://ipapi.co/json/");
-    const raw = await res.json();
-    const data = {
-      status: "success",
-      query: raw.ip,
-      country: raw.country_name,
-      city: raw.city,
-      proxy: false,
-      hosting: false,
-    };
-    sessionStorage.setItem("cr_ip_data", JSON.stringify(data));
-    return data;
-  } catch(e) {}
-  return null;
-}
 
  
 // ── Followers / Following fix ─────────────────────────────────────────────

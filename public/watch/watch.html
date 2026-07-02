@@ -1124,33 +1124,40 @@ async function initWatchPage() {
     };
   }
 
-  const hdBtn = document.getElementById("watchHDBtn");
+    const hdBtn = document.getElementById("watchHDBtn");
   if (hdBtn && type === "movie") {
+    // Check if already marked as HD globally
+    if (_hdVotes[tmdbId] >= 3) {
+      hdBtn.textContent = "HD ✓ Marked (click to unmark)";
+      hdBtn.style.background = "rgba(0,100,220,0.3)";
+    }
+
     hdBtn.onclick = async () => {
       if (typeof _crUser !== "undefined" && _crUser && typeof getUserRole === "function") {
         const role = await getUserRole(_crUser.uid);
         if (hasRole(role, "owner") || hasRole(role, "developer")) {
-          const key = tmdbId + "_hd_override";
-          const isMarked = localStorage.getItem(key);
+          const isMarked = _hdVotes[tmdbId] >= 3;
           if (isMarked) {
-            localStorage.removeItem(key);
+            // Unmark it
             try {
               const { getDatabase, ref, remove } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
               const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
               const app = getApps().length ? getApps()[0] : initializeApp({ apiKey:"AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",databaseURL:"https://cinerealm-8b7b9-default-rtdb.firebaseio.com",projectId:"cinerealm-8b7b9" });
               await remove(ref(getDatabase(app), "hd_override/" + tmdbId));
+              _hdVotes[tmdbId] = 0;
             } catch(e) {}
             showToast("HD badge removed", "info");
             hdBtn.textContent = "HD Mark as HD";
             hdBtn.style.background = "rgba(0,100,220,0.15)";
           } else {
-            localStorage.setItem(key, "1");
+            // Mark it
             try {
               const { getDatabase, ref, set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
               const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
               const app = getApps().length ? getApps()[0] : initializeApp({ apiKey:"AIzaSyAIRrBzdN6Rvndo5G4w6ILTa9xoJ_95VrM",databaseURL:"https://cinerealm-8b7b9-default-rtdb.firebaseio.com",projectId:"cinerealm-8b7b9" });
               await set(ref(getDatabase(app), "hd_override/" + tmdbId), { markedAt: Date.now(), by: _crUser.uid });
               await set(ref(getDatabase(app), "hd_votes/" + tmdbId), 3);
+              _hdVotes[tmdbId] = 3;
             } catch(e) {}
             showToast("✓ HD marked instantly — privileged", "success");
             hdBtn.textContent = "HD ✓ Marked (click to unmark)";
@@ -1159,6 +1166,7 @@ async function initWatchPage() {
           return;
         }
       }
+      // Fallback for normal users
       if (typeof voteHD === "function") voteHD(tmdbId, title);
     };
   } else if (hdBtn) {
