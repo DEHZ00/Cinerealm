@@ -12,19 +12,25 @@
   document.head.appendChild(s);
 })();
 
+
+let _fpLoader = null;
+
 async function _getVisitorFingerprint() {
   try {
-
-    let attempts = 0;
-    while (typeof FingerprintJS === "undefined" && attempts < 20) {
-      await new Promise(r => setTimeout(r, 200));
-      attempts++;
+  
+    if (!_fpLoader) {
+  
+      _fpLoader = (await import("https://openfpcdn.io/fingerprintjs/v4/dist/fp.esm.js")).default;
     }
-    if (typeof FingerprintJS === "undefined") return null;
-    const fp = await FingerprintJS.load();
+    if (!_fpLoader) return null;
+    
+    const fp = await _fpLoader.load();
     const result = await fp.get();
     return result.visitorId;
-  } catch(e) { return null; }
+  } catch(e) { 
+    console.error("Fingerprint failed to load:", e);
+    return null; 
+  }
 }
 
 async function _getIPData() {
