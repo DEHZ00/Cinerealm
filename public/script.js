@@ -100,52 +100,6 @@ async function _getIPData() {
 }
 
  
-// ── IP ──────────────────────────────────────────────────────────────────────────
-
-if (!window.location.pathname.startsWith("/banned") && !window.location.pathname.startsWith("/admin")) {
-  window.addEventListener("load", async function() {
-    try {
-      const [fp, ipData] = await Promise.all([_getVisitorFingerprint(), _getIPData()]);
-      if (!ipData?.query) return;
-
-      const { getDatabase, ref, push, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-      const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-      const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
-      const db = getDatabase(app);
-
-      // Dedup by fingerprint only
-      if (fp) {
-        const logsSnap = await get(ref(db, "ip_logs"));
-        if (logsSnap.exists()) {
-          const alreadyLogged = Object.values(logsSnap.val()).some(l => l.fingerprint === fp);
-          if (alreadyLogged) return;
-        }
-      }
-
-      const { getAuth, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-      const auth = getAuth(app);
-      const uid = await new Promise(resolve => {
-        const u = onAuthStateChanged(auth, user => { u(); resolve(user?.uid || null); });
-      });
-
-      let username = null;
-      if (uid) {
-        const pSnap = await get(ref(db, "users/" + uid + "/profile"));
-        if (pSnap.exists()) username = pSnap.val().username || null;
-      }
-
-      await push(ref(db, "ip_logs"), {
-        ip: ipData.query,
-        country: ipData.country || null,
-        city: ipData.city || null,
-        fingerprint: fp || null,
-        uid,
-        username,
-        firstSeen: Date.now(),
-      });
-    } catch(e) {}
-  });
-}
 // ── Followers / Following fix ─────────────────────────────────────────────
 
  

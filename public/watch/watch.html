@@ -1407,6 +1407,12 @@ async function renderSeasonsDropdownInto(container, tvId, media, extraOpts) {
         extraOpts.season  = seasonNumber;
         extraOpts.episode = ep.episode_number;
 
+        // 🛑 CRITICAL FIX: Update the global watch context so source switching uses the new episode!
+        if (window._watchContext) {
+          window._watchContext.season = seasonNumber;
+          window._watchContext.episode = ep.episode_number;
+        }
+
         document.title = ep.name + " — CineRealm";
 
         const iframePlaceholder = document.getElementById("watch-iframe-placeholder");
@@ -1416,6 +1422,7 @@ async function renderSeasonsDropdownInto(container, tvId, media, extraOpts) {
         const lastProgress = getHistoryProgress(tvId, "tv", seasonNumber, ep.episode_number);
         const updatedMedia = { type: "tv", tmdbId: tvId, season: seasonNumber, episode: ep.episode_number };
         const updatedOpts  = Object.assign({}, extraOpts, { season: seasonNumber, episode: ep.episode_number, startAt: lastProgress, progress: lastProgress });
+        
         const activeTab    = document.querySelector(".source-tab.active");
         const activeKey    = activeTab ? activeTab.dataset.key : null;
 
@@ -1424,7 +1431,13 @@ async function renderSeasonsDropdownInto(container, tvId, media, extraOpts) {
           if (url) {
             const iframe = document.createElement("iframe");
             iframe.src = url;
-            iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock");
+            
+            // 🛑 FIX: Only apply sandbox if the provider specifically requires it
+            const provider = PROVIDERS.find(p => p.key === activeKey);
+            if (provider && provider.sandbox === true) {
+              iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock");
+            }
+            
             iframe.setAttribute("allow", "autoplay; encrypted-media; fullscreen; picture-in-picture");
             iframe.setAttribute("allowfullscreen", "");
             iframe.style.cssText = "width:100%;height:clamp(320px,56vw,640px);border:none;display:block;";
