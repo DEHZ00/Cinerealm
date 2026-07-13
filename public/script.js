@@ -4516,6 +4516,8 @@ function _addOledToCloak() {
       @keyframes _shimmer{0%,100%{opacity:1;}50%{opacity:0.7;}}
       @keyframes _catFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
       @keyframes _sparkle{0%{opacity:0;transform:scale(0) rotate(0deg);}50%{opacity:1;transform:scale(1) rotate(180deg);}100%{opacity:0;transform:scale(0) rotate(360deg);}}
+      @keyframes _pop{0%{opacity:0;transform:scale(0.7) translateY(6px);}60%{opacity:1;transform:scale(1.05) translateY(0);}100%{opacity:1;transform:scale(1) translateY(0);}}
+
     `;
     document.head.appendChild(style);
 
@@ -4554,14 +4556,18 @@ function _addOledToCloak() {
         <div id="_cr_s_sub" style="font-size:15px;color:rgba(255,200,230,0.75);letter-spacing:3px;text-transform:uppercase;opacity:0;animation:_fadeUp 0.8s ease 1s forwards;">
           You make everything better 💕
         </div>
+        <div id="_cr_s_rotator" style="margin-top:18px;font-size:22px;font-weight:800;color:#ffb6d9;min-height:32px;font-family:'Georgia',serif;font-style:italic;text-shadow:0 0 20px rgba(255,105,180,0.5);"></div>
 
         <!-- Secondary message -->
         <div style="margin-top:16px;font-size:13px;color:rgba(255,182,193,0.5);opacity:0;animation:_fadeUp 0.8s ease 1.4s forwards;font-style:italic;">
-          🍵 &nbsp; My fav matcha enjoyer. &nbsp; 🍵
+           &nbsp; My fav girl. &nbsp; 
         </div>
+      <div style="margin-top:14px;font-size:14px;color:rgba(255,255,255,0.55);opacity:0;animation:_fadeUp 0.8s ease 1.6s forwards;max-width:380px;margin-left:auto;margin-right:auto;line-height:1.5;">
+        I'll always love you babe.
+      </div>
 
         <!-- Button -->
-        <div style="margin-top:40px;opacity:0;animation:_fadeUp 0.6s ease 1.8s forwards;">
+        <div style="margin-top:40px;opacity:0;animation:_fadeUp 0.6s ease 2s forwards;">
           <button onclick="document.getElementById('_cr_secret').remove();document.body.style.overflow='';if(window._cleanupSecret)_cleanupSecret();" style="padding:13px 36px;background:linear-gradient(135deg,rgba(255,105,180,0.2),rgba(255,20,147,0.15));border:1.5px solid rgba(255,105,180,0.4);border-radius:999px;color:rgba(255,200,230,0.8);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1.5px;transition:all 0.25s;backdrop-filter:blur(10px);" onmouseover="this.style.background='linear-gradient(135deg,rgba(255,105,180,0.35),rgba(255,20,147,0.25))';this.style.color='#fff'" onmouseout="this.style.background='linear-gradient(135deg,rgba(255,105,180,0.2),rgba(255,20,147,0.15))';this.style.color='rgba(255,200,230,0.8)'">
             Back to CineRealm 🌸
           </button>
@@ -4629,7 +4635,22 @@ function _addOledToCloak() {
     }
     draw();
 
-    window._cleanupSecret=function(){clearInterval(bgI);cancelAnimationFrame(animId);};
+    const _msgs=["My princess.","My sweet girl.","You're still my favorite person.","You're perfect my love."," I miss you."];
+     let _mi=0;
+    const rotatorEl=document.getElementById("_cr_s_rotator");
+    function _showNextMsg(){
+      if(!rotatorEl||!document.getElementById("_cr_secret"))return;
+      rotatorEl.style.animation="none";
+      void rotatorEl.offsetWidth;
+      rotatorEl.textContent=_msgs[_mi%_msgs.length];
+      rotatorEl.style.animation="_pop 0.5s ease forwards";
+      _mi++;
+    }
+    setTimeout(_showNextMsg,2200);
+    const msgInterval=setInterval(_showNextMsg,5000);
+
+    window._cleanupSecret=function(){clearInterval(bgI);clearInterval(msgInterval);cancelAnimationFrame(animId);};
+
   }
 })();
 
