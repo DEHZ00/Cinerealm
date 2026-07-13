@@ -4548,7 +4548,8 @@ function _addOledToCloak() {
     if(document.getElementById("_cr_secret"))return;
     const o=document.createElement("div");
     o.id="_cr_secret";
-    o.style.cssText="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;overflow:hidden;";
+    o.style.cssText="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:24px 0;";
+
 
       const style=document.createElement("style");
   style.textContent=`
@@ -4635,11 +4636,11 @@ function _addOledToCloak() {
       <div style="margin-top:14px;font-size:14px;color:rgba(255,255,255,0.55);opacity:0;animation:_fadeUp 0.8s ease 1.6s forwards;max-width:380px;margin-left:auto;margin-right:auto;line-height:1.5;">
         I'll always love you babe.
       </div>
-   <div class="mp-panel" id="mpPanel" style="opacity:0;animation:_fadeUp 0.8s ease 1.8s forwards;">
+        <div class="mp-panel" id="mpPanel" style="opacity:0;animation:_fadeUp 0.8s ease 1.8s forwards;">
           <div class="mp-mini" id="mpMini">
             <div class="mp-mini-icon">🎵</div>
             <div class="mp-mini-title" id="mpTitle">Loading…</div>
-            <button class="mp-mini-play" id="mpMiniPlay" title="Play/Pause">⏸</button>
+            <button class="mp-mini-play" id="mpMiniPlay" title="Play/Pause"></button>
             <span class="mp-mini-chevron">▲</span>
           </div>
           <div class="mp-full">
@@ -4649,13 +4650,13 @@ function _addOledToCloak() {
               <span class="mp-time" id="mpDur">0:00</span>
             </div>
             <div class="mp-controls">
-              <button class="mp-btn" id="mpBack10" title="Back 10s">⏪</button>
-              <button class="mp-btn mp-play" id="mpPlay" title="Play/Pause">⏸</button>
-              <button class="mp-btn" id="mpFwd10" title="Forward 10s">⏩</button>
-              <button class="mp-btn" id="mpNext" title="Next song">⏭</button>
+              <button class="mp-btn" id="mpBack10" title="Back 10s"></button>
+              <button class="mp-btn mp-play" id="mpPlay" title="Play/Pause"></button>
+              <button class="mp-btn" id="mpFwd10" title="Forward 10s"></button>
+              <button class="mp-btn" id="mpNext" title="Next song"></button>
             </div>
             <div class="mp-vol-row">
-              <button class="mp-btn" id="mpMute" title="Mute">🔊</button>
+              <button class="mp-btn" id="mpMute" title="Mute"></button>
               <button class="mp-btn" id="mpVolDown" title="Volume down">−</button>
               <input type="range" class="mp-vol-track" id="mpVol" min="0" max="100" value="60">
               <button class="mp-btn" id="mpVolUp" title="Volume up">+</button>
@@ -4664,6 +4665,7 @@ function _addOledToCloak() {
           </div>
         </div>
 
+        
         <!-- Button -->
         <div style="margin-top:40px;opacity:0;animation:_fadeUp 0.6s ease 2s forwards;">
           <button onclick="document.getElementById('_cr_secret').remove();document.body.style.overflow='';if(window._cleanupSecret)_cleanupSecret();" style="padding:13px 36px;background:linear-gradient(135deg,rgba(255,105,180,0.2),rgba(255,20,147,0.15));border:1.5px solid rgba(255,105,180,0.4);border-radius:999px;color:rgba(255,200,230,0.8);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1.5px;transition:all 0.25s;backdrop-filter:blur(10px);" onmouseover="this.style.background='linear-gradient(135deg,rgba(255,105,180,0.35),rgba(255,20,147,0.25))';this.style.color='#fff'" onmouseout="this.style.background='linear-gradient(135deg,rgba(255,105,180,0.2),rgba(255,20,147,0.15))';this.style.color='rgba(255,200,230,0.8)'">
@@ -4673,7 +4675,12 @@ function _addOledToCloak() {
       </div>
     `;
 
-    document.body.style.overflow="hidden";
+        const _cr_scrollY = window.scrollY || window.pageYOffset || 0;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${_cr_scrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.overflow = "hidden";
     document.body.appendChild(o);
 
     // Animated gradient background
@@ -4747,25 +4754,44 @@ function _addOledToCloak() {
     setTimeout(_showNextMsg,2200);
     const msgInterval=setInterval(_showNextMsg,5000);
 
+        const ICON = {
+      play:  s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>`,
+      pause: s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><rect x="6" y="5" width="4" height="14" fill="currentColor"/><rect x="14" y="5" width="4" height="14" fill="currentColor"/></svg>`,
+      back10:s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M11 18V6l-8.5 6z" fill="currentColor"/><path d="M21 18V6l-8.5 6z" fill="currentColor"/></svg>`,
+      fwd10: s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M13 6v12l8.5-6z" fill="currentColor"/><path d="M3 6v12l8.5-6z" fill="currentColor"/></svg>`,
+      next:  s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M6 6l8.5 6L6 18z" fill="currentColor"/><rect x="16" y="6" width="3" height="12" fill="currentColor"/></svg>`,
+      vol:   s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M4 9v6h4l5 5V4L8 9H4z" fill="currentColor"/><path d="M16.2 8.3a5 5 0 010 7.4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>`,
+      mute:  s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M4 9v6h4l5 5V4L8 9H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+    };
+
     const audio = new Audio();
     audio.volume = 0.6;
     let lrcLines = [];
+    let lineEls = [], lastActiveIdx = -1;
+
     const mpTitle=document.getElementById("mpTitle"), mpPlay=document.getElementById("mpPlay"),
           mpMiniPlay=document.getElementById("mpMiniPlay"), mpPanel=document.getElementById("mpPanel"),
           mpMini=document.getElementById("mpMini"),
           mpSeek=document.getElementById("mpSeek"), mpCur=document.getElementById("mpCur"),
           mpDur=document.getElementById("mpDur"), mpVol=document.getElementById("mpVol"),
-          mpMute=document.getElementById("mpMute"), mpLyrics=document.getElementById("mpLyrics");
-    let seeking=false, muted=false, lastVol=0.6;
+          mpMute=document.getElementById("mpMute"), mpLyrics=document.getElementById("mpLyrics"),
+          mpBack10=document.getElementById("mpBack10"), mpFwd10=document.getElementById("mpFwd10"),
+          mpNext=document.getElementById("mpNext");
+    let seeking=false;
+
+    mpBack10.innerHTML = ICON.back10(15);
+    mpFwd10.innerHTML  = ICON.fwd10(15);
+    mpNext.innerHTML   = ICON.next(16);
+    mpMute.innerHTML   = ICON.vol(15);
 
     mpMini.addEventListener("click",(e)=>{
-      if(e.target===mpMiniPlay) return;
+      if(e.target===mpMiniPlay||mpMiniPlay.contains(e.target)) return;
       mpPanel.classList.toggle("expanded");
     });
 
     function setPlayIcon(paused){
-      const icon = paused ? "▶" : "⏸";
-      mpPlay.textContent = icon; mpMiniPlay.textContent = icon;
+      mpPlay.innerHTML = paused ? ICON.play(18) : ICON.pause(18);
+      mpMiniPlay.innerHTML = paused ? ICON.play(13) : ICON.pause(13);
     }
     mpMiniPlay.onclick=(e)=>{ e.stopPropagation(); togglePlay(); };
 
@@ -4780,7 +4806,7 @@ function _addOledToCloak() {
       audio.src = t.src;
       mpTitle.textContent = t.title;
       mpLyrics.innerHTML = `<div class="mp-line" style="opacity:0.4;">Loading lyrics…</div>`;
-      lrcLines = [];
+      lrcLines = []; lineEls = []; lastActiveIdx = -1;
       if(t.lrc){
         try {
           const res = await fetch(t.lrc);
@@ -4793,6 +4819,9 @@ function _addOledToCloak() {
             l.words.map((w)=>`<span class="mp-word" data-t="${w.time}">${w.text||"♪"}</span>`).join(" ")
           }</div>`).join("")
         : `<div class="mp-line" style="opacity:0.4;">No lyrics available</div>`;
+      lineEls = Array.from(mpLyrics.querySelectorAll(".mp-line")).map(el=>({
+        el, words: Array.from(el.querySelectorAll(".mp-word"))
+      }));
       audio.play().catch(()=>{});
       setPlayIcon(false);
     }
@@ -4804,49 +4833,59 @@ function _addOledToCloak() {
         mpSeek.value = audio.duration ? (audio.currentTime/audio.duration*100) : 0;
         mpCur.textContent = fmtTime(audio.currentTime);
       }
-      if(lrcLines.length){
-        let activeIdx=-1;
-        for(let i=0;i<lrcLines.length;i++){ if(audio.currentTime>=lrcLines[i].time) activeIdx=i; }
-        mpLyrics.querySelectorAll(".mp-line").forEach((el,idx)=>{
-          const isActive = idx===activeIdx;
-          el.classList.toggle("active", isActive);
-          if(isActive){
-            el.scrollIntoView({block:"center",behavior:"smooth"});
-            const words = el.querySelectorAll(".mp-word");
-            words.forEach(w=>{
-              const wt = parseFloat(w.dataset.t);
-              w.classList.remove("sung","current");
-              if(audio.currentTime >= wt) w.classList.add("sung");
-            });
-            let curWord=null;
-            words.forEach(w=>{ if(audio.currentTime >= parseFloat(w.dataset.t)) curWord=w; });
-            if(curWord){ curWord.classList.remove("sung"); curWord.classList.add("current"); }
-          }
+      if(!lineEls.length) return;
+      let activeIdx=-1;
+      for(let i=0;i<lrcLines.length;i++){ if(audio.currentTime>=lrcLines[i].time) activeIdx=i; }
+      if(activeIdx !== lastActiveIdx){
+        if(lastActiveIdx>=0 && lineEls[lastActiveIdx]) lineEls[lastActiveIdx].el.classList.remove("active");
+        if(activeIdx>=0 && lineEls[activeIdx]){
+          lineEls[activeIdx].el.classList.add("active");
+          lineEls[activeIdx].el.scrollIntoView({block:"center",behavior:"smooth"});
+        }
+        lastActiveIdx = activeIdx;
+      }
+      if(activeIdx>=0 && lineEls[activeIdx]){
+        let curWord=null;
+        lineEls[activeIdx].words.forEach(w=>{
+          const wt = parseFloat(w.dataset.t);
+          const passed = audio.currentTime >= wt;
+          if(passed && !w.classList.contains("sung") && !w.classList.contains("current")) w.classList.add("sung");
+          if(!passed){ w.classList.remove("sung","current"); }
+          if(passed) curWord=w;
         });
+        if(curWord){
+          lineEls[activeIdx].words.forEach(w=>w.classList.remove("current"));
+          curWord.classList.remove("sung"); curWord.classList.add("current");
+        }
       }
     });
     audio.addEventListener("ended", ()=> loadTrack(_pi+1));
 
     mpPlay.onclick=togglePlay;
-    document.getElementById("mpNext").onclick=()=>loadTrack(_pi+1);
-    document.getElementById("mpBack10").onclick=()=>{ audio.currentTime=Math.max(0,audio.currentTime-10); };
-    document.getElementById("mpFwd10").onclick=()=>{ audio.currentTime=Math.min(audio.duration||0,audio.currentTime+10); };
+    mpNext.onclick=()=>loadTrack(_pi+1);
+    mpBack10.onclick=()=>{ audio.currentTime=Math.max(0,audio.currentTime-10); };
+    mpFwd10.onclick=()=>{ audio.currentTime=Math.min(audio.duration||0,audio.currentTime+10); };
 
     mpSeek.addEventListener("input",()=>{ seeking=true; mpCur.textContent=fmtTime((mpSeek.value/100)*(audio.duration||0)); });
     mpSeek.addEventListener("change",()=>{ audio.currentTime=(mpSeek.value/100)*(audio.duration||0); seeking=false; });
 
-    mpVol.addEventListener("input",()=>{ audio.volume=mpVol.value/100; muted=false; mpMute.textContent = audio.volume===0?"🔇":"🔊"; });
-    document.getElementById("mpVolUp").onclick=()=>{ mpVol.value=Math.min(100,+mpVol.value+10); audio.volume=mpVol.value/100; mpMute.textContent="🔊"; };
-    document.getElementById("mpVolDown").onclick=()=>{ mpVol.value=Math.max(0,+mpVol.value-10); audio.volume=mpVol.value/100; mpMute.textContent = audio.volume===0?"🔇":"🔊"; };
+    mpVol.addEventListener("input",()=>{ audio.volume=mpVol.value/100; audio.muted=false; mpMute.innerHTML = audio.volume===0?ICON.mute(15):ICON.vol(15); });
+    document.getElementById("mpVolUp").onclick=()=>{ mpVol.value=Math.min(100,+mpVol.value+10); audio.volume=mpVol.value/100; audio.muted=false; mpMute.innerHTML=ICON.vol(15); };
+    document.getElementById("mpVolDown").onclick=()=>{ mpVol.value=Math.max(0,+mpVol.value-10); audio.volume=mpVol.value/100; mpMute.innerHTML = audio.volume===0?ICON.mute(15):ICON.vol(15); };
     mpMute.onclick=()=>{
-      muted=!muted;
-      if(muted){ lastVol=audio.volume; audio.volume=0; mpVol.value=0; mpMute.textContent="🔇"; }
-      else { audio.volume=lastVol||0.6; mpVol.value=(lastVol||0.6)*100; mpMute.textContent="🔊"; }
+      audio.muted = !audio.muted;
+      mpMute.innerHTML = audio.muted ? ICON.mute(15) : ICON.vol(15);
     };
 
-    window._cleanupSecret=function(){
+        window._cleanupSecret=function(){
       clearInterval(bgI);clearInterval(msgInterval);cancelAnimationFrame(animId);
       audio.pause(); audio.src="";
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.overflow = "";
+      window.scrollTo(0, _cr_scrollY);
     };
 
 
