@@ -4552,11 +4552,11 @@ function _addOledToCloak() {
 
       const style=document.createElement("style");
   style.textContent=`
-    @keyframes _heartPulse{...}
-    @keyframes _fadeUp{...}
-    @keyframes _shimmer{...}
-    @keyframes _catFloat{...}
-    @keyframes _sparkle{...}
+    @keyframes _heartPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 30px rgba(255,105,180,0.8));}50%{transform:scale(1.25);filter:drop-shadow(0 0 60px rgba(255,20,147,1));}}
+    @keyframes _fadeUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes _shimmer{0%,100%{opacity:1;}50%{opacity:0.7;}}
+    @keyframes _catFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+    @keyframes _sparkle{0%{opacity:0;transform:scale(0) rotate(0deg);}50%{opacity:1;transform:scale(1) rotate(180deg);}100%{opacity:0;transform:scale(0) rotate(360deg);}}
     @keyframes _pop{0%{opacity:0;transform:scale(0.7) translateY(6px);}60%{opacity:1;transform:scale(1.05) translateY(0);}100%{opacity:1;transform:scale(1) translateY(0);}}
     .mp-panel{margin-top:26px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,182,217,0.35);border-radius:18px;padding:16px 18px;backdrop-filter:blur(6px);box-shadow:0 0 30px rgba(255,255,255,0.08),0 0 50px rgba(255,105,180,0.15);}
     .mp-seek-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
