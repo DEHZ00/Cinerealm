@@ -4504,8 +4504,8 @@ function _addOledToCloak() {
   }
   const PLAYLIST = [
     { title: "Fade Into You(Said was ur fav)",   src: "/Mazzy Star - Fade into You.mp3", lrc: "/fiy.lrc" },
-    { title: "Still Beating",   src: "/Mac DeMarco - Still Beating - (320 Kbps).mp3", lrc: "/stillbeating.lrc" },
     { title: "No One", src: "/Maoli - No One Official Lyric Video.mp3", lrc: "/no-one.lrc" },
+    { title: "Still Beating",   src: "/Mac DeMarco - Still Beating - (320 Kbps).mp3", lrc: "/stillbeating.lrc" },
     { title: "My kind of woman",  src: "/Mac DeMarco My Kind of Woman OFFICIAL VIDEO.mp3", lrc: "/mykindofwoman.lrc" },
   ];
   let _pi = 0;
