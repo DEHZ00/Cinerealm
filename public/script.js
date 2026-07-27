@@ -116,20 +116,12 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
       const fp = await _getVisitorFingerprint();
       console.log("🔒 IP Log: Fingerprint generated ->", fp);
 
-      let ipData = null;
-      try {
-        console.log("🔒 IP Log: Fetching from ipapi.co...");
-        const res = await fetch("https://ipapi.co/json/");
-        const raw = await res.json();
-        if (raw.ip) {
-          ipData = { query: raw.ip, country: raw.country_name, city: raw.city };
-          console.log("🔒 IP Log: IP Fetched successfully ->", ipData.query);
-        } else {
-          console.warn("🔒 IP Log: ipapi.co did not return an IP. Raw:", raw);
-        }
-      } catch(e) {
-        console.error("🔒 IP Log: ipapi.co fetch failed:", e);
-      }
+      // Use the shared helper — it has a 4s timeout, an ipify fallback,
+      // session caching, and (importantly) truncates IPv6 to a /64 prefix.
+      // This used to be a bare inline fetch that had none of that, so full
+      // untruncated IPv6 addresses were being written to the database and a
+      // hung request would stall the logger indefinitely.
+      let ipData = await _getIPData();
 
       if (!ipData) {
         console.log("🔒 IP Log: Using fallback IP data.");
@@ -522,12 +514,20 @@ function showDisclaimerThen(runAfterAccept) {
 
 
 function switchPage(page) {
+  const target = document.getElementById(page + "Page");
+  if (!target) return; // page section not present on this document
+
   currentPage = page;
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-  document.getElementById(page + "Page").classList.add("active");
-  document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.remove("active"));
-  document.getElementById(page + "Btn").classList.add("active");
-  playerDiv.innerHTML = "";
+  target.classList.add("active");
+
+  // Nav links are plain <a href> elements — match on href, not a "<page>Btn" id
+  const href = page === "home" ? "/" : "/" + page;
+  document.querySelectorAll(".nav-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("href") === href);
+  });
+
+  if (playerDiv) playerDiv.innerHTML = "";
   window.scrollTo(0, 0);
 }
 
@@ -863,22 +863,19 @@ function createMovieCard(movie, type = "movie") {
     </div>
   `;
 
-  // Blur-up
-// Blur-up
-const img = card.querySelector("img");
-if (window._crLite) {
-  img.src = fullSrc;
-  img.classList.remove("card-img-blur");
-  img.classList.add("card-img-loaded");
-} else {
-  const fullImg = new Image();
-  fullImg.onload = () => {
+  // Blur-up.
+  // The full-size poster is NOT fetched here — doing that eagerly defeated the
+  // whole lazy-loading system (every card on the page pulled a w500 image
+  // immediately). The IntersectionObserver in Section 22 reads data-src and
+  // runs the same blur-up swap once the card is actually near the viewport.
+  const img = card.querySelector("img");
+  if (window._crLite) {
+    // Lite mode: skip the thumb/blur stage entirely, one image only.
+    img.removeAttribute("data-src");
     img.src = fullSrc;
     img.classList.remove("card-img-blur");
     img.classList.add("card-img-loaded");
-  };
-  fullImg.src = fullSrc;
-}
+  }
 
 
 if (!window._crLite) {
@@ -2742,18 +2739,8 @@ if (homeLink) {
 }
 
 
-document.querySelectorAll(".nav-btn[data-page]").forEach(btn => {
-  btn.addEventListener("click", (e) => {
-    e.preventDefault();
-    const page = btn.dataset.page;
-    if (!page) return;
-
-    switchPage(page);
-
-    if (page === "watchlist") renderWatchlist();
-    if (page === "trending") renderTrending();
-  });
-});
+// Nav links are real <a href> navigations to standalone pages — no JS needed.
+// (The old ".nav-btn[data-page]" handler was dead code: no element carries data-page.)
 
 
 
@@ -4039,19 +4026,49 @@ function updateReviewBadgeInPanel(id, type) {
 // 2. IntersectionObserver-based lazy loading for all images
 // (upgrades native loading="lazy" with better control)
 (function initLazyImages() {
+  // Swap a placeholder <img> up to its full-resolution poster.
+  function upgrade(img) {
+    const src = img.dataset.src || img.dataset.lazySrc;
+    if (!src || img.src === src) return;
+
+    img.removeAttribute("data-src");
+    img.removeAttribute("data-lazy-src");
+
+    // Decode the full image off-screen first, then swap — this keeps the
+    // blur-up transition smooth instead of flashing a half-painted poster.
+    const full = new Image();
+    full.onload = () => {
+      img.src = src;
+      img.classList.remove("card-img-blur");
+      img.classList.add("card-img-loaded");
+    };
+    full.onerror = () => {
+      // Poster failed — keep the low-res thumb rather than an empty box.
+      img.classList.remove("card-img-blur");
+      img.classList.add("card-img-loaded");
+    };
+    full.src = src;
+  }
+
+  // Old TV / webview browsers may not have IntersectionObserver. Without this
+  // guard the constructor below throws and takes the rest of the file with it —
+  // and this site deliberately targets TVs (see LITE MODE at the top).
+  if (typeof IntersectionObserver !== "function") {
+    const upgradeAll = () =>
+      document.querySelectorAll("img[data-src], img[data-lazy-src]").forEach(upgrade);
+    upgradeAll();
+    document.addEventListener("DOMContentLoaded", upgradeAll);
+    window.addEventListener("load", upgradeAll);
+    return;
+  }
+
   const observer = new IntersectionObserver((entries, obs) => {
     entries.forEach(entry => {
       if (!entry.isIntersecting) return;
-      const img = entry.target;
-      const src = img.dataset.src || img.dataset.lazySrc;
-      if (src && img.src !== src) {
-        img.src = src;
-        img.removeAttribute("data-src");
-        img.removeAttribute("data-lazy-src");
-      }
-      obs.unobserve(img);
+      obs.unobserve(entry.target);
+      upgrade(entry.target);
     });
-  }, { rootMargin: "200px", threshold: 0 });
+  }, { rootMargin: "300px", threshold: 0 });
 
   // Observe existing lazy images
   document.querySelectorAll("img[data-src], img[data-lazy-src]").forEach(img => observer.observe(img));

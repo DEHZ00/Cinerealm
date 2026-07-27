@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Private / operational pages — no value in the index
+Disallow: /admin
+Disallow: /banned
+Disallow: /browser
+Disallow: /maintenance
+Disallow: /offline
+Disallow: /games-proxy
+Disallow: /user/
+Disallow: /api/
+
+Sitemap: https://cinerealm.online/sitemap.xml

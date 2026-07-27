@@ -142,10 +142,13 @@ app.use(express.static(path.join(__dirname, "public"), {
   setHeaders: (res, filePath) => {
     const ext = path.extname(filePath).toLowerCase();
     if ([".css", ".js", ".html"].includes(ext)) {
-      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-      res.setHeader("Pragma", "no-cache");
-      res.setHeader("Expires", "0");
-    } else if ([".png", ".jpg", ".jpeg", ".webp", ".ico", ".svg", ".woff", ".woff2"].includes(ext)) {
+      // "no-cache" = store it, but always revalidate before reuse.
+      // Users still get the newest build immediately, but unchanged assets
+      // come back as a ~200-byte 304 instead of re-downloading ~350kb of
+      // JS+CSS on every single navigation. (Was "no-store", which banned
+      // storage entirely and made ETag/Last-Modified useless.)
+      res.setHeader("Cache-Control", "no-cache");
+    } else if ([".png", ".jpg", ".jpeg", ".webp", ".ico", ".svg", ".woff", ".woff2", ".mp3"].includes(ext)) {
       res.setHeader("Cache-Control", "public, max-age=604800, immutable");
     }
   }
@@ -153,9 +156,8 @@ app.use(express.static(path.join(__dirname, "public"), {
 
 // Helper
 function sendHTML(res, filePath) {
-  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-  res.setHeader("Pragma", "no-cache");
-  res.setHeader("Expires", "0");
+  // Revalidate every time, but allow storage so unchanged pages 304.
+  res.setHeader("Cache-Control", "no-cache");
   res.sendFile(filePath, err => { if (err) res.status(404).send("Not Found"); });
 }
 

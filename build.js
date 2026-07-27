@@ -1,65 +1,86 @@
 /**
  * CineRealm Build Script
- * Obfuscates public/script.js before deploy
- * Vercel runs this automatically via the "build" script in package.json
- * 
- * To edit the site: edit public/script.js normally
- * On deploy: Vercel runs this, obfuscated version is what users see
- * Your original is always safe in git
+ * Vercel runs this automatically via the "build" script in package.json.
+ *
+ * What it does:
+ *   1. Minifies public/script.js  → public/script.min.js
+ *   2. Minifies public/style.css  → public/style.min.css
+ *   3. (Optional) Obfuscates the generated script.min.js
+ *
+ * To edit the site: edit public/script.js and public/style.css normally.
+ * The .min.* files are BUILD OUTPUT — every page loads those, so never hand-edit
+ * them or they'll drift out of sync with the source.
+ *
+ * Obfuscation is opt-in: set OBFUSCATE=true. It's off by default because it adds
+ * ~30-60% back to the file size and costs runtime performance, which cancels out
+ * most of the benefit of minifying in the first place.
+ *
+ * NOTE: the previous version of this script obfuscated public/script.js IN PLACE.
+ * That was doubly wrong — it destroyed the source file, and every page loads
+ * script.min.js, so the obfuscated output never actually reached a user.
  */
 
 const fs   = require("fs");
 const path = require("path");
 
-let JavaScriptObfuscator;
-try {
-  JavaScriptObfuscator = require("javascript-obfuscator");
-} catch(e) {
-  console.log("⚠  javascript-obfuscator not installed — skipping obfuscation");
-  process.exit(0);
-}
+const OBFUSCATE = process.env.OBFUSCATE === "true";
+const SCRIPT_MIN = path.join(__dirname, "public", "script.min.js");
 
-const srcPath = path.join(__dirname, "public", "script.js");
+(async () => {
+  // ── 1 + 2. Minify ────────────────────────────────────────────────────────
+  await require("./minify.js");
 
-if (!fs.existsSync(srcPath)) {
-  console.error("❌ public/script.js not found");
+  // ── 3. Optional obfuscation of the BUILD OUTPUT (never the source) ───────
+  if (!OBFUSCATE) {
+    console.log("ℹ  Obfuscation skipped (set OBFUSCATE=true to enable)");
+    return;
+  }
+
+  let JavaScriptObfuscator;
+  try {
+    JavaScriptObfuscator = require("javascript-obfuscator");
+  } catch (e) {
+    console.log("⚠  javascript-obfuscator not installed — skipping obfuscation");
+    return;
+  }
+
+  console.log("🔒 Obfuscating public/script.min.js...");
+  const source = fs.readFileSync(SCRIPT_MIN, "utf8");
+
+  const result = JavaScriptObfuscator.obfuscate(source, {
+    compact: true,
+    controlFlowFlattening: false,
+    deadCodeInjection: false,
+    debugProtection: false,
+    disableConsoleOutput: true,
+    identifierNamesGenerator: "hexadecimal",
+    log: false,
+    numbersToExpressions: true,
+    renameGlobals: false,          // keep global fn names (showToast etc still work)
+    selfDefending: false,
+    simplify: true,
+    splitStrings: true,
+    splitStringsChunkLength: 5,
+    stringArray: true,
+    stringArrayCallsTransform: true,
+    stringArrayEncoding: ["base64"],
+    stringArrayIndexShift: true,
+    stringArrayRotate: true,
+    stringArrayShuffle: true,
+    stringArrayWrappersCount: 2,
+    stringArrayWrappersChainedCalls: true,
+    stringArrayWrappersParametersMaxCount: 4,
+    stringArrayWrappersType: "function",
+    stringArrayThreshold: 0.75,
+    transformObjectKeys: false,
+    unicodeEscapeSequence: false,
+  });
+
+  fs.writeFileSync(SCRIPT_MIN, result.getObfuscatedCode());
+  console.log("✅ Obfuscation complete");
+  console.log(`   Minified:   ${(source.length / 1024).toFixed(1)}kb`);
+  console.log(`   Obfuscated: ${(result.getObfuscatedCode().length / 1024).toFixed(1)}kb`);
+})().catch(err => {
+  console.error("❌ Build failed:", err.message);
   process.exit(1);
-}
-
-console.log("🔒 Obfuscating public/script.js...");
-const source = fs.readFileSync(srcPath, "utf8");
-
-const result = JavaScriptObfuscator.obfuscate(source, {
-  // ── Balanced obfuscation (Option 2) ─────────────────────────────────────
-  compact: true,
-  controlFlowFlattening: false,       // off — keeps performance good
-  deadCodeInjection: false,           // off — keeps file size down
-  debugProtection: false,             // off — don't want to break devtools entirely
-  disableConsoleOutput: true,         // hides console.log output from users
-  identifierNamesGenerator: "hexadecimal", // var names become _0x1a2b3c
-  log: false,
-  numbersToExpressions: true,         // 10 → (2*5) — harder to read
-  renameGlobals: false,               // keep global fn names (showToast etc still work)
-  selfDefending: false,               // off — can cause issues on some browsers
-  simplify: true,
-  splitStrings: true,                 // "hello world" → "hel"+"lo "+"world"
-  splitStringsChunkLength: 5,
-  stringArray: true,                  // all strings go into an encoded array
-  stringArrayCallsTransform: true,
-  stringArrayEncoding: ["base64"],    // base64 encode the string array
-  stringArrayIndexShift: true,
-  stringArrayRotate: true,
-  stringArrayShuffle: true,
-  stringArrayWrappersCount: 2,
-  stringArrayWrappersChainedCalls: true,
-  stringArrayWrappersParametersMaxCount: 4,
-  stringArrayWrappersType: "function",
-  stringArrayThreshold: 0.75,        // 75% of strings get encoded
-  transformObjectKeys: false,         // off — can break object access
-  unicodeEscapeSequence: false,       // off — makes file too large
 });
-
-fs.writeFileSync(srcPath, result.getObfuscatedCode());
-console.log("✅ Obfuscation complete");
-console.log(`   Original: ${(source.length / 1024).toFixed(1)}kb`);
-console.log(`   Obfuscated: ${(result.getObfuscatedCode().length / 1024).toFixed(1)}kb`);

@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Stats — CineRealm</title>
-  <link rel="stylesheet" href="/style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+<link rel="stylesheet" href="/style.min.css">
     <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#ff2c2c">
   <meta name="mobile-web-app-capable" content="yes">
@@ -214,9 +217,6 @@
   <p class="intro-tagline">Stream Movies, TV &amp; Anime</p>
   <div class="intro-bar-wrap"><div class="intro-bar"></div></div>
 </div>
-  <p class="intro-tagline">Stream Movies, TV &amp; Anime</p>
-  <div class="intro-bar-wrap"><div class="intro-bar"></div></div>
-</div>
 <div id="site-notification"></div>
 
 <header>
@@ -232,6 +232,7 @@
     <a href="/anime" class="nav-btn">Anime</a>
     <a href="/watchlist" class="nav-btn">Watchlist</a>
     <a href="/games" class="nav-btn">Games</a>
+    <a href="/stats" class="nav-btn active">Stats</a>
     <a href="/legal" class="nav-btn">Legal</a>
     <a href="/donate" class="nav-btn" style="color:rgba(255,150,150,0.7);">♥</a>
   </nav>
@@ -293,7 +294,7 @@
 </div>
 
 <script src="/cloak-config.js"></script>
-<script src="/script.js" defer></script>
+<script src="/script.min.js" defer></script>
 <script>
 const IMG_BASE_STATS = "https://image.tmdb.org/t/p/w92";
 

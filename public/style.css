@@ -5,7 +5,7 @@
 
 body {
   margin: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #3b0000, #5a0000, #8a0000);
 
   color: white;
@@ -1624,8 +1624,7 @@ section h2::before {
    SECTION 2 — V2 DESIGN OVERHAUL
    ════════════════════════════════════════════════════════════════════════════ */
 
-/* ── Google Font — Inter ─────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+/* ── Google Font — Inter: loaded via <link> in each page <head> ── */
 
 * { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
 
@@ -2428,7 +2427,7 @@ footer strong { color: rgba(255,255,255,0.55); font-weight: 600; }
 
 body {
   margin: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #3b0000, #5a0000, #8a0000);
 
   color: white;
@@ -4032,8 +4031,7 @@ section h2::before {
    SECTION 2 — V2 DESIGN OVERHAUL
    ════════════════════════════════════════════════════════════════════════════ */
 
-/* ── Google Font — Inter ─────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+/* ── Google Font — Inter: loaded via <link> in each page <head> ── */
 
 * { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
 
