@@ -541,28 +541,26 @@ const API_CACHE_TTL = 10 * 60 * 1000; // 10 minutes (up from 5)
 const API_CACHE_MAX = 300; // max entries before eviction
 
 async function apiCall(endpoint, params = {}) {
+  const queryString = new URLSearchParams(params).toString();
+  const url = `${BACKEND_URL}/api/tmdb${endpoint}${queryString ? "?" + queryString : ""}`;
+
   try {
     showLoading(true);
-    const queryString = new URLSearchParams(params).toString();
-    const url = `${BACKEND_URL}/api/tmdb${endpoint}${queryString ? "?" + queryString : ""}`;
 
     // Return cached result if fresh
     const cached = _apiCache.get(url);
-    if (cached && Date.now() - cached.ts < API_CACHE_TTL) {
-      showLoading(false);
-      return cached.data;
-    }
+    if (cached && Date.now() - cached.ts < API_CACHE_TTL) return cached.data;
 
-    // Deduplicate — if same URL is already in flight, wait for it
-    if (_apiPending.has(url)) {
-      showLoading(false);
-      return _apiPending.get(url);
-    }
+    // Deduplicate — if same URL is already in flight, wait for it.
+    // Must be `return await`, not a bare `return`: a bare `return promise`
+    // inside try/catch does NOT route the rejection through the catch below,
+    // so a failed in-flight request would escape as an unhandled rejection
+    // instead of resolving to null like every caller expects.
+    if (_apiPending.has(url)) return await _apiPending.get(url);
 
     // Evict oldest if cache is full
     if (_apiCache.size >= API_CACHE_MAX) {
-      const oldestKey = _apiCache.keys().next().value;
-      _apiCache.delete(oldestKey);
+      _apiCache.delete(_apiCache.keys().next().value);
     }
 
     const promise = fetch(url, { signal: AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined })
@@ -572,21 +570,20 @@ async function apiCall(endpoint, params = {}) {
       })
       .then(data => {
         _apiCache.set(url, { data, ts: Date.now() });
-        _apiPending.delete(url);
         return data;
       })
-      .catch(err => {
-        _apiPending.delete(url);
-        throw err;
-      });
+      .finally(() => { _apiPending.delete(url); });
+
+    // Park a permanent no-op handler on it so a rejection can never surface as
+    // an unhandled rejection, even if every awaiting caller has gone away.
+    promise.catch(() => {});
 
     _apiPending.set(url, promise);
-    const data = await promise;
-    showLoading(false);
-    return data;
+    return await promise;
   } catch (err) {
-    showLoading(false);
     return null;
+  } finally {
+    showLoading(false);
   }
 }
 
@@ -6060,10 +6057,25 @@ function initHomeGenreFilter() {
     loadGenreResults(activeType, genreId);
   }
 
+  // Live infinite-scroll handles for the genre currently on screen. Only one
+  // genre is ever displayed, so switching chips must tear the old pair down \u2014
+  // otherwise the previous genre's observer keeps firing and appends its
+  // movies into the new genre's row.
+  let _gObs = null, _gSentinel = null, _gRunId = 0;
+
+  function teardownGenreScroll() {
+    if (_gObs) { _gObs.disconnect(); _gObs = null; }
+    if (_gSentinel) { _gSentinel.remove(); _gSentinel = null; }
+  }
+
   async function loadGenreResults(type, genreId) {
+    teardownGenreScroll();
     resultsRow.innerHTML = "<p class=\"placeholder\">Loading\u2026</p>";
     // Reset infinite scroll state
     let _gPage = 1, _gDone = false, _gLoading = false;
+    // Identifies this closure as the current one; a stale run that is still
+    // awaiting its fetch when the user switches genres must not render.
+    const myRun = ++_gRunId;
 
     async function loadGenrePage(reset) {
       if (_gLoading || _gDone) return;
@@ -6075,6 +6087,10 @@ function initHomeGenreFilter() {
         sort_by: "popularity.desc",
         page: _gPage
       });
+
+      // User switched genre while this fetch was in flight — drop the results.
+      if (myRun !== _gRunId) return;
+
       const items = ((data && data.results) ? data.results : []).filter(i => i.poster_path);
       const totalPages = Math.min(data?.total_pages || 1, 20); // cap at 20 pages
 
@@ -6091,22 +6107,18 @@ function initHomeGenreFilter() {
 
       if (_gPage >= totalPages) {
         _gDone = true;
-        // Remove sentinel if exists
-        document.getElementById("genreSentinel_" + genreId)?.remove();
+        teardownGenreScroll();
       } else {
         _gPage++;
-        // Create or keep sentinel
-        let sentinel = document.getElementById("genreSentinel_" + genreId);
-        if (!sentinel) {
-          sentinel = document.createElement("div");
-          sentinel.id = "genreSentinel_" + genreId;
-          sentinel.style.cssText = "height:20px;width:100%;flex-basis:100%;";
-          resultsRow.parentElement?.appendChild(sentinel);
-          // Observe sentinel
-          const obs = new IntersectionObserver(entries => {
+        if (!_gSentinel) {
+          _gSentinel = document.createElement("div");
+          _gSentinel.id = "genreSentinel";
+          _gSentinel.style.cssText = "height:20px;width:100%;flex-basis:100%;";
+          resultsRow.parentElement?.appendChild(_gSentinel);
+          _gObs = new IntersectionObserver(entries => {
             if (entries[0].isIntersecting) loadGenrePage(false);
           }, { rootMargin: "300px" });
-          obs.observe(sentinel);
+          _gObs.observe(_gSentinel);
         }
       }
       _gLoading = false;

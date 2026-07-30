@@ -44,7 +44,11 @@ function minifyCSS() {
   const out = path.join(PUB, "style.min.css");
   const code = fs.readFileSync(src, "utf8");
 
-  const result = new CleanCSS({ level: 2, rebase: false }).minify(code);
+  // level 1 only (whitespace/comment stripping, no rule restructuring).
+  // level 2 merges ~370 of this sheet's 1276 rules and reorders selectors —
+  // risky in a stylesheet built from iterative overrides, and worth just
+  // ~0.8kb once brotli is applied. Not a trade worth making.
+  const result = new CleanCSS({ level: 1, rebase: false }).minify(code);
   if (result.errors.length) throw new Error(result.errors.join("\n"));
   fs.writeFileSync(out, result.styles);
   return { from: code.length, to: result.styles.length };
