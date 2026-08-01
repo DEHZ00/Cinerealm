@@ -4446,463 +4446,508 @@ function _addOledToCloak() {
 }
 
 
-// ── Hidden ───────────────────────────────────────────────────────────────
+// // ── Hidden ───────────────────────────────────────────────────────────────
+// (function(){
+//   const _s=[38,38,40,40,37,39,37,39,66,65];
+//   let _i=0;
+//   const _m=atob("SSBMb3ZlIFlvdSBBaXlhbmE=");
+//   const _sub=atob("WW91IG1ha2UgZXZlcnl0aGluZyBiZXR0ZXIgXHUyNzY1");
+//   const _valid=[atob("QWl5YW5h"),atob("YWl5YW5h"),atob("QVJZQU5B"),atob("YWl5YW5h")];
+// 
+//   // Desktop: Konami code
+//   document.addEventListener("keydown",function(e){
+//     if(e.keyCode===_s[_i]){_i++;if(_i===_s.length){_i=0;_askName();}}else{_i=0;}
+//   });
+// 
+//   // Mobile: tap logo 7 times + name prompt
+//   window.addEventListener("load", () => {
+//     const logo = document.querySelector("header h1, .header-left h1, #homeLink");
+//     if (!logo) return;
+//     let _tapCount = 0;
+//     let _tapTimer = null;
+//     logo.addEventListener("touchend", e => {
+//       e.preventDefault();
+//       _tapCount++;
+//       clearTimeout(_tapTimer);
+//       if (_tapCount === 3) { if(typeof showToast==="function") showToast("✨ Keep tapping...", "info"); }
+//       if (_tapCount === 6) { if(typeof showToast==="function") showToast("🩷 One more!", "info"); }
+//       if (_tapCount >= 7) {
+//         _tapCount = 0;
+//         clearTimeout(_tapTimer);
+//         setTimeout(_askName, 600); // delay so last toast is readable
+//         return;
+//       }
+//       _tapTimer = setTimeout(() => { _tapCount = 0; }, 1800); // 1.8s window — plenty of time to read toast
+//     });
+//   });
+// 
+//   function _askName() {
+//     const overlay = document.createElement("div");
+//     overlay.style.cssText = "position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.85);backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;padding:24px;";
+//     overlay.innerHTML = `
+//       <div style="background:linear-gradient(160deg,#1a0010,#0d0008);border:1.5px solid rgba(255,150,200,0.25);border-radius:20px;padding:28px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.7);">
+//         <div style="font-size:36px;margin-bottom:12px;">🐱</div>
+//         <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:6px;">Who's there?</div>
+//         <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:20px;">Enter your name to continue</div>
+//         <input id="_cr_name_input" type="text" autocomplete="off" placeholder="Your name..."
+//           style="width:100%;padding:11px 16px;border-radius:10px;border:1.5px solid rgba(255,150,200,0.2);background:rgba(255,255,255,0.06);color:#fff;font-size:15px;outline:none;text-align:center;box-sizing:border-box;font-family:inherit;"
+//           oninput="this.style.borderColor='rgba(255,150,200,0.4)'">
+//         <button id="_cr_name_submit" style="margin-top:14px;width:100%;padding:11px;background:linear-gradient(135deg,#ff69b4,#ff1493);border:none;border-radius:10px;color:#fff;font-weight:800;font-size:14px;cursor:pointer;">Continue ✨</button>
+//       </div>
+//     `;
+//     document.body.appendChild(overlay);
+// 
+//     const input = overlay.querySelector("#_cr_name_input");
+//     const submit = overlay.querySelector("#_cr_name_submit");
+//     setTimeout(() => input.focus(), 100);
+// 
+//     const check = () => {
+//       const val = input.value.trim().toLowerCase();
+//       overlay.remove();
+//       if (_valid.map(v=>v.toLowerCase()).includes(val)) {
+//         _showSecret();
+//       } else {
+//         // Wrong name — silently refresh after brief delay
+//         setTimeout(() => window.location.reload(), 400);
+//       }
+//     };
+// 
+//     submit.onclick = check;
+//     input.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
+//     overlay.addEventListener("click", e => { if (e.target === overlay) { overlay.remove(); } });
+//   }
+//   const PLAYLIST = [
+//     { title: "Fade Into You(Said was ur fav)",   src: "/Mazzy Star - Fade into You.mp3", lrc: "/fiy.lrc" },
+//     { title: "No One", src: "/Maoli - No One Official Lyric Video.mp3", lrc: "/no-one.lrc" },
+//     { title: "Still Beating",   src: "/Mac DeMarco - Still Beating - (320 Kbps).mp3", lrc: "/stillbeating.lrc" },
+//     { title: "My kind of woman",  src: "/Mac DeMarco My Kind of Woman OFFICIAL VIDEO.mp3", lrc: "/mykindofwoman.lrc" },
+//   ];
+//   let _pi = 0;
+// 
+//   function parseLRC(text){
+//     if(!text) return [];
+//     const lineRe = /^\[(\d+):(\d+(?:\.\d+)?)\](.*)$/;
+//     const wordRe = /<(\d+):(\d+(?:\.\d+)?)>([^<]*)/g;
+//     return text.split(/\r?\n/).map(raw=>{
+//       const m = raw.match(lineRe);
+//       if(!m) return null;
+//       const lineTime = parseInt(m[1])*60 + parseFloat(m[2]);
+//       const rest = m[3];
+//       if(rest.indexOf("<") === -1){
+//         return { time: lineTime, words: [{ time: lineTime, text: rest.trim() }], text: rest.trim() };
+//       }
+//       const words = [];
+//       const firstTagIdx = rest.search(/</);
+//       const leading = (firstTagIdx === -1 ? rest : rest.slice(0, firstTagIdx)).trim();
+//       if(leading) words.push({ time: lineTime, text: leading });
+//       let wm;
+//       wordRe.lastIndex = 0;
+//       while((wm = wordRe.exec(rest))){
+//         const wt = parseInt(wm[1])*60 + parseFloat(wm[2]);
+//         const wtext = wm[3].trim();
+//         if(wtext) words.push({ time: wt, text: wtext });
+//       }
+//       return { time: lineTime, words, text: words.map(w=>w.text).join(" ") };
+//     }).filter(Boolean);
+//   }
+// 
+//   function fmtTime(s){
+//     if(!isFinite(s)) return "0:00";
+//     const m = Math.floor(s/60), sec = Math.floor(s%60);
+//     return m + ":" + String(sec).padStart(2,"0");
+//   }
+// 
+// 
+//   function _showSecret(){
+//     if(document.getElementById("_cr_secret"))return;
+//     const o=document.createElement("div");
+//     o.id="_cr_secret";
+//     o.style.cssText="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:24px 0;";
+// 
+// 
+//       const style=document.createElement("style");
+//   style.textContent=`
+//     @keyframes _heartPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 30px rgba(255,105,180,0.8));}50%{transform:scale(1.25);filter:drop-shadow(0 0 60px rgba(255,20,147,1));}}
+//     @keyframes _fadeUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+//     @keyframes _shimmer{0%,100%{opacity:1;}50%{opacity:0.7;}}
+//     @keyframes _catFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+//     @keyframes _sparkle{0%{opacity:0;transform:scale(0) rotate(0deg);}50%{opacity:1;transform:scale(1) rotate(180deg);}100%{opacity:0;transform:scale(0) rotate(360deg);}}
+//     @keyframes _pop{0%{opacity:0;transform:scale(0.7) translateY(6px);}60%{opacity:1;transform:scale(1.05) translateY(0);}100%{opacity:1;transform:scale(1) translateY(0);}}
+//     .mp-panel{margin-top:26px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,182,217,0.35);border-radius:18px;padding:16px 18px;backdrop-filter:blur(6px);box-shadow:0 0 30px rgba(255,255,255,0.08),0 0 50px rgba(255,105,180,0.15);}
+//     .mp-seek-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+//     .mp-time{font-size:10px;color:rgba(255,255,255,0.5);width:32px;text-align:center;flex-shrink:0;}
+//     .mp-seek{flex:1;height:4px;-webkit-appearance:none;appearance:none;background:rgba(255,255,255,0.15);border-radius:999px;outline:none;cursor:pointer;}
+//     .mp-seek::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#ff9ecb;box-shadow:0 0 8px rgba(255,105,180,0.9);cursor:pointer;}
+//     .mp-controls{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;}
+//     .mp-btn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,182,217,0.3);color:#ffe0ef;border-radius:50%;width:38px;height:38px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;box-shadow:0 0 12px rgba(255,255,255,0.06);}
+//     .mp-btn:hover{background:rgba(255,182,217,0.2);box-shadow:0 0 20px rgba(255,105,180,0.5);}
+//     .mp-btn.mp-play{width:46px;height:46px;font-size:18px;background:linear-gradient(135deg,rgba(255,150,200,0.35),rgba(255,105,180,0.25));box-shadow:0 0 18px rgba(255,105,180,0.5);}
+//     .mp-vol-row{display:flex;align-items:center;gap:8px;justify-content:center;}
+//     .mp-vol-row .mp-btn{width:30px;height:30px;font-size:12px;}
+//     .mp-vol-track{width:70px;height:4px;-webkit-appearance:none;appearance:none;background:rgba(255,255,255,0.15);border-radius:999px;outline:none;cursor:pointer;}
+//     .mp-vol-track::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;border-radius:50%;background:#ffe0ef;box-shadow:0 0 6px rgba(255,255,255,0.8);cursor:pointer;}
+//     .mp-lyrics{margin-top:14px;max-height:110px;overflow-y:auto;text-align:center;font-size:12px;line-height:1.9;color:rgba(255,255,255,0.35);scrollbar-width:none;}
+//     .mp-lyrics::-webkit-scrollbar{display:none;}
+//     .mp-lyrics .mp-line.active{color:#ffe0ef;font-weight:700;font-size:13px;text-shadow:0 0 14px rgba(255,105,180,0.6);}
+//     .mp-lyrics .mp-line:not(.active){opacity:0.4;}
+//     .mp-word{color:rgba(255,255,255,0.32);transition:color 0.15s ease, text-shadow 0.15s ease;}
+//     .mp-line.active .mp-word{color:rgba(255,224,239,0.35);}
+//     .mp-line.active .mp-word.sung{color:#ffe0ef;}
+//     .mp-line.active .mp-word.current{color:#fff;text-shadow:0 0 16px rgba(255,105,180,0.9);}
+//     .mp-mini{display:flex;align-items:center;gap:10px;cursor:pointer;}
+//     .mp-mini-icon{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,rgba(255,150,200,0.35),rgba(255,105,180,0.2));display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;box-shadow:0 0 14px rgba(255,105,180,0.4);animation:_catFloat 2.4s ease-in-out infinite;}
+//     .mp-mini-title{flex:1;text-align:left;font-size:12px;font-weight:700;color:#ffd6ea;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+//     .mp-mini-play{background:none;border:none;color:#ffe0ef;font-size:16px;cursor:pointer;flex-shrink:0;}
+//     .mp-mini-chevron{font-size:11px;color:rgba(255,214,234,0.5);flex-shrink:0;transition:transform 0.3s ease;}
+//     .mp-panel.expanded .mp-mini-chevron{transform:rotate(180deg);}
+//     .mp-full{max-height:0;overflow:hidden;transition:max-height 0.4s ease, opacity 0.3s ease, margin-top 0.4s ease;opacity:0;}
+//     .mp-panel.expanded .mp-full{max-height:400px;opacity:1;margin-top:14px;}
+//   `;
+//   document.head.appendChild(style);
+// 
+// 
+//     o.innerHTML=`
+//       <div id="_cr_s_bg" style="position:absolute;inset:0;background:linear-gradient(135deg,#1a0010,#0d0008,#1a0818);transition:background 2s ease;"></div>
+//       <canvas id="_cr_s_canvas" style="position:absolute;inset:0;pointer-events:none;"></canvas>
+// 
+//       <!-- Floating cat top left -->
+//       <div style="position:absolute;top:40px;left:40px;font-size:40px;animation:_catFloat 3s ease-in-out infinite;opacity:0.7;">🐱</div>
+//       <!-- Floating cat top right -->
+//       <div style="position:absolute;top:60px;right:50px;font-size:32px;animation:_catFloat 2.5s ease-in-out infinite 0.5s;opacity:0.6;">🐾</div>
+//       <!-- Matcha bottom left -->
+//       <div style="position:absolute;bottom:80px;left:40px;font-size:28px;animation:_catFloat 4s ease-in-out infinite 1s;opacity:0.5;">🍵</div>
+//       <!-- Sparkle corners -->
+//       <div style="position:absolute;top:100px;right:80px;font-size:20px;animation:_sparkle 2s ease-in-out infinite;">✨</div>
+//       <div style="position:absolute;bottom:120px;right:60px;font-size:16px;animation:_sparkle 2.5s ease-in-out infinite 0.8s;">✨</div>
+//       <div style="position:absolute;top:150px;left:80px;font-size:14px;animation:_sparkle 3s ease-in-out infinite 0.3s;">🌸</div>
+// 
+//       <div style="position:relative;z-index:2;text-align:center;padding:40px;max-width:560px;">
+// 
+//         <!-- Big heart -->
+//         <div id="_cr_s_heart" style="font-size:90px;line-height:1;margin-bottom:20px;animation:_heartPulse 1.4s ease-in-out infinite;display:inline-block;">🩷</div>
+// 
+//         <!-- Cats row -->
+//         <div style="font-size:28px;margin-bottom:20px;opacity:0;animation:_fadeUp 0.8s ease 0.2s forwards;letter-spacing:8px;">🐱 🌸 🐱</div>
+// 
+//         <!-- Main message -->
+//         <div id="_cr_s_msg" style="font-size:46px;font-weight:900;color:#fff;letter-spacing:-1px;margin-bottom:10px;font-family:'Georgia',serif;opacity:0;animation:_fadeUp 0.9s ease 0.5s forwards;text-shadow:0 0 40px rgba(255,105,180,0.8),0 0 80px rgba(255,20,147,0.4);">
+//           I Love You Aiyana
+//         </div>
+// 
+//         <!-- Pink decorative line -->
+//         <div style="width:120px;height:3px;background:linear-gradient(90deg,transparent,#ff69b4,#ff1493,#ff69b4,transparent);border-radius:999px;margin:0 auto 14px;opacity:0;animation:_fadeUp 0.8s ease 0.8s forwards;"></div>
+// 
+//         <!-- Subtitle -->
+//         <div id="_cr_s_sub" style="font-size:15px;color:rgba(255,200,230,0.75);letter-spacing:3px;text-transform:uppercase;opacity:0;animation:_fadeUp 0.8s ease 1s forwards;">
+//           You make everything better 💕
+//         </div>
+//         <div id="_cr_s_rotator" style="margin-top:18px;font-size:22px;font-weight:800;color:#ffb6d9;min-height:32px;font-family:'Georgia',serif;font-style:italic;text-shadow:0 0 20px rgba(255,105,180,0.5);"></div>
+// 
+//         <!-- Secondary message -->
+//         <div style="margin-top:16px;font-size:13px;color:rgba(255,182,193,0.5);opacity:0;animation:_fadeUp 0.8s ease 1.4s forwards;font-style:italic;">
+//            &nbsp; My fav girl. &nbsp; 
+//         </div>
+//       <div style="margin-top:14px;font-size:14px;color:rgba(255,255,255,0.55);opacity:0;animation:_fadeUp 0.8s ease 1.6s forwards;max-width:380px;margin-left:auto;margin-right:auto;line-height:1.5;">
+//         I'll always love you babe.
+//       </div>
+//         <div class="mp-panel" id="mpPanel" style="opacity:0;animation:_fadeUp 0.8s ease 1.8s forwards;">
+//           <div class="mp-mini" id="mpMini">
+//             <div class="mp-mini-icon">🎵</div>
+//             <div class="mp-mini-title" id="mpTitle">Loading…</div>
+//             <button class="mp-mini-play" id="mpMiniPlay" title="Play/Pause"></button>
+//             <span class="mp-mini-chevron">▲</span>
+//           </div>
+//           <div class="mp-full">
+//             <div class="mp-seek-row">
+//               <span class="mp-time" id="mpCur">0:00</span>
+//               <input type="range" class="mp-seek" id="mpSeek" min="0" max="100" value="0">
+//               <span class="mp-time" id="mpDur">0:00</span>
+//             </div>
+//             <div class="mp-controls">
+//               <button class="mp-btn" id="mpBack10" title="Back 10s"></button>
+//               <button class="mp-btn mp-play" id="mpPlay" title="Play/Pause"></button>
+//               <button class="mp-btn" id="mpFwd10" title="Forward 10s"></button>
+//               <button class="mp-btn" id="mpNext" title="Next song"></button>
+//             </div>
+//             <div class="mp-vol-row">
+//               <button class="mp-btn" id="mpMute" title="Mute"></button>
+//               <button class="mp-btn" id="mpVolDown" title="Volume down">−</button>
+//               <input type="range" class="mp-vol-track" id="mpVol" min="0" max="100" value="60">
+//               <button class="mp-btn" id="mpVolUp" title="Volume up">+</button>
+//             </div>
+//             <div class="mp-lyrics" id="mpLyrics"></div>
+//           </div>
+//         </div>
+// 
+//         
+//         <!-- Button -->
+//         <div style="margin-top:40px;opacity:0;animation:_fadeUp 0.6s ease 2s forwards;">
+//           <button onclick="document.getElementById('_cr_secret').remove();document.body.style.overflow='';if(window._cleanupSecret)_cleanupSecret();" style="padding:13px 36px;background:linear-gradient(135deg,rgba(255,105,180,0.2),rgba(255,20,147,0.15));border:1.5px solid rgba(255,105,180,0.4);border-radius:999px;color:rgba(255,200,230,0.8);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1.5px;transition:all 0.25s;backdrop-filter:blur(10px);" onmouseover="this.style.background='linear-gradient(135deg,rgba(255,105,180,0.35),rgba(255,20,147,0.25))';this.style.color='#fff'" onmouseout="this.style.background='linear-gradient(135deg,rgba(255,105,180,0.2),rgba(255,20,147,0.15))';this.style.color='rgba(255,200,230,0.8)'">
+//             Back to CineRealm 🌸
+//           </button>
+//         </div>
+//       </div>
+//     `;
+// 
+//         const _cr_scrollY = window.scrollY || window.pageYOffset || 0;
+//     document.body.style.position = "fixed";
+//     document.body.style.top = `-${_cr_scrollY}px`;
+//     document.body.style.left = "0";
+//     document.body.style.right = "0";
+//     document.body.style.overflow = "hidden";
+//     document.body.appendChild(o);
+// 
+//     // Animated gradient background
+//     const bg=document.getElementById("_cr_s_bg");
+//     const bgs=[
+//       "linear-gradient(135deg,#1a0010,#0d0008,#1a0818)",
+//       "linear-gradient(135deg,#200015,#0a0005,#1f0a1a)",
+//       "linear-gradient(135deg,#180010,#120008,#1c0d18)",
+//       "linear-gradient(135deg,#1f0018,#0f0008,#1a0a1f)",
+//     ];
+//     let bi=0;
+//     const bgI=setInterval(()=>{bi=(bi+1)%bgs.length;bg.style.background=bgs[bi];},2000);
+// 
+//     // Particle canvas
+//     const canvas=document.getElementById("_cr_s_canvas");
+//     canvas.width=window.innerWidth;
+//     canvas.height=window.innerHeight;
+//     const ctx=canvas.getContext("2d");
+// 
+//     // Rich particles — mix of hearts, flowers, cats, sparkles, matcha
+//     const chars=["🩷","💕","🌸","✨","💗","🐾","🌺","💝","🌷","💖","🩷","🌸","💕","✨","🩷"];
+//     const particles=[];
+//     for(let i=0;i<80;i++){
+//       particles.push({
+//         x:Math.random()*canvas.width,
+//         y:canvas.height+Math.random()*300,
+//         size:Math.random()*24+8,
+//         speed:Math.random()*1.2+0.3,
+//         opacity:Math.random()*0.7+0.2,
+//         drift:(Math.random()-0.5)*0.6,
+//         wobble:Math.random()*Math.PI*2,
+//         wobbleSpeed:Math.random()*0.03+0.01,
+//         char:chars[Math.floor(Math.random()*chars.length)]
+//       });
+//     }
+// 
+//     let animId;
+//     function draw(){
+//       ctx.clearRect(0,0,canvas.width,canvas.height);
+//       particles.forEach(p=>{
+//         p.y-=p.speed;
+//         p.wobble+=p.wobbleSpeed;
+//         p.x+=Math.sin(p.wobble)*0.8+p.drift;
+//         p.opacity-=0.0008;
+//         if(p.y<-60||p.opacity<=0){
+//           p.y=canvas.height+20;
+//           p.x=Math.random()*canvas.width;
+//           p.opacity=Math.random()*0.6+0.2;
+//           p.char=chars[Math.floor(Math.random()*chars.length)];
+//         }
+//         ctx.globalAlpha=p.opacity;
+//         ctx.font=p.size+"px serif";
+//         ctx.fillText(p.char,p.x,p.y);
+//       });
+//       ctx.globalAlpha=1;
+//       if(document.getElementById("_cr_secret"))animId=requestAnimationFrame(draw);
+//     }
+//     draw();
+// 
+//     const _msgs=["My princess.","My sweet girl.","You're still my favorite person.","You're perfect my love."," I miss you."];
+//      let _mi=0;
+//     const rotatorEl=document.getElementById("_cr_s_rotator");
+//     function _showNextMsg(){
+//       if(!rotatorEl||!document.getElementById("_cr_secret"))return;
+//       rotatorEl.style.animation="none";
+//       void rotatorEl.offsetWidth;
+//       rotatorEl.textContent=_msgs[_mi%_msgs.length];
+//       rotatorEl.style.animation="_pop 0.5s ease forwards";
+//       _mi++;
+//     }
+//     setTimeout(_showNextMsg,2200);
+//     const msgInterval=setInterval(_showNextMsg,5000);
+// 
+//         const ICON = {
+//       play:  s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>`,
+//       pause: s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><rect x="6" y="5" width="4" height="14" fill="currentColor"/><rect x="14" y="5" width="4" height="14" fill="currentColor"/></svg>`,
+//       back10:s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M11 18V6l-8.5 6z" fill="currentColor"/><path d="M21 18V6l-8.5 6z" fill="currentColor"/></svg>`,
+//       fwd10: s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M13 6v12l8.5-6z" fill="currentColor"/><path d="M3 6v12l8.5-6z" fill="currentColor"/></svg>`,
+//       next:  s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M6 6l8.5 6L6 18z" fill="currentColor"/><rect x="16" y="6" width="3" height="12" fill="currentColor"/></svg>`,
+//       vol:   s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M4 9v6h4l5 5V4L8 9H4z" fill="currentColor"/><path d="M16.2 8.3a5 5 0 010 7.4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>`,
+//       mute:  s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M4 9v6h4l5 5V4L8 9H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+//     };
+// 
+//     const audio = new Audio();
+//     audio.volume = 0.6;
+//     let lrcLines = [];
+//     let lineEls = [], lastActiveIdx = -1;
+// 
+//     const mpTitle=document.getElementById("mpTitle"), mpPlay=document.getElementById("mpPlay"),
+//           mpMiniPlay=document.getElementById("mpMiniPlay"), mpPanel=document.getElementById("mpPanel"),
+//           mpMini=document.getElementById("mpMini"),
+//           mpSeek=document.getElementById("mpSeek"), mpCur=document.getElementById("mpCur"),
+//           mpDur=document.getElementById("mpDur"), mpVol=document.getElementById("mpVol"),
+//           mpMute=document.getElementById("mpMute"), mpLyrics=document.getElementById("mpLyrics"),
+//           mpBack10=document.getElementById("mpBack10"), mpFwd10=document.getElementById("mpFwd10"),
+//           mpNext=document.getElementById("mpNext");
+//     let seeking=false;
+// 
+//     mpBack10.innerHTML = ICON.back10(15);
+//     mpFwd10.innerHTML  = ICON.fwd10(15);
+//     mpNext.innerHTML   = ICON.next(16);
+//     mpMute.innerHTML   = ICON.vol(15);
+// 
+//     mpMini.addEventListener("click",(e)=>{
+//       if(e.target===mpMiniPlay||mpMiniPlay.contains(e.target)) return;
+//       mpPanel.classList.toggle("expanded");
+//     });
+// 
+//     function setPlayIcon(paused){
+//       mpPlay.innerHTML = paused ? ICON.play(18) : ICON.pause(18);
+//       mpMiniPlay.innerHTML = paused ? ICON.play(13) : ICON.pause(13);
+//     }
+//     mpMiniPlay.onclick=(e)=>{ e.stopPropagation(); togglePlay(); };
+// 
+//     function togglePlay(){
+//       if(audio.paused){ audio.play().catch(()=>{}); setPlayIcon(false); }
+//       else { audio.pause(); setPlayIcon(true); }
+//     }
+// 
+//     async function loadTrack(i){
+//       _pi = (i+PLAYLIST.length)%PLAYLIST.length;
+//       const t = PLAYLIST[_pi];
+//       audio.src = t.src;
+//       mpTitle.textContent = t.title;
+//       mpLyrics.innerHTML = `<div class="mp-line" style="opacity:0.4;">Loading lyrics…</div>`;
+//       lrcLines = []; lineEls = []; lastActiveIdx = -1;
+//       if(t.lrc){
+//         try {
+//           const res = await fetch(t.lrc);
+//           const text = await res.text();
+//           lrcLines = parseLRC(text);
+//         } catch(e) { lrcLines = []; }
+//       }
+//       mpLyrics.innerHTML = lrcLines.length
+//         ? lrcLines.map((l,idx)=>`<div class="mp-line" data-i="${idx}">${
+//             l.words.map((w)=>`<span class="mp-word" data-t="${w.time}">${w.text||"♪"}</span>`).join(" ")
+//           }</div>`).join("")
+//         : `<div class="mp-line" style="opacity:0.4;">No lyrics available</div>`;
+//       lineEls = Array.from(mpLyrics.querySelectorAll(".mp-line")).map(el=>({
+//         el, words: Array.from(el.querySelectorAll(".mp-word"))
+//       }));
+//       audio.play().catch(()=>{});
+//       setPlayIcon(false);
+//     }
+//     loadTrack(0);
+// 
+//     audio.addEventListener("loadedmetadata", ()=>{ mpDur.textContent = fmtTime(audio.duration); });
+//     audio.addEventListener("timeupdate", ()=>{
+//       if(!seeking){
+//         mpSeek.value = audio.duration ? (audio.currentTime/audio.duration*100) : 0;
+//         mpCur.textContent = fmtTime(audio.currentTime);
+//       }
+//       if(!lineEls.length) return;
+//       let activeIdx=-1;
+//       for(let i=0;i<lrcLines.length;i++){ if(audio.currentTime>=lrcLines[i].time) activeIdx=i; }
+//       if(activeIdx !== lastActiveIdx){
+//         if(lastActiveIdx>=0 && lineEls[lastActiveIdx]) lineEls[lastActiveIdx].el.classList.remove("active");
+//         if(activeIdx>=0 && lineEls[activeIdx]){
+//           lineEls[activeIdx].el.classList.add("active");
+//           lineEls[activeIdx].el.scrollIntoView({block:"center",behavior:"smooth"});
+//         }
+//         lastActiveIdx = activeIdx;
+//       }
+//       if(activeIdx>=0 && lineEls[activeIdx]){
+//         let curWord=null;
+//         lineEls[activeIdx].words.forEach(w=>{
+//           const wt = parseFloat(w.dataset.t);
+//           const passed = audio.currentTime >= wt;
+//           if(passed && !w.classList.contains("sung") && !w.classList.contains("current")) w.classList.add("sung");
+//           if(!passed){ w.classList.remove("sung","current"); }
+//           if(passed) curWord=w;
+//         });
+//         if(curWord){
+//           lineEls[activeIdx].words.forEach(w=>w.classList.remove("current"));
+//           curWord.classList.remove("sung"); curWord.classList.add("current");
+//         }
+//       }
+//     });
+//     audio.addEventListener("ended", ()=> loadTrack(_pi+1));
+// 
+//     mpPlay.onclick=togglePlay;
+//     mpNext.onclick=()=>loadTrack(_pi+1);
+//     mpBack10.onclick=()=>{ audio.currentTime=Math.max(0,audio.currentTime-10); };
+//     mpFwd10.onclick=()=>{ audio.currentTime=Math.min(audio.duration||0,audio.currentTime+10); };
+// 
+//     mpSeek.addEventListener("input",()=>{ seeking=true; mpCur.textContent=fmtTime((mpSeek.value/100)*(audio.duration||0)); });
+//     mpSeek.addEventListener("change",()=>{ audio.currentTime=(mpSeek.value/100)*(audio.duration||0); seeking=false; });
+// 
+//     mpVol.addEventListener("input",()=>{ audio.volume=mpVol.value/100; audio.muted=false; mpMute.innerHTML = audio.volume===0?ICON.mute(15):ICON.vol(15); });
+//     document.getElementById("mpVolUp").onclick=()=>{ mpVol.value=Math.min(100,+mpVol.value+10); audio.volume=mpVol.value/100; audio.muted=false; mpMute.innerHTML=ICON.vol(15); };
+//     document.getElementById("mpVolDown").onclick=()=>{ mpVol.value=Math.max(0,+mpVol.value-10); audio.volume=mpVol.value/100; mpMute.innerHTML = audio.volume===0?ICON.mute(15):ICON.vol(15); };
+//     mpMute.onclick=()=>{
+//       audio.muted = !audio.muted;
+//       mpMute.innerHTML = audio.muted ? ICON.mute(15) : ICON.vol(15);
+//     };
+// 
+//         window._cleanupSecret=function(){
+//       clearInterval(bgI);clearInterval(msgInterval);cancelAnimationFrame(animId);
+//       audio.pause(); audio.src="";
+//       document.body.style.position = "";
+//       document.body.style.top = "";
+//       document.body.style.left = "";
+//       document.body.style.right = "";
+//       document.body.style.overflow = "";
+//       window.scrollTo(0, _cr_scrollY);
+//     };
+// 
+// 
+//   }
+// })();
+
+// ── Easter egg ───────────────────────────────────────────────────────────
+// The previous overlay is kept above, commented out. The same triggers
+// (Konami code on desktop, 7 logo taps on mobile) now open a blank page.
 (function(){
   const _s=[38,38,40,40,37,39,37,39,66,65];
   let _i=0;
-  const _m=atob("SSBMb3ZlIFlvdSBBaXlhbmE=");
-  const _sub=atob("WW91IG1ha2UgZXZlcnl0aGluZyBiZXR0ZXIgXHUyNzY1");
-  const _valid=[atob("QWl5YW5h"),atob("YWl5YW5h"),atob("QVJZQU5B"),atob("YWl5YW5h")];
 
-  // Desktop: Konami code
-  document.addEventListener("keydown",function(e){
-    if(e.keyCode===_s[_i]){_i++;if(_i===_s.length){_i=0;_askName();}}else{_i=0;}
+  document.addEventListener("keydown", function(e){
+    if(e.keyCode===_s[_i]){ _i++; if(_i===_s.length){ _i=0; _showBlank(); } } else { _i=0; }
   });
 
-  // Mobile: tap logo 7 times + name prompt
   window.addEventListener("load", () => {
     const logo = document.querySelector("header h1, .header-left h1, #homeLink");
     if (!logo) return;
-    let _tapCount = 0;
-    let _tapTimer = null;
+    let _tapCount = 0, _tapTimer = null;
     logo.addEventListener("touchend", e => {
       e.preventDefault();
       _tapCount++;
       clearTimeout(_tapTimer);
-      if (_tapCount === 3) { if(typeof showToast==="function") showToast("✨ Keep tapping...", "info"); }
-      if (_tapCount === 6) { if(typeof showToast==="function") showToast("🩷 One more!", "info"); }
-      if (_tapCount >= 7) {
-        _tapCount = 0;
-        clearTimeout(_tapTimer);
-        setTimeout(_askName, 600); // delay so last toast is readable
-        return;
-      }
-      _tapTimer = setTimeout(() => { _tapCount = 0; }, 1800); // 1.8s window — plenty of time to read toast
+      if (_tapCount >= 7) { _tapCount = 0; setTimeout(_showBlank, 200); return; }
+      _tapTimer = setTimeout(() => { _tapCount = 0; }, 1800);
     });
   });
 
-  function _askName() {
-    const overlay = document.createElement("div");
-    overlay.style.cssText = "position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.85);backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;padding:24px;";
-    overlay.innerHTML = `
-      <div style="background:linear-gradient(160deg,#1a0010,#0d0008);border:1.5px solid rgba(255,150,200,0.25);border-radius:20px;padding:28px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.7);">
-        <div style="font-size:36px;margin-bottom:12px;">🐱</div>
-        <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:6px;">Who's there?</div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:20px;">Enter your name to continue</div>
-        <input id="_cr_name_input" type="text" autocomplete="off" placeholder="Your name..."
-          style="width:100%;padding:11px 16px;border-radius:10px;border:1.5px solid rgba(255,150,200,0.2);background:rgba(255,255,255,0.06);color:#fff;font-size:15px;outline:none;text-align:center;box-sizing:border-box;font-family:inherit;"
-          oninput="this.style.borderColor='rgba(255,150,200,0.4)'">
-        <button id="_cr_name_submit" style="margin-top:14px;width:100%;padding:11px;background:linear-gradient(135deg,#ff69b4,#ff1493);border:none;border-radius:10px;color:#fff;font-weight:800;font-size:14px;cursor:pointer;">Continue ✨</button>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-
-    const input = overlay.querySelector("#_cr_name_input");
-    const submit = overlay.querySelector("#_cr_name_submit");
-    setTimeout(() => input.focus(), 100);
-
-    const check = () => {
-      const val = input.value.trim().toLowerCase();
-      overlay.remove();
-      if (_valid.map(v=>v.toLowerCase()).includes(val)) {
-        _showSecret();
-      } else {
-        // Wrong name — silently refresh after brief delay
-        setTimeout(() => window.location.reload(), 400);
-      }
-    };
-
-    submit.onclick = check;
-    input.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
-    overlay.addEventListener("click", e => { if (e.target === overlay) { overlay.remove(); } });
-  }
-  const PLAYLIST = [
-    { title: "Fade Into You(Said was ur fav)",   src: "/Mazzy Star - Fade into You.mp3", lrc: "/fiy.lrc" },
-    { title: "No One", src: "/Maoli - No One Official Lyric Video.mp3", lrc: "/no-one.lrc" },
-    { title: "Still Beating",   src: "/Mac DeMarco - Still Beating - (320 Kbps).mp3", lrc: "/stillbeating.lrc" },
-    { title: "My kind of woman",  src: "/Mac DeMarco My Kind of Woman OFFICIAL VIDEO.mp3", lrc: "/mykindofwoman.lrc" },
-  ];
-  let _pi = 0;
-
-  function parseLRC(text){
-    if(!text) return [];
-    const lineRe = /^\[(\d+):(\d+(?:\.\d+)?)\](.*)$/;
-    const wordRe = /<(\d+):(\d+(?:\.\d+)?)>([^<]*)/g;
-    return text.split(/\r?\n/).map(raw=>{
-      const m = raw.match(lineRe);
-      if(!m) return null;
-      const lineTime = parseInt(m[1])*60 + parseFloat(m[2]);
-      const rest = m[3];
-      if(rest.indexOf("<") === -1){
-        return { time: lineTime, words: [{ time: lineTime, text: rest.trim() }], text: rest.trim() };
-      }
-      const words = [];
-      const firstTagIdx = rest.search(/</);
-      const leading = (firstTagIdx === -1 ? rest : rest.slice(0, firstTagIdx)).trim();
-      if(leading) words.push({ time: lineTime, text: leading });
-      let wm;
-      wordRe.lastIndex = 0;
-      while((wm = wordRe.exec(rest))){
-        const wt = parseInt(wm[1])*60 + parseFloat(wm[2]);
-        const wtext = wm[3].trim();
-        if(wtext) words.push({ time: wt, text: wtext });
-      }
-      return { time: lineTime, words, text: words.map(w=>w.text).join(" ") };
-    }).filter(Boolean);
-  }
-
-  function fmtTime(s){
-    if(!isFinite(s)) return "0:00";
-    const m = Math.floor(s/60), sec = Math.floor(s%60);
-    return m + ":" + String(sec).padStart(2,"0");
-  }
-
-
-  function _showSecret(){
-    if(document.getElementById("_cr_secret"))return;
-    const o=document.createElement("div");
-    o.id="_cr_secret";
-    o.style.cssText="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:24px 0;";
-
-
-      const style=document.createElement("style");
-  style.textContent=`
-    @keyframes _heartPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 30px rgba(255,105,180,0.8));}50%{transform:scale(1.25);filter:drop-shadow(0 0 60px rgba(255,20,147,1));}}
-    @keyframes _fadeUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
-    @keyframes _shimmer{0%,100%{opacity:1;}50%{opacity:0.7;}}
-    @keyframes _catFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
-    @keyframes _sparkle{0%{opacity:0;transform:scale(0) rotate(0deg);}50%{opacity:1;transform:scale(1) rotate(180deg);}100%{opacity:0;transform:scale(0) rotate(360deg);}}
-    @keyframes _pop{0%{opacity:0;transform:scale(0.7) translateY(6px);}60%{opacity:1;transform:scale(1.05) translateY(0);}100%{opacity:1;transform:scale(1) translateY(0);}}
-    .mp-panel{margin-top:26px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,182,217,0.35);border-radius:18px;padding:16px 18px;backdrop-filter:blur(6px);box-shadow:0 0 30px rgba(255,255,255,0.08),0 0 50px rgba(255,105,180,0.15);}
-    .mp-seek-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
-    .mp-time{font-size:10px;color:rgba(255,255,255,0.5);width:32px;text-align:center;flex-shrink:0;}
-    .mp-seek{flex:1;height:4px;-webkit-appearance:none;appearance:none;background:rgba(255,255,255,0.15);border-radius:999px;outline:none;cursor:pointer;}
-    .mp-seek::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#ff9ecb;box-shadow:0 0 8px rgba(255,105,180,0.9);cursor:pointer;}
-    .mp-controls{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;}
-    .mp-btn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,182,217,0.3);color:#ffe0ef;border-radius:50%;width:38px;height:38px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;box-shadow:0 0 12px rgba(255,255,255,0.06);}
-    .mp-btn:hover{background:rgba(255,182,217,0.2);box-shadow:0 0 20px rgba(255,105,180,0.5);}
-    .mp-btn.mp-play{width:46px;height:46px;font-size:18px;background:linear-gradient(135deg,rgba(255,150,200,0.35),rgba(255,105,180,0.25));box-shadow:0 0 18px rgba(255,105,180,0.5);}
-    .mp-vol-row{display:flex;align-items:center;gap:8px;justify-content:center;}
-    .mp-vol-row .mp-btn{width:30px;height:30px;font-size:12px;}
-    .mp-vol-track{width:70px;height:4px;-webkit-appearance:none;appearance:none;background:rgba(255,255,255,0.15);border-radius:999px;outline:none;cursor:pointer;}
-    .mp-vol-track::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;border-radius:50%;background:#ffe0ef;box-shadow:0 0 6px rgba(255,255,255,0.8);cursor:pointer;}
-    .mp-lyrics{margin-top:14px;max-height:110px;overflow-y:auto;text-align:center;font-size:12px;line-height:1.9;color:rgba(255,255,255,0.35);scrollbar-width:none;}
-    .mp-lyrics::-webkit-scrollbar{display:none;}
-    .mp-lyrics .mp-line.active{color:#ffe0ef;font-weight:700;font-size:13px;text-shadow:0 0 14px rgba(255,105,180,0.6);}
-    .mp-lyrics .mp-line:not(.active){opacity:0.4;}
-    .mp-word{color:rgba(255,255,255,0.32);transition:color 0.15s ease, text-shadow 0.15s ease;}
-    .mp-line.active .mp-word{color:rgba(255,224,239,0.35);}
-    .mp-line.active .mp-word.sung{color:#ffe0ef;}
-    .mp-line.active .mp-word.current{color:#fff;text-shadow:0 0 16px rgba(255,105,180,0.9);}
-    .mp-mini{display:flex;align-items:center;gap:10px;cursor:pointer;}
-    .mp-mini-icon{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,rgba(255,150,200,0.35),rgba(255,105,180,0.2));display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;box-shadow:0 0 14px rgba(255,105,180,0.4);animation:_catFloat 2.4s ease-in-out infinite;}
-    .mp-mini-title{flex:1;text-align:left;font-size:12px;font-weight:700;color:#ffd6ea;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .mp-mini-play{background:none;border:none;color:#ffe0ef;font-size:16px;cursor:pointer;flex-shrink:0;}
-    .mp-mini-chevron{font-size:11px;color:rgba(255,214,234,0.5);flex-shrink:0;transition:transform 0.3s ease;}
-    .mp-panel.expanded .mp-mini-chevron{transform:rotate(180deg);}
-    .mp-full{max-height:0;overflow:hidden;transition:max-height 0.4s ease, opacity 0.3s ease, margin-top 0.4s ease;opacity:0;}
-    .mp-panel.expanded .mp-full{max-height:400px;opacity:1;margin-top:14px;}
-  `;
-  document.head.appendChild(style);
-
-
-    o.innerHTML=`
-      <div id="_cr_s_bg" style="position:absolute;inset:0;background:linear-gradient(135deg,#1a0010,#0d0008,#1a0818);transition:background 2s ease;"></div>
-      <canvas id="_cr_s_canvas" style="position:absolute;inset:0;pointer-events:none;"></canvas>
-
-      <!-- Floating cat top left -->
-      <div style="position:absolute;top:40px;left:40px;font-size:40px;animation:_catFloat 3s ease-in-out infinite;opacity:0.7;">🐱</div>
-      <!-- Floating cat top right -->
-      <div style="position:absolute;top:60px;right:50px;font-size:32px;animation:_catFloat 2.5s ease-in-out infinite 0.5s;opacity:0.6;">🐾</div>
-      <!-- Matcha bottom left -->
-      <div style="position:absolute;bottom:80px;left:40px;font-size:28px;animation:_catFloat 4s ease-in-out infinite 1s;opacity:0.5;">🍵</div>
-      <!-- Sparkle corners -->
-      <div style="position:absolute;top:100px;right:80px;font-size:20px;animation:_sparkle 2s ease-in-out infinite;">✨</div>
-      <div style="position:absolute;bottom:120px;right:60px;font-size:16px;animation:_sparkle 2.5s ease-in-out infinite 0.8s;">✨</div>
-      <div style="position:absolute;top:150px;left:80px;font-size:14px;animation:_sparkle 3s ease-in-out infinite 0.3s;">🌸</div>
-
-      <div style="position:relative;z-index:2;text-align:center;padding:40px;max-width:560px;">
-
-        <!-- Big heart -->
-        <div id="_cr_s_heart" style="font-size:90px;line-height:1;margin-bottom:20px;animation:_heartPulse 1.4s ease-in-out infinite;display:inline-block;">🩷</div>
-
-        <!-- Cats row -->
-        <div style="font-size:28px;margin-bottom:20px;opacity:0;animation:_fadeUp 0.8s ease 0.2s forwards;letter-spacing:8px;">🐱 🌸 🐱</div>
-
-        <!-- Main message -->
-        <div id="_cr_s_msg" style="font-size:46px;font-weight:900;color:#fff;letter-spacing:-1px;margin-bottom:10px;font-family:'Georgia',serif;opacity:0;animation:_fadeUp 0.9s ease 0.5s forwards;text-shadow:0 0 40px rgba(255,105,180,0.8),0 0 80px rgba(255,20,147,0.4);">
-          I Love You Aiyana
-        </div>
-
-        <!-- Pink decorative line -->
-        <div style="width:120px;height:3px;background:linear-gradient(90deg,transparent,#ff69b4,#ff1493,#ff69b4,transparent);border-radius:999px;margin:0 auto 14px;opacity:0;animation:_fadeUp 0.8s ease 0.8s forwards;"></div>
-
-        <!-- Subtitle -->
-        <div id="_cr_s_sub" style="font-size:15px;color:rgba(255,200,230,0.75);letter-spacing:3px;text-transform:uppercase;opacity:0;animation:_fadeUp 0.8s ease 1s forwards;">
-          You make everything better 💕
-        </div>
-        <div id="_cr_s_rotator" style="margin-top:18px;font-size:22px;font-weight:800;color:#ffb6d9;min-height:32px;font-family:'Georgia',serif;font-style:italic;text-shadow:0 0 20px rgba(255,105,180,0.5);"></div>
-
-        <!-- Secondary message -->
-        <div style="margin-top:16px;font-size:13px;color:rgba(255,182,193,0.5);opacity:0;animation:_fadeUp 0.8s ease 1.4s forwards;font-style:italic;">
-           &nbsp; My fav girl. &nbsp; 
-        </div>
-      <div style="margin-top:14px;font-size:14px;color:rgba(255,255,255,0.55);opacity:0;animation:_fadeUp 0.8s ease 1.6s forwards;max-width:380px;margin-left:auto;margin-right:auto;line-height:1.5;">
-        I'll always love you babe.
-      </div>
-        <div class="mp-panel" id="mpPanel" style="opacity:0;animation:_fadeUp 0.8s ease 1.8s forwards;">
-          <div class="mp-mini" id="mpMini">
-            <div class="mp-mini-icon">🎵</div>
-            <div class="mp-mini-title" id="mpTitle">Loading…</div>
-            <button class="mp-mini-play" id="mpMiniPlay" title="Play/Pause"></button>
-            <span class="mp-mini-chevron">▲</span>
-          </div>
-          <div class="mp-full">
-            <div class="mp-seek-row">
-              <span class="mp-time" id="mpCur">0:00</span>
-              <input type="range" class="mp-seek" id="mpSeek" min="0" max="100" value="0">
-              <span class="mp-time" id="mpDur">0:00</span>
-            </div>
-            <div class="mp-controls">
-              <button class="mp-btn" id="mpBack10" title="Back 10s"></button>
-              <button class="mp-btn mp-play" id="mpPlay" title="Play/Pause"></button>
-              <button class="mp-btn" id="mpFwd10" title="Forward 10s"></button>
-              <button class="mp-btn" id="mpNext" title="Next song"></button>
-            </div>
-            <div class="mp-vol-row">
-              <button class="mp-btn" id="mpMute" title="Mute"></button>
-              <button class="mp-btn" id="mpVolDown" title="Volume down">−</button>
-              <input type="range" class="mp-vol-track" id="mpVol" min="0" max="100" value="60">
-              <button class="mp-btn" id="mpVolUp" title="Volume up">+</button>
-            </div>
-            <div class="mp-lyrics" id="mpLyrics"></div>
-          </div>
-        </div>
-
-        
-        <!-- Button -->
-        <div style="margin-top:40px;opacity:0;animation:_fadeUp 0.6s ease 2s forwards;">
-          <button onclick="document.getElementById('_cr_secret').remove();document.body.style.overflow='';if(window._cleanupSecret)_cleanupSecret();" style="padding:13px 36px;background:linear-gradient(135deg,rgba(255,105,180,0.2),rgba(255,20,147,0.15));border:1.5px solid rgba(255,105,180,0.4);border-radius:999px;color:rgba(255,200,230,0.8);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1.5px;transition:all 0.25s;backdrop-filter:blur(10px);" onmouseover="this.style.background='linear-gradient(135deg,rgba(255,105,180,0.35),rgba(255,20,147,0.25))';this.style.color='#fff'" onmouseout="this.style.background='linear-gradient(135deg,rgba(255,105,180,0.2),rgba(255,20,147,0.15))';this.style.color='rgba(255,200,230,0.8)'">
-            Back to CineRealm 🌸
-          </button>
-        </div>
-      </div>
-    `;
-
-        const _cr_scrollY = window.scrollY || window.pageYOffset || 0;
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${_cr_scrollY}px`;
-    document.body.style.left = "0";
-    document.body.style.right = "0";
+  function _showBlank(){
+    if (document.getElementById("_cr_secret")) return;
+    const o = document.createElement("div");
+    o.id = "_cr_secret";
+    o.style.cssText = "position:fixed;inset:0;z-index:99999;background:#000;display:flex;align-items:center;justify-content:center;";
+    o.innerHTML = `<div style="font-size:28px;font-weight:600;color:rgba(255,255,255,0.75);font-family:'Georgia',serif;">goodbye.</div>`;
+    const _scrollY = window.scrollY || window.pageYOffset || 0;
     document.body.style.overflow = "hidden";
     document.body.appendChild(o);
-
-    // Animated gradient background
-    const bg=document.getElementById("_cr_s_bg");
-    const bgs=[
-      "linear-gradient(135deg,#1a0010,#0d0008,#1a0818)",
-      "linear-gradient(135deg,#200015,#0a0005,#1f0a1a)",
-      "linear-gradient(135deg,#180010,#120008,#1c0d18)",
-      "linear-gradient(135deg,#1f0018,#0f0008,#1a0a1f)",
-    ];
-    let bi=0;
-    const bgI=setInterval(()=>{bi=(bi+1)%bgs.length;bg.style.background=bgs[bi];},2000);
-
-    // Particle canvas
-    const canvas=document.getElementById("_cr_s_canvas");
-    canvas.width=window.innerWidth;
-    canvas.height=window.innerHeight;
-    const ctx=canvas.getContext("2d");
-
-    // Rich particles — mix of hearts, flowers, cats, sparkles, matcha
-    const chars=["🩷","💕","🌸","✨","💗","🐾","🌺","💝","🌷","💖","🩷","🌸","💕","✨","🩷"];
-    const particles=[];
-    for(let i=0;i<80;i++){
-      particles.push({
-        x:Math.random()*canvas.width,
-        y:canvas.height+Math.random()*300,
-        size:Math.random()*24+8,
-        speed:Math.random()*1.2+0.3,
-        opacity:Math.random()*0.7+0.2,
-        drift:(Math.random()-0.5)*0.6,
-        wobble:Math.random()*Math.PI*2,
-        wobbleSpeed:Math.random()*0.03+0.01,
-        char:chars[Math.floor(Math.random()*chars.length)]
-      });
-    }
-
-    let animId;
-    function draw(){
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      particles.forEach(p=>{
-        p.y-=p.speed;
-        p.wobble+=p.wobbleSpeed;
-        p.x+=Math.sin(p.wobble)*0.8+p.drift;
-        p.opacity-=0.0008;
-        if(p.y<-60||p.opacity<=0){
-          p.y=canvas.height+20;
-          p.x=Math.random()*canvas.width;
-          p.opacity=Math.random()*0.6+0.2;
-          p.char=chars[Math.floor(Math.random()*chars.length)];
-        }
-        ctx.globalAlpha=p.opacity;
-        ctx.font=p.size+"px serif";
-        ctx.fillText(p.char,p.x,p.y);
-      });
-      ctx.globalAlpha=1;
-      if(document.getElementById("_cr_secret"))animId=requestAnimationFrame(draw);
-    }
-    draw();
-
-    const _msgs=["My princess.","My sweet girl.","You're still my favorite person.","You're perfect my love."," I miss you."];
-     let _mi=0;
-    const rotatorEl=document.getElementById("_cr_s_rotator");
-    function _showNextMsg(){
-      if(!rotatorEl||!document.getElementById("_cr_secret"))return;
-      rotatorEl.style.animation="none";
-      void rotatorEl.offsetWidth;
-      rotatorEl.textContent=_msgs[_mi%_msgs.length];
-      rotatorEl.style.animation="_pop 0.5s ease forwards";
-      _mi++;
-    }
-    setTimeout(_showNextMsg,2200);
-    const msgInterval=setInterval(_showNextMsg,5000);
-
-        const ICON = {
-      play:  s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>`,
-      pause: s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><rect x="6" y="5" width="4" height="14" fill="currentColor"/><rect x="14" y="5" width="4" height="14" fill="currentColor"/></svg>`,
-      back10:s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M11 18V6l-8.5 6z" fill="currentColor"/><path d="M21 18V6l-8.5 6z" fill="currentColor"/></svg>`,
-      fwd10: s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M13 6v12l8.5-6z" fill="currentColor"/><path d="M3 6v12l8.5-6z" fill="currentColor"/></svg>`,
-      next:  s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M6 6l8.5 6L6 18z" fill="currentColor"/><rect x="16" y="6" width="3" height="12" fill="currentColor"/></svg>`,
-      vol:   s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M4 9v6h4l5 5V4L8 9H4z" fill="currentColor"/><path d="M16.2 8.3a5 5 0 010 7.4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>`,
-      mute:  s=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M4 9v6h4l5 5V4L8 9H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
-    };
-
-    const audio = new Audio();
-    audio.volume = 0.6;
-    let lrcLines = [];
-    let lineEls = [], lastActiveIdx = -1;
-
-    const mpTitle=document.getElementById("mpTitle"), mpPlay=document.getElementById("mpPlay"),
-          mpMiniPlay=document.getElementById("mpMiniPlay"), mpPanel=document.getElementById("mpPanel"),
-          mpMini=document.getElementById("mpMini"),
-          mpSeek=document.getElementById("mpSeek"), mpCur=document.getElementById("mpCur"),
-          mpDur=document.getElementById("mpDur"), mpVol=document.getElementById("mpVol"),
-          mpMute=document.getElementById("mpMute"), mpLyrics=document.getElementById("mpLyrics"),
-          mpBack10=document.getElementById("mpBack10"), mpFwd10=document.getElementById("mpFwd10"),
-          mpNext=document.getElementById("mpNext");
-    let seeking=false;
-
-    mpBack10.innerHTML = ICON.back10(15);
-    mpFwd10.innerHTML  = ICON.fwd10(15);
-    mpNext.innerHTML   = ICON.next(16);
-    mpMute.innerHTML   = ICON.vol(15);
-
-    mpMini.addEventListener("click",(e)=>{
-      if(e.target===mpMiniPlay||mpMiniPlay.contains(e.target)) return;
-      mpPanel.classList.toggle("expanded");
-    });
-
-    function setPlayIcon(paused){
-      mpPlay.innerHTML = paused ? ICON.play(18) : ICON.pause(18);
-      mpMiniPlay.innerHTML = paused ? ICON.play(13) : ICON.pause(13);
-    }
-    mpMiniPlay.onclick=(e)=>{ e.stopPropagation(); togglePlay(); };
-
-    function togglePlay(){
-      if(audio.paused){ audio.play().catch(()=>{}); setPlayIcon(false); }
-      else { audio.pause(); setPlayIcon(true); }
-    }
-
-    async function loadTrack(i){
-      _pi = (i+PLAYLIST.length)%PLAYLIST.length;
-      const t = PLAYLIST[_pi];
-      audio.src = t.src;
-      mpTitle.textContent = t.title;
-      mpLyrics.innerHTML = `<div class="mp-line" style="opacity:0.4;">Loading lyrics…</div>`;
-      lrcLines = []; lineEls = []; lastActiveIdx = -1;
-      if(t.lrc){
-        try {
-          const res = await fetch(t.lrc);
-          const text = await res.text();
-          lrcLines = parseLRC(text);
-        } catch(e) { lrcLines = []; }
-      }
-      mpLyrics.innerHTML = lrcLines.length
-        ? lrcLines.map((l,idx)=>`<div class="mp-line" data-i="${idx}">${
-            l.words.map((w)=>`<span class="mp-word" data-t="${w.time}">${w.text||"♪"}</span>`).join(" ")
-          }</div>`).join("")
-        : `<div class="mp-line" style="opacity:0.4;">No lyrics available</div>`;
-      lineEls = Array.from(mpLyrics.querySelectorAll(".mp-line")).map(el=>({
-        el, words: Array.from(el.querySelectorAll(".mp-word"))
-      }));
-      audio.play().catch(()=>{});
-      setPlayIcon(false);
-    }
-    loadTrack(0);
-
-    audio.addEventListener("loadedmetadata", ()=>{ mpDur.textContent = fmtTime(audio.duration); });
-    audio.addEventListener("timeupdate", ()=>{
-      if(!seeking){
-        mpSeek.value = audio.duration ? (audio.currentTime/audio.duration*100) : 0;
-        mpCur.textContent = fmtTime(audio.currentTime);
-      }
-      if(!lineEls.length) return;
-      let activeIdx=-1;
-      for(let i=0;i<lrcLines.length;i++){ if(audio.currentTime>=lrcLines[i].time) activeIdx=i; }
-      if(activeIdx !== lastActiveIdx){
-        if(lastActiveIdx>=0 && lineEls[lastActiveIdx]) lineEls[lastActiveIdx].el.classList.remove("active");
-        if(activeIdx>=0 && lineEls[activeIdx]){
-          lineEls[activeIdx].el.classList.add("active");
-          lineEls[activeIdx].el.scrollIntoView({block:"center",behavior:"smooth"});
-        }
-        lastActiveIdx = activeIdx;
-      }
-      if(activeIdx>=0 && lineEls[activeIdx]){
-        let curWord=null;
-        lineEls[activeIdx].words.forEach(w=>{
-          const wt = parseFloat(w.dataset.t);
-          const passed = audio.currentTime >= wt;
-          if(passed && !w.classList.contains("sung") && !w.classList.contains("current")) w.classList.add("sung");
-          if(!passed){ w.classList.remove("sung","current"); }
-          if(passed) curWord=w;
-        });
-        if(curWord){
-          lineEls[activeIdx].words.forEach(w=>w.classList.remove("current"));
-          curWord.classList.remove("sung"); curWord.classList.add("current");
-        }
-      }
-    });
-    audio.addEventListener("ended", ()=> loadTrack(_pi+1));
-
-    mpPlay.onclick=togglePlay;
-    mpNext.onclick=()=>loadTrack(_pi+1);
-    mpBack10.onclick=()=>{ audio.currentTime=Math.max(0,audio.currentTime-10); };
-    mpFwd10.onclick=()=>{ audio.currentTime=Math.min(audio.duration||0,audio.currentTime+10); };
-
-    mpSeek.addEventListener("input",()=>{ seeking=true; mpCur.textContent=fmtTime((mpSeek.value/100)*(audio.duration||0)); });
-    mpSeek.addEventListener("change",()=>{ audio.currentTime=(mpSeek.value/100)*(audio.duration||0); seeking=false; });
-
-    mpVol.addEventListener("input",()=>{ audio.volume=mpVol.value/100; audio.muted=false; mpMute.innerHTML = audio.volume===0?ICON.mute(15):ICON.vol(15); });
-    document.getElementById("mpVolUp").onclick=()=>{ mpVol.value=Math.min(100,+mpVol.value+10); audio.volume=mpVol.value/100; audio.muted=false; mpMute.innerHTML=ICON.vol(15); };
-    document.getElementById("mpVolDown").onclick=()=>{ mpVol.value=Math.max(0,+mpVol.value-10); audio.volume=mpVol.value/100; mpMute.innerHTML = audio.volume===0?ICON.mute(15):ICON.vol(15); };
-    mpMute.onclick=()=>{
-      audio.muted = !audio.muted;
-      mpMute.innerHTML = audio.muted ? ICON.mute(15) : ICON.vol(15);
-    };
-
-        window._cleanupSecret=function(){
-      clearInterval(bgI);clearInterval(msgInterval);cancelAnimationFrame(animId);
-      audio.pause(); audio.src="";
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.left = "";
-      document.body.style.right = "";
+    const close = () => {
+      o.remove();
       document.body.style.overflow = "";
-      window.scrollTo(0, _cr_scrollY);
+      window.scrollTo(0, _scrollY);
+      document.removeEventListener("keydown", onKey);
     };
-
-
+    const onKey = e => { if (e.key === "Escape") close(); };
+    o.addEventListener("click", close);
+    document.addEventListener("keydown", onKey);
   }
 })();
 
