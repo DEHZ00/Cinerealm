@@ -902,6 +902,26 @@ async function initWatchPage() {
 
   window.insertIframe = _origInsert;
 
+  // Resume notice. This page builds its own player rather than going through
+  // loadPlayer, so the bar has to be raised here too — otherwise it appears on
+  // the home-page player only and never on the page people actually watch on.
+  const lastDuration = (typeof getHistoryDuration === "function")
+    ? getHistoryDuration(tmdbId, type, season, episode) : 0;
+  const nearEnd = lastDuration > 0 && lastProgress >= lastDuration - 90;
+  if (lastProgress > 60 && !nearEnd && !window._crRestarted && typeof _showResumeBar === "function") {
+    _showResumeBar(lastProgress, () => {
+      window._crRestarted = true;
+      // Rebuild the player from the top with no saved offset.
+      document.getElementById("watch-tabs-placeholder").innerHTML = "";
+      document.getElementById("watch-iframe-placeholder").innerHTML = "";
+      const freshOpts = { ...opts, progress: 0, startAt: 0 };
+      const freshTabs = renderSourcePills(media, DEFAULT_SOURCE, freshOpts);
+      document.getElementById("watch-tabs-placeholder").appendChild(freshTabs);
+      const b = freshTabs.querySelector(".source-tab.active") || freshTabs.querySelector(".source-tab");
+      if (b) b.click();
+    });
+  }
+
   setTimeout(() => {
     document.getElementById("watch-player-container")
       .scrollIntoView({ behavior: "smooth", block: "start" });

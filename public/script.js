@@ -2075,7 +2075,13 @@ async function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
 
 // Bar shown above the player when a saved position was applied.
 function _showResumeBar(seconds, onStartOver) {
-  const host = document.getElementById("player-tabs-placeholder") || playerDiv;
+  // /watch is a standalone page with its own player markup and its own build
+  // path, so both id conventions have to be handled here — looking only for
+  // the home-page one meant the bar silently never appeared on the page where
+  // most watching actually happens.
+  const host = document.getElementById("player-tabs-placeholder")
+            || document.getElementById("watch-tabs-placeholder")
+            || (typeof playerDiv !== "undefined" ? playerDiv : null);
   if (!host) return;
 
   document.getElementById("crResumeBar")?.remove();
@@ -2102,7 +2108,10 @@ function _showResumeBar(seconds, onStartOver) {
   bar.append(text, restart, close);
   host.insertAdjacentElement("afterbegin", bar);
 
-  let hideTimer = setTimeout(() => bar.remove(), 9000);
+  // 20s, not 9. The bar carries an actionable control, and /watch can take
+  // several seconds to build on a slow connection — a shorter window meant
+  // "Start from beginning" could vanish before the viewer had focused on it.
+  let hideTimer = setTimeout(() => bar.remove(), 20000);
   const stop = () => clearTimeout(hideTimer);
   bar.addEventListener("mouseenter", stop);
 
@@ -2402,15 +2411,29 @@ if (activeBtn) {
 function getHistoryProgress(tmdbId, type, season, episode) {
   if (!historyData || !Array.isArray(historyData)) return 0;
 
-  const match = historyData.find((item) => {
-    if (item.type !== type || item.tmdbId !== tmdbId) return false;
+  const match = _findHistoryEntry(tmdbId, type, season, episode);
+  return match ? match.progress || 0 : 0;
+}
+
+// Shared lookup. Season/episode arrive as strings from the /watch URL but are
+// stored as numbers, so the old strict comparison (1 === "1") never matched
+// and TV episodes silently never resumed. Everything is coerced before
+// comparing; tmdbId gets the same treatment for the same reason.
+function _findHistoryEntry(tmdbId, type, season, episode) {
+  if (!historyData || !Array.isArray(historyData)) return null;
+
+  const id = Number(tmdbId);
+  const s  = season  != null ? Number(season)  : null;
+  const ep = episode != null ? Number(episode) : null;
+
+  return historyData.find((item) => {
+    if (item.type !== type || Number(item.tmdbId) !== id) return false;
     if (type === "tv") {
-      return item.season === season && item.episode === episode;
+      if (s == null || ep == null) return false;
+      return Number(item.season) === s && Number(item.episode) === ep;
     }
     return true;
-  });
-
-  return match ? match.progress || 0 : 0;
+  }) || null;
 }
 
 // First-run panel — replaces the row of empty personalised shelves a brand
@@ -2440,16 +2463,7 @@ function _showFirstRunPanel() {
 // Runtime for the same entry, used to tell "resume" apart from "they already
 // finished this and are opening it again".
 function getHistoryDuration(tmdbId, type, season, episode) {
-  if (!historyData || !Array.isArray(historyData)) return 0;
-
-  const match = historyData.find((item) => {
-    if (item.type !== type || item.tmdbId !== tmdbId) return false;
-    if (type === "tv") {
-      return item.season === season && item.episode === episode;
-    }
-    return true;
-  });
-
+  const match = _findHistoryEntry(tmdbId, type, season, episode);
   return match ? match.duration || 0 : 0;
 }
 
