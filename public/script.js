@@ -411,9 +411,27 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
           await set(logRef, { ...payload, firstSeen: Date.now() });
         }
       } else {
-        // Guest: No read permission. We just use update() so we don't overwrite firstSeen if they are a returning visitor.
+        // Guest: no read permission, so get() fails and we cannot tell a new
+        // device from a returning one. update() therefore omits firstSeen —
+        // sending it unconditionally would reset it on every single visit.
         console.log("🔒 IP Log: Guest user. Updating lastSeen...");
         await update(logRef, payload);
+
+        // Seed firstSeen exactly once, as a separate best-effort write.
+        // The local marker is keyed by fingerprint so it survives everything
+        // except a storage wipe. For a guarantee, add this to your rules:
+        //   "ip_logs": { "$fp": { "firstSeen": { ".write": "!data.exists()" } } }
+        // which makes the field immutable server-side — this write is then
+        // simply rejected on later visits and the catch below swallows it.
+        const seenKey = "cr_fs_" + fp;
+        let alreadySeeded = false;
+        try { alreadySeeded = localStorage.getItem(seenKey) === "1"; } catch (e) {}
+        if (!alreadySeeded) {
+          try {
+            await set(ref(db, "ip_logs/" + fp + "/firstSeen"), Date.now());
+          } catch (e) { /* rule rejected it — already set, which is correct */ }
+          try { localStorage.setItem(seenKey, "1"); } catch (e) {}
+        }
       }
 
       console.log("✅ IP Log: SUCCESS! Written to database.");
