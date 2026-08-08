@@ -1152,6 +1152,27 @@ function renderIPLogs() {
     return;
   }
 
+  // The fingerprint identifies a browser on a device, not the person — so the
+  // same human in Chrome and Edge is legitimately two rows. Showing the
+  // browser makes that obvious instead of looking like a bug.
+  const uaLabel = ua => {
+    if (!ua) return "";
+    let br = "Browser";
+    if (/Edg\//.test(ua))            br = "Edge";
+    else if (/OPR\/|Opera/.test(ua)) br = "Opera";
+    else if (/Firefox\//.test(ua))   br = "Firefox";
+    else if (/Chrome\//.test(ua))    br = "Chrome";
+    else if (/Safari\//.test(ua))    br = "Safari";
+    let os = "";
+    if (/Windows NT 10/.test(ua))      os = "Win";
+    else if (/Windows/.test(ua))       os = "Win";
+    else if (/Android/.test(ua))       os = "Android";
+    else if (/iPhone|iPad|iOS/.test(ua)) os = "iOS";
+    else if (/Mac OS X/.test(ua))      os = "macOS";
+    else if (/Linux/.test(ua))         os = "Linux";
+    return [br, os].filter(Boolean).join(" · ");
+  };
+
   const flags = l => {
     const f = [];
     if (l.tor)     f.push(`<span class="adm-badge adm-badge-open" style="font-size:9px;">TOR</span>`);
@@ -1181,6 +1202,7 @@ function renderIPLogs() {
               <span title="${_esc(fpKey)}">${fpKey ? _esc(fpKey.substring(0, 10)) + "…" : "None"}</span>
               ${fpKey ? `<button class="adm-btn" data-copy="${_esc(fpKey)}" style="padding:1px 4px;font-size:9px;">Copy</button>` : ""}
             </div>
+            ${l.ua ? `<div style="font-size:9.5px;color:rgba(255,255,255,0.32);font-family:system-ui,sans-serif;margin-top:2px;" title="${_esc(l.ua)}">${_esc(uaLabel(l.ua))}</div>` : ""}
           </td>
           <td style="font-size:10.5px;white-space:nowrap;">
             <div style="color:#34d399;">${l.lastSeen?new Date(l.lastSeen).toLocaleString():"—"}</div>

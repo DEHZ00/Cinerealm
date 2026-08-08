@@ -183,21 +183,37 @@ async function _getVisitorFingerprint() {
   if (_fpCache) return _fpCache;
 
   const n = navigator;
+
+  // Audio is a float. Tiny last-digit drift between runs would otherwise
+  // produce a completely different hash, so it is rounded before hashing.
+  const audio = await _fpAudio();
+  const audioStable = /^[\d.]+$/.test(audio) ? Number(audio).toFixed(2) : audio;
+
+  // Screen: only the physical panel size and colour depth.
+  //
+  // devicePixelRatio, availWidth and availHeight are deliberately excluded —
+  // they are NOT device constants. devicePixelRatio changes the moment the
+  // user presses Ctrl +/-, and availWidth/Height shift when the taskbar hides
+  // or the window moves to another monitor. Including them meant an ordinary
+  // zoom created a brand-new "device". A transient 0 (screen unavailable) is
+  // normalised so it can't mint an identity either.
+  const sw = screen.width || 0, sh = screen.height || 0;
+  const screenPart = (sw && sh)
+    ? [sw, sh, screen.colorDepth || 0].join("x")
+    : "screen-unknown";
+
   const components = [
     _fpCanvas(),
     _fpWebGL(),
-    await _fpAudio(),
+    audioStable,
     _fpFonts(),
-    [screen.width, screen.height, screen.availWidth, screen.availHeight,
-     screen.colorDepth, screen.pixelDepth, devicePixelRatio].join("x"),
+    screenPart,
     Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-    new Date().getTimezoneOffset(),
     (n.languages || [n.language]).join(","),
     n.platform || "",
     n.hardwareConcurrency || 0,
     n.deviceMemory || 0,
     n.maxTouchPoints || 0,
-    typeof n.pdfViewerEnabled === "boolean" ? n.pdfViewerEnabled : "",
     // userAgent last: it changes on browser update, so it is the one component
     // we deliberately keep coarse (major version only) to avoid churn.
     (n.userAgent || "").replace(/\d+\.\d+[\d.]*/g, m => m.split(".")[0]),
