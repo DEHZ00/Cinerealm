@@ -1494,6 +1494,84 @@ const PROVIDERS = [
 ];
 
 
+// ── Source health ─────────────────────────────────────────────────────────
+// Embeds are cross-origin, so their contents can never be inspected — there
+// is no way to see an error page or a "not found" message inside one. The one
+// trustworthy signal is that some providers post a PLAYER_EVENT back to us:
+// receiving one proves that source is actually playing.
+//
+// Which providers do that is *learned*, never assumed. A provider is only
+// marked capable once it has genuinely emitted an event at least once. Silence
+// from a capable provider is treated as a probable failure; silence from one
+// that has never emitted means nothing and is never held against it. So a
+// source is never accused of being broken on the strength of no evidence.
+const _srcHealth = (function () {
+  const KEY = "cr_source_health";
+  const PROBE_MS = 12000;   // grace period before silence counts as a failure
+  const FAIL_STREAK = 2;    // consecutive silent loads before flagging
+
+  let state = { caps: {}, stats: {}, titles: {} };
+  try {
+    const raw = JSON.parse(localStorage.getItem(KEY) || "{}");
+    state = { caps: raw.caps || {}, stats: raw.stats || {}, titles: raw.titles || {} };
+  } catch (e) {}
+
+  let active = null;   // { key, mediaKey, timer, signalled }
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+  function stat(key) {
+    return (state.stats[key] = state.stats[key] || { ok: 0, fail: 0, streak: 0, lastOk: 0 });
+  }
+
+  function probe(key, mediaKey) {
+    if (active && active.timer) clearTimeout(active.timer);
+    active = { key, mediaKey, timer: null, signalled: false };
+
+    active.timer = setTimeout(() => {
+      if (!active || active.signalled) return;
+      // Only capable providers can fail by silence.
+      if (state.caps[active.key]) {
+        const s = stat(active.key);
+        s.fail++; s.streak++;
+        if (state.titles[active.mediaKey]?.best === active.key) delete state.titles[active.mediaKey];
+        save();
+      }
+    }, PROBE_MS);
+  }
+
+  function signal() {
+    if (!active || active.signalled) return;
+    active.signalled = true;
+    clearTimeout(active.timer);
+    state.caps[active.key] = true;          // proven to emit
+    const s = stat(active.key);
+    s.ok++; s.streak = 0; s.lastOk = Date.now();
+    state.titles[active.mediaKey] = { best: active.key, ts: Date.now() };
+    save();
+  }
+
+  // "working" | "suspect" | null (unknown — show nothing)
+  function status(key, mediaKey) {
+    if (state.titles[mediaKey]?.best === key) return "working";
+    if (!state.caps[key]) return null;
+    const s = state.stats[key];
+    if (!s) return null;
+    if (s.streak >= FAIL_STREAK) return "suspect";
+    if (s.lastOk && Date.now() - s.lastOk < 14 * 24 * 60 * 60 * 1000) return "working";
+    return null;
+  }
+
+  function preferredFor(mediaKey) { return state.titles[mediaKey]?.best || null; }
+
+  return { probe, signal, status, preferredFor, _state: () => state };
+})();
+
+function _mediaKey(media) {
+  return (media?.type || "movie") + "_" + (media?.tmdbId ?? media?.id ?? "");
+}
+
 function buildQuery(params) {
   const qs = Object.entries(params || {})
     .filter(([k, v]) => v !== undefined && v !== null && v !== "")
@@ -1737,12 +1815,21 @@ function renderSourcePills(media, defaultName, opts) {
   const bar = document.createElement("div");
   bar.className = "source-tabs-bar";
 
+  const mediaKey = _mediaKey(media);
+
+  // A source proven to have played *this* title wins over the globally
+  // remembered choice — it is the strongest evidence available.
+  const preferredKey = _srcHealth.preferredFor(mediaKey);
+  const preferred = preferredKey
+    ? PROVIDERS.find(p => p.key === preferredKey && p.supports[media.type])
+    : null;
+
   // Persist last chosen provider
   const savedProvider = localStorage.getItem("cine_last_provider");
-  const initialName =
-    savedProvider && PROVIDERS.some(p => p.name === savedProvider && p.supports[media.type])
+  const initialName = preferred ? preferred.name :
+    (savedProvider && PROVIDERS.some(p => p.name === savedProvider && p.supports[media.type])
       ? savedProvider
-      : defaultName;
+      : defaultName);
 
   function activateProvider(providerKey, allBtns) {
     allBtns.forEach(b => b.classList.remove("active"));
@@ -1769,6 +1856,8 @@ function renderSourcePills(media, defaultName, opts) {
     const url = buildProviderUrl(providerKey, currentMedia, currentOpts);
     const provider = PROVIDERS.find(p => p.key === providerKey);
     insertIframe(url, provider?.sandbox === true);
+    // Start watching for a PLAYER_EVENT from this source.
+    _srcHealth.probe(providerKey, _mediaKey(currentMedia));
   }
 
   const tiers = [
@@ -1814,6 +1903,18 @@ function renderSourcePills(media, defaultName, opts) {
         badge.title = "Works on Chromebook";
         badge.textContent = "CB";
         btn.appendChild(badge);
+      }
+
+      // Health dot — only rendered when there is real evidence either way.
+      // Unknown sources get nothing rather than a misleading neutral marker.
+      const health = _srcHealth.status(p.key, mediaKey);
+      if (health) {
+        const dot = document.createElement("span");
+        dot.className = "source-health source-health--" + health;
+        dot.title = health === "working"
+          ? "Confirmed playing recently"
+          : "Loaded without playing the last couple of tries";
+        btn.appendChild(dot);
       }
 
       btn.addEventListener("click", () => activateProvider(p.key, allBtns));
@@ -2968,6 +3069,9 @@ window.addEventListener("message", function (event) {
     }
 
     if (!msg || msg.type !== "PLAYER_EVENT" || !msg.data) return;
+
+    // Proof the active source is genuinely playing.
+    _srcHealth.signal();
 
     const {
       currentTime,

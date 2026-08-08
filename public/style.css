@@ -7995,3 +7995,25 @@ body.theater-mode #watch-content {
 .cr-lite .movie-row {
   will-change: auto !important;
 }
+/* ── Source health dot ────────────────────────────────────────────────────
+   Rendered only when there is real evidence about a source. Sources we have
+   no signal for are left unmarked rather than shown neutral, so the UI never
+   implies something the data doesn't support. */
+.source-health {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: 5px;
+  display: inline-block;
+}
+.source-health--working {
+  background: #4ac878;
+  box-shadow: 0 0 5px rgba(74, 200, 120, 0.7);
+}
+.source-health--suspect {
+  background: #d9a441;
+  box-shadow: 0 0 5px rgba(217, 164, 65, 0.6);
+}
+.source-tab.active .source-health--working { background: #0c3d1f; box-shadow: none; }
+.source-tab.active .source-health--suspect { background: #5c4310; box-shadow: none; }
