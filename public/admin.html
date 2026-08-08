@@ -1163,27 +1163,31 @@ function renderIPLogs() {
 
   el.innerHTML = `
     <div style="font-size:12px;color:rgba(255,255,255,0.3);margin-bottom:8px;">Showing ${rows.length} of ${_ipLogsCache.length} device${_ipLogsCache.length!==1?"s":""}</div>
-    <div style="overflow-x:auto;">
-    <table class="adm-table">
-      <thead><tr><th>IP</th><th>Network</th><th>Location</th><th>ISP / ASN</th><th>Flags</th><th>User</th><th>Fingerprint</th><th>First Seen</th><th>Last Seen</th><th>Action</th></tr></thead>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+    <table class="adm-table" style="min-width:840px;">
+      <thead><tr><th>IP / Network</th><th>Location</th><th>ISP / ASN</th><th>Flags</th><th>User</th><th>Fingerprint</th><th>Seen</th><th style="text-align:right;">Action</th></tr></thead>
       <tbody>${rows.map(([fpKey, l]) => `
         <tr>
-          <td style="font-weight:700;color:#fff;font-family:monospace;font-size:11px;">${_esc(l.ip) || "—"}</td>
-          <td style="font-size:10px;color:rgba(255,255,255,0.45);font-family:monospace;">${_esc(l.network) || "—"}</td>
+          <td style="font-weight:700;color:#fff;font-family:monospace;font-size:11px;white-space:nowrap;">
+            ${_esc(l.ip) || "—"}
+            ${l.network ? `<div style="font-size:9.5px;color:rgba(255,255,255,0.35);font-weight:400;">${_esc(l.network)}</div>` : ""}
+          </td>
           <td style="font-size:12px;">${_esc([l.city, l.region, l.country].filter(Boolean).join(", ")) || "—"}</td>
           <td style="font-size:11px;color:rgba(255,255,255,0.5);">${_esc(l.isp) || "—"}${l.asn ? `<div style="font-size:9px;color:rgba(255,255,255,0.3);">AS${_esc(l.asn)}</div>` : ""}</td>
           <td>${flags(l)}</td>
-          <td style="font-size:12px;">${l.username ? "@" + _esc(l.username) : "Guest"}</td>
+          <td style="font-size:12px;white-space:nowrap;">${l.username ? "@" + _esc(l.username) : "Guest"}</td>
           <td style="font-size:10px;color:rgba(255,255,255,0.4);font-family:monospace;">
             <div style="display:flex;align-items:center;gap:4px;">
-              <span title="${_esc(fpKey)}">${fpKey ? _esc(fpKey.substring(0, 12)) + "…" : "None"}</span>
+              <span title="${_esc(fpKey)}">${fpKey ? _esc(fpKey.substring(0, 10)) + "…" : "None"}</span>
               ${fpKey ? `<button class="adm-btn" data-copy="${_esc(fpKey)}" style="padding:1px 4px;font-size:9px;">Copy</button>` : ""}
             </div>
           </td>
-          <td style="font-size:11px;color:rgba(255,255,255,0.3);">${l.firstSeen?new Date(l.firstSeen).toLocaleString():"—"}</td>
-          <td style="font-size:11px;color:#34d399;">${l.lastSeen?new Date(l.lastSeen).toLocaleString():"—"}</td>
+          <td style="font-size:10.5px;white-space:nowrap;">
+            <div style="color:#34d399;">${l.lastSeen?new Date(l.lastSeen).toLocaleString():"—"}</div>
+            ${l.firstSeen ? `<div style="color:rgba(255,255,255,0.28);">first ${new Date(l.firstSeen).toLocaleDateString()}</div>` : ""}
+          </td>
           <td>
-            <div style="display:flex;gap:4px;">
+            <div style="display:flex;gap:4px;justify-content:flex-end;">
               <button class="adm-btn adm-btn-red" style="font-size:11px;" data-ban-ip="${_esc(l.ip||"")}" data-ban-fp="${_esc(fpKey||"")}" data-ban-user="${_esc(l.username||"")}">🔨 Ban</button>
               <button class="adm-btn" style="font-size:11px;" data-del-log="${_esc(fpKey)}" title="Delete this log entry">🗑</button>
             </div>

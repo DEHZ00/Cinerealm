@@ -4455,6 +4455,16 @@ setInterval(() => {
 
 // ── 1. Changelog popup ────────────────────────────────────────────────────
 const CR_VERSION = "2.0";
+// Master switch for the built-in v2 changelog popup.
+//
+// This is separate from anything in Firebase. Even with every entry removed
+// from release_announcements, the fallback below still fired for anyone
+// missing the "cr_seen_v2.0" localStorage flag — i.e. every new visitor —
+// which is why the v2 popup kept coming back after it was "turned off".
+//
+// Left false, the popup only ever appears when an admin actually publishes a
+// release from the dashboard. Flip to true to bring the hardcoded one back.
+const CR_SHOW_LOCAL_CHANGELOG = false;
 const CR_CHANGELOG = [
   { icon: "🔐", title: "Profiles & Login",     desc: "Sign in with Google or email. Your history and watchlist sync across all devices." },
   { icon: "👑", title: "Role Badges",           desc: "Owner, Developer, Verified, and Moderator badges. Visible on profiles and search." },
@@ -4570,10 +4580,9 @@ function _showChangelogPopup(version, items, dismissKey) {
       }
     } catch(e) {}
 
-    // Always check Firebase first for admin-pushed releases
+    // Admin-pushed releases from Firebase are the only source by default.
     const shownFromFirebase = await checkFirebaseRelease();
-    // If no Firebase release, fall back to local version check
-    if (!shownFromFirebase && !localStorage.getItem(localKey)) {
+    if (CR_SHOW_LOCAL_CHANGELOG && !shownFromFirebase && !localStorage.getItem(localKey)) {
       _showChangelogPopup(CR_VERSION, CR_CHANGELOG, localKey);
     }
   }, 1800);
