@@ -5371,7 +5371,14 @@ function _addOledToCloak() {
       for (let i = 0; i < nodes.length; i++) nodes[i].classList.toggle("on", i === idx);
       if (idx >= 0 && nodes[idx]) {
         const n = nodes[idx];
-        lyricsEl.scrollTo({ top: n.offsetTop - lyricsEl.clientHeight / 2 + n.clientHeight / 2, behavior: "smooth" });
+        // Measure against the scroll container directly. offsetTop resolves
+        // against the nearest *positioned* ancestor — which here is the fixed
+        // overlay, not this box — so it included the whole letter above and
+        // overscrolled the active line clean out of view.
+        const nRect = n.getBoundingClientRect();
+        const cRect = lyricsEl.getBoundingClientRect();
+        const delta = (nRect.top - cRect.top) - (lyricsEl.clientHeight - n.clientHeight) / 2;
+        lyricsEl.scrollTo({ top: lyricsEl.scrollTop + delta, behavior: "smooth" });
       }
     }
 
