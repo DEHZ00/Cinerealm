@@ -1984,6 +1984,7 @@ async function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
   };
 
   const lastProgress = getHistoryProgress(id, type, extraOpts.season, extraOpts.episode);
+  const lastDuration = getHistoryDuration(id, type, extraOpts.season, extraOpts.episode);
 
 
   // render player wrapper
@@ -2056,8 +2057,57 @@ async function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
   const activeBtn = tabs.querySelector(".source-tab.active") || tabs.querySelector(".source-tab");
   if (activeBtn) activeBtn.click();
 
+  // Resume notice. The offset was already being handed to the player, but
+  // silently — a jump into the middle of a film with no explanation and no way
+  // back. Only shown when resuming is actually meaningful: far enough in to
+  // matter, and not so close to the end that starting over is the real intent.
+  const resumeAt = opts.progress || 0;
+  const nearEnd = lastDuration > 0 && resumeAt >= lastDuration - 90;
+  if (resumeAt > 60 && !nearEnd && !extraOpts._restarted) {
+    _showResumeBar(resumeAt, () => {
+      loadPlayer(id, type, title, { ...extraOpts, progress: 0, _restarted: true });
+    });
+  }
+
   currentlyPlaying = { id, type, title, media, opts };
   setTimeout(() => playerDiv.scrollIntoView({ behavior: "smooth" }), 80);
+}
+
+// Bar shown above the player when a saved position was applied.
+function _showResumeBar(seconds, onStartOver) {
+  const host = document.getElementById("player-tabs-placeholder") || playerDiv;
+  if (!host) return;
+
+  document.getElementById("crResumeBar")?.remove();
+
+  const bar = document.createElement("div");
+  bar.id = "crResumeBar";
+  bar.className = "cr-resume-bar";
+
+  const text = document.createElement("span");
+  text.className = "cr-resume-text";
+  text.textContent = "▶ Resuming from " + formatTime(seconds);
+
+  const restart = document.createElement("button");
+  restart.type = "button";
+  restart.className = "cr-resume-restart";
+  restart.textContent = "Start from beginning";
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "cr-resume-close";
+  close.setAttribute("aria-label", "Dismiss");
+  close.textContent = "✕";
+
+  bar.append(text, restart, close);
+  host.insertAdjacentElement("afterbegin", bar);
+
+  let hideTimer = setTimeout(() => bar.remove(), 9000);
+  const stop = () => clearTimeout(hideTimer);
+  bar.addEventListener("mouseenter", stop);
+
+  restart.onclick = () => { stop(); bar.remove(); onStartOver(); };
+  close.onclick    = () => { stop(); bar.remove(); };
 }
 
 
@@ -2363,6 +2413,46 @@ function getHistoryProgress(tmdbId, type, season, episode) {
   return match ? match.progress || 0 : 0;
 }
 
+// First-run panel — replaces the row of empty personalised shelves a brand
+// new visitor would otherwise land on. Removed automatically once they have
+// any watch history.
+function _showFirstRunPanel() {
+  if (document.getElementById("crFirstRun")) return;
+  const hero = document.getElementById("heroSection");
+  if (!hero) return;   // home page only
+
+  const el = document.createElement("div");
+  el.id = "crFirstRun";
+  el.className = "cr-firstrun";
+  el.innerHTML = `
+    <div class="cr-firstrun-title">Welcome to CineRealm</div>
+    <div class="cr-firstrun-sub">Pick something to watch and this page starts building itself — your history, picks for you, and where you left off all show up here.</div>
+    <div class="cr-firstrun-actions">
+      <a href="/trending" class="cr-firstrun-btn cr-firstrun-btn--primary">🔥 Trending now</a>
+      <a href="/movies" class="cr-firstrun-btn">🎬 Browse movies</a>
+      <a href="/genres" class="cr-firstrun-btn">🎭 By genre</a>
+    </div>`;
+
+  const anchor = document.getElementById("trendingTicker") || hero;
+  anchor.insertAdjacentElement("afterend", el);
+}
+
+// Runtime for the same entry, used to tell "resume" apart from "they already
+// finished this and are opening it again".
+function getHistoryDuration(tmdbId, type, season, episode) {
+  if (!historyData || !Array.isArray(historyData)) return 0;
+
+  const match = historyData.find((item) => {
+    if (item.type !== type || item.tmdbId !== tmdbId) return false;
+    if (type === "tv") {
+      return item.season === season && item.episode === episode;
+    }
+    return true;
+  });
+
+  return match ? match.duration || 0 : 0;
+}
+
 
 function formatTime(s) {
   const h = Math.floor(s / 3600);
@@ -2379,10 +2469,20 @@ async function renderContinueWatching() {
 
   container.innerHTML = "";
 
+  const cwSection = container.closest("section");
+
   if (!Array.isArray(historyData) || historyData.length === 0) {
-    container.innerHTML = `<p class="placeholder">You haven't watched anything yet. Start watching to see it here!</p>`;
+    // A first-time visitor was landing on a "Continue Watching" heading above
+    // an apology, followed by several more empty personalised rows. Hide the
+    // shell entirely and point them somewhere they can actually start.
+    if (cwSection) cwSection.style.display = "none";
+    _showFirstRunPanel();
     return;
   }
+
+  // Returning visitor — undo the first-run state.
+  if (cwSection) cwSection.style.display = "";
+  document.getElementById("crFirstRun")?.remove();
 
   // Sort newest first
   const sorted = [...historyData].sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
