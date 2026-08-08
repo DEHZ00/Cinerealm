@@ -57,48 +57,248 @@ const FB_CONFIG = {
   appId: "1:1076768481536:web:4fd3bdc3f222e4850ad3e5"
   
 };
-// ── Bulletproof IP Logging & Fingerprinting ──────────────────────────────
-async function _getVisitorFingerprint() {
-  let fp = localStorage.getItem("cr_device_fp");
-  if (!fp) {
-    fp = "fp_" + (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
-    localStorage.setItem("cr_device_fp", fp);
+// ── Device Fingerprinting & IP Logging ────────────────────────────────────
+// The old fingerprint was just crypto.randomUUID() cached in localStorage —
+// it identified a *browser profile*, not a device. Clearing site data, opening
+// incognito, or switching browsers minted a brand new identity, so bans and
+// logs were trivially bypassable and one person showed up as many devices.
+//
+// This derives the id from hardware/software traits instead, so it stays
+// stable across localStorage clears, incognito, and cache wipes. It is still
+// client-side and a determined user can defeat it — treat it as strong
+// deduplication, not as proof of identity.
+
+// Each probe is individually guarded: a single blocked API (Brave, Tor,
+// hardened Firefox) must degrade one signal, not throw away the whole id.
+function _fpCanvas() {
+  try {
+    const c = document.createElement("canvas");
+    c.width = 240; c.height = 60;
+    const ctx = c.getContext("2d");
+    if (!ctx) return "no-canvas";
+    ctx.textBaseline = "top";
+    ctx.font = "14px 'Arial'";
+    ctx.fillStyle = "#f60";
+    ctx.fillRect(1, 1, 62, 20);
+    ctx.fillStyle = "#069";
+    ctx.fillText("CineRealm-fp-❤︎", 2, 15);
+    ctx.fillStyle = "rgba(102,204,0,0.7)";
+    ctx.fillText("CineRealm-fp-❤︎", 4, 17);
+    ctx.globalCompositeOperation = "multiply";
+    ctx.beginPath(); ctx.arc(50, 30, 20, 0, Math.PI * 2); ctx.fill();
+    return c.toDataURL();
+  } catch (e) { return "canvas-err"; }
+}
+
+function _fpWebGL() {
+  try {
+    const c = document.createElement("canvas");
+    const gl = c.getContext("webgl") || c.getContext("experimental-webgl");
+    if (!gl) return "no-webgl";
+    const dbg = gl.getExtension("WEBGL_debug_renderer_info");
+    const vendor   = dbg ? gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL)   : gl.getParameter(gl.VENDOR);
+    const renderer = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+    return [vendor, renderer, gl.getParameter(gl.MAX_TEXTURE_SIZE),
+            gl.getParameter(gl.MAX_RENDERBUFFER_SIZE),
+            (gl.getSupportedExtensions() || []).length].join("|");
+  } catch (e) { return "webgl-err"; }
+}
+
+// Renders a tone offline and hashes the output. Distinguishes audio stacks
+// without ever touching the speakers.
+function _fpAudio() {
+  return new Promise(resolve => {
+    try {
+      const AC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      if (!AC) return resolve("no-audio");
+      const ctx = new AC(1, 4400, 44100);
+      const osc = ctx.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.value = 10000;
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -50; comp.knee.value = 40; comp.ratio.value = 12;
+      comp.attack.value = 0;      comp.release.value = 0.25;
+      osc.connect(comp); comp.connect(ctx.destination);
+      osc.start(0);
+      const timer = setTimeout(() => resolve("audio-timeout"), 1200);
+      ctx.oncomplete = ev => {
+        clearTimeout(timer);
+        try {
+          const buf = ev.renderedBuffer.getChannelData(0);
+          let sum = 0;
+          for (let i = 2000; i < buf.length; i++) sum += Math.abs(buf[i]);
+          resolve(sum.toString());
+        } catch (e) { resolve("audio-read-err"); }
+      };
+      ctx.startRendering();
+    } catch (e) { resolve("audio-err"); }
+  });
+}
+
+// Which fonts are installed, inferred from text-width deltas against fallbacks.
+function _fpFonts() {
+  try {
+    const base = ["monospace", "sans-serif", "serif"];
+    const test = ["Arial","Verdana","Times New Roman","Courier New","Georgia",
+                  "Palatino","Garamond","Comic Sans MS","Trebuchet MS","Impact",
+                  "Segoe UI","Roboto","Helvetica Neue","Tahoma","Calibri","Cambria"];
+    const span = document.createElement("span");
+    span.style.cssText = "position:absolute;left:-9999px;top:-9999px;font-size:72px;white-space:nowrap;";
+    span.textContent = "mmmmmmmmmmlli";
+    document.body.appendChild(span);
+
+    const baseline = {};
+    for (const b of base) { span.style.fontFamily = b; baseline[b] = [span.offsetWidth, span.offsetHeight]; }
+
+    const found = [];
+    for (const f of test) {
+      for (const b of base) {
+        span.style.fontFamily = `'${f}',${b}`;
+        if (span.offsetWidth !== baseline[b][0] || span.offsetHeight !== baseline[b][1]) { found.push(f); break; }
+      }
+    }
+    span.remove();
+    return found.join(",");
+  } catch (e) { return "fonts-err"; }
+}
+
+async function _sha256Hex(str) {
+  try {
+    if (crypto?.subtle) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+  } catch (e) {}
+  // Non-secure context or no WebCrypto — FNV-1a is weaker but keeps ids stable.
+  let h1 = 0x811c9dc5, h2 = 0x01000193;
+  for (let i = 0; i < str.length; i++) {
+    h1 ^= str.charCodeAt(i); h1 = Math.imul(h1, 0x01000193);
+    h2 = Math.imul(h2 ^ str.charCodeAt(i), 0x85ebca6b);
   }
-  return fp;
+  return ((h1 >>> 0).toString(16) + (h2 >>> 0).toString(16)).padStart(16, "0");
+}
+
+let _fpCache = null;
+async function _getVisitorFingerprint() {
+  if (_fpCache) return _fpCache;
+
+  const n = navigator;
+  const components = [
+    _fpCanvas(),
+    _fpWebGL(),
+    await _fpAudio(),
+    _fpFonts(),
+    [screen.width, screen.height, screen.availWidth, screen.availHeight,
+     screen.colorDepth, screen.pixelDepth, devicePixelRatio].join("x"),
+    Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+    new Date().getTimezoneOffset(),
+    (n.languages || [n.language]).join(","),
+    n.platform || "",
+    n.hardwareConcurrency || 0,
+    n.deviceMemory || 0,
+    n.maxTouchPoints || 0,
+    typeof n.pdfViewerEnabled === "boolean" ? n.pdfViewerEnabled : "",
+    // userAgent last: it changes on browser update, so it is the one component
+    // we deliberately keep coarse (major version only) to avoid churn.
+    (n.userAgent || "").replace(/\d+\.\d+[\d.]*/g, m => m.split(".")[0]),
+  ].join("~~");
+
+  const hash = await _sha256Hex(components);
+  _fpCache = "fp_" + hash.slice(0, 32);
+
+  // Keep the legacy random id around purely so existing rows can be linked to
+  // the new stable id — it is no longer the identity itself.
+  try {
+    const legacy = localStorage.getItem("cr_device_fp");
+    if (legacy && legacy !== _fpCache) localStorage.setItem("cr_device_fp_legacy", legacy);
+    localStorage.setItem("cr_device_fp", _fpCache);
+  } catch (e) {}
+
+  return _fpCache;
+}
+
+// Network-level key: the /64 prefix for IPv6, the /24 for IPv4. Lets you group
+// "same household / same network" without discarding the exact address, which
+// is what the old truncate-in-place did.
+function _networkKey(ip) {
+  if (!ip || ip === "Unknown_IP") return null;
+  if (ip.includes(":")) {
+    const parts = ip.split(":");
+    return parts.slice(0, 4).join(":") + "::/64";
+  }
+  const oct = ip.split(".");
+  return oct.length === 4 ? oct.slice(0, 3).join(".") + ".0/24" : null;
 }
 
 async function _getIPData() {
   try {
     const cached = sessionStorage.getItem("cr_ip_data");
     if (cached) return JSON.parse(cached);
-    
+
+    const timeout = ms => (AbortSignal.timeout ? AbortSignal.timeout(ms) : undefined);
     let data = null;
+
+    // Primary: ipwho.is — free, HTTPS, no key, and the only one of the three
+    // that reports VPN/proxy/Tor plus ISP/ASN, so masked traffic is visible.
     try {
-      const res1 = await fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined });
-      const raw1 = await res1.json();
-      if (raw1.ip) {
-        data = { status: "success", query: raw1.ip, country: raw1.country_name, city: raw1.city, proxy: false, hosting: false };
+      const res = await fetch("https://ipwho.is/", { signal: timeout(4500) });
+      const raw = await res.json();
+      if (raw && raw.success !== false && raw.ip) {
+        data = {
+          status: "success",
+          query: raw.ip,
+          country: raw.country || "Unknown",
+          city: raw.city || "Unknown",
+          region: raw.region || null,
+          isp: raw.connection?.isp || raw.connection?.org || null,
+          asn: raw.connection?.asn != null ? String(raw.connection.asn) : null,
+          proxy: !!(raw.security?.proxy || raw.security?.vpn || raw.security?.tor),
+          vpn: !!raw.security?.vpn,
+          tor: !!raw.security?.tor,
+          hosting: !!raw.security?.hosting,
+        };
       }
-    } catch(e) {}
+    } catch (e) {}
 
     if (!data) {
-      const res2 = await fetch("https://api.ipify.org?format=json", { signal: AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined });
-      const raw2 = await res2.json();
-      if (raw2.ip) {
-        data = { status: "success", query: raw2.ip, country: "Unknown", city: "Unknown", proxy: false, hosting: false };
-      }
+      try {
+        const res = await fetch("https://ipapi.co/json/", { signal: timeout(4000) });
+        const raw = await res.json();
+        if (raw.ip) {
+          data = {
+            status: "success", query: raw.ip,
+            country: raw.country_name || "Unknown", city: raw.city || "Unknown",
+            region: raw.region || null, isp: raw.org || null,
+            asn: raw.asn || null,
+            proxy: false, vpn: false, tor: false, hosting: false,
+          };
+        }
+      } catch (e) {}
+    }
+
+    if (!data) {
+      try {
+        const res = await fetch("https://api.ipify.org?format=json", { signal: timeout(4000) });
+        const raw = await res.json();
+        if (raw.ip) {
+          data = {
+            status: "success", query: raw.ip, country: "Unknown", city: "Unknown",
+            region: null, isp: null, asn: null,
+            proxy: false, vpn: false, tor: false, hosting: false,
+          };
+        }
+      } catch (e) {}
     }
 
     if (!data) return null;
 
-    if (data.query && data.query.includes(":")) {
-      const parts = data.query.split(":");
-      data.query = parts.slice(0, 4).join(":") + "::";
-    }
-    
+    // Keep the full address AND the network key. The old code overwrote the
+    // address with its own /64, so exact-device lookups were impossible.
+    data.network = _networkKey(data.query);
+
     sessionStorage.setItem("cr_ip_data", JSON.stringify(data));
     return data;
-  } catch(e) { return null; }
+  } catch (e) { return null; }
 }
 
 // ── IP Logging — runs once per browser session ───────────────────────────
@@ -151,50 +351,53 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
       }
 
       const logRef = ref(db, "ip_logs/" + fp);
-      
+
+      let legacyFp = null;
+      try { legacyFp = localStorage.getItem("cr_device_fp_legacy"); } catch (e) {}
+
+      // Built once — the three write paths below differ only in firstSeen
+      // handling and identity, not in the signals they record.
+      const payload = {
+        ip:       ipData.query,
+        network:  ipData.network || null,
+        country:  ipData.country || null,
+        city:     ipData.city    || null,
+        region:   ipData.region  || null,
+        isp:      ipData.isp     || null,
+        asn:      ipData.asn     || null,
+        proxy:    !!ipData.proxy,
+        vpn:      !!ipData.vpn,
+        tor:      !!ipData.tor,
+        hosting:  !!ipData.hosting,
+        ua:       (navigator.userAgent || "").slice(0, 300),
+        legacyFp: legacyFp,
+        uid:      uid,
+        username: username,
+        lastSeen: Date.now(),
+      };
+
       // 🛑 FIX FIRST SEEN OVERWRITE: Guests don't have read permission, so get() fails for them.
       // We handle logged-in users and guests differently.
       if (uid) {
         // Logged in user: has read permission, so we can check if they exist
         const logSnap = await get(logRef).catch(() => null);
-        
+
         if (logSnap && logSnap.exists()) {
-          const existingData = logSnap.val();
           console.log("🔒 IP Log: Device exists. Updating lastSeen...");
           await update(logRef, {
-            ip: ipData.query,
-            country: ipData.country || null,
-            city: ipData.city || null,
-            uid: uid,
-            username: username,
-            lastSeen: Date.now(),
+            ...payload,
             // Preserve firstSeen if it exists, otherwise set it now
-            firstSeen: existingData.firstSeen || Date.now()
+            firstSeen: logSnap.val().firstSeen || Date.now()
           });
         } else {
           // Logged in, but brand new device
           console.log("🔒 IP Log: Writing to Firebase -> ip_logs/" + fp);
-          await set(logRef, {
-            ip: ipData.query,
-            country: ipData.country || null,
-            city: ipData.city || null,
-            uid: uid,
-            username: username,
-            firstSeen: Date.now(),
-            lastSeen: Date.now()
-          });
+          await set(logRef, { ...payload, firstSeen: Date.now() });
         }
       } else {
         // Guest: No read permission. We just use update() so we don't overwrite firstSeen if they are a returning visitor.
         console.log("🔒 IP Log: Guest user. Updating lastSeen...");
-        await update(logRef, {
-          ip: ipData.query,
-          country: ipData.country || null,
-          city: ipData.city || null,
-          uid: null,
-          username: null,
-          lastSeen: Date.now()
-        });
+        await update(logRef, payload);
       }
 
       console.log("✅ IP Log: SUCCESS! Written to database.");
@@ -355,29 +558,36 @@ function saveWatchlist() {
   localStorage.setItem("watchlist", JSON.stringify(watchlistData));
 }
 
-// ── Splash screen — show on every page load ───────────────────────────────
+// ── Splash screen — home page, once per session ───────────────────────────
+// It used to run on every page load (5.5s on /anime, 1.6s everywhere else),
+// so every nav click cost the user a full-screen wait for an animation they
+// had already seen. Now it plays on the home page only, and only the first
+// time in a session — bouncing between pages never re-triggers it.
 (function() {
   const intro = document.getElementById("appIntro");
   if (!intro) return;
 
+  const SPLASH_KEY = "cr_splash_shown";
   const isHome = window.location.pathname === "/";
 
+  let alreadyShown = false;
+  try { alreadyShown = sessionStorage.getItem(SPLASH_KEY) === "1"; } catch (e) {}
 
-  if (isHome) intro.classList.add("intro-home");
+  if (!isHome || alreadyShown) {
+    // Stays hidden — never occupies the screen or delays the page.
+    intro.style.display = "none";
+    return;
+  }
 
+  try { sessionStorage.setItem(SPLASH_KEY, "1"); } catch (e) {}
 
+  intro.classList.add("intro-home");
   intro.classList.remove("hidden");
-
-
-  const isAnime = window.location.pathname === "/anime";
-  const duration = isHome ? 2600 : isAnime ? 5500 : 1600;
 
   setTimeout(() => {
     intro.classList.add("fade-out");
-    setTimeout(() => {
-      intro.style.display = "none";
-    }, 800);
-  }, duration);
+    setTimeout(() => { intro.style.display = "none"; }, 800);
+  }, 2600);
 })();
 
 
@@ -4907,14 +5117,28 @@ function _addOledToCloak() {
 // })();
 
 // ── Easter egg ───────────────────────────────────────────────────────────
-// The previous overlay is kept above, commented out. The same triggers
-// (Konami code on desktop, 7 logo taps on mobile) now open a blank page.
+// Konami code on desktop, 7 logo taps on mobile → name gate → letter.
+// The original bright-pink version is kept commented out above.
 (function(){
   const _s=[38,38,40,40,37,39,37,39,66,65];
   let _i=0;
 
+  // Exact match only — "aiyana" or "Aiyana", nothing else. Deliberately not
+  // case-folded, so AIYANA / aIyAnA / aryana all fail.
+  const _valid = ["aiyana", "Aiyana"];
+
+  const PLAYLIST = [
+    { title: "Letter Home",          artist: "Childish Gambino", src: "/letter-home.mp3",         lrc: "/letter-home.lrc" },
+    { title: "Te Sigo Extrañando",   artist: "Iván Cornejo",     src: "/te-sigo-extranando.mp3",  lrc: "/te-sigo-extranando.lrc",
+      // Optional English translation. Drop a te-sigo-extranando.en.lrc in
+      // /public and the EN/ES toggle appears on its own; if the file isn't
+      // there the toggle stays hidden and Spanish plays as normal.
+      lrcEn: "/te-sigo-extranando.en.lrc" },
+    { title: "Fade Into You",        artist: "Mazzy Star",       src: "/Mazzy Star - Fade into You.mp3", lrc: "/fiy.lrc" },
+  ];
+
   document.addEventListener("keydown", function(e){
-    if(e.keyCode===_s[_i]){ _i++; if(_i===_s.length){ _i=0; _showBlank(); } } else { _i=0; }
+    if(e.keyCode===_s[_i]){ _i++; if(_i===_s.length){ _i=0; _askName(); } } else { _i=0; }
   });
 
   window.addEventListener("load", () => {
@@ -4925,29 +5149,327 @@ function _addOledToCloak() {
       e.preventDefault();
       _tapCount++;
       clearTimeout(_tapTimer);
-      if (_tapCount >= 7) { _tapCount = 0; setTimeout(_showBlank, 200); return; }
+      if (_tapCount >= 7) { _tapCount = 0; setTimeout(_askName, 200); return; }
       _tapTimer = setTimeout(() => { _tapCount = 0; }, 1800);
     });
   });
 
-  function _showBlank(){
+  function parseLRC(text){
+    if(!text) return [];
+    const lineRe = /^\[(\d+):(\d+(?:\.\d+)?)\](.*)$/;
+    const wordRe = /<(\d+):(\d+(?:\.\d+)?)>([^<]*)/g;
+    return text.split(/\r?\n/).map(raw=>{
+      const m = raw.match(lineRe);
+      if(!m) return null;
+      const lineTime = parseInt(m[1])*60 + parseFloat(m[2]);
+      const rest = m[3];
+      if(rest.indexOf("<") === -1){
+        const t = rest.trim();
+        return t ? { time: lineTime, text: t } : null;
+      }
+      // Strip word-level <mm:ss> tags — the letter shows whole lines only.
+      const words = [];
+      const firstTagIdx = rest.search(/</);
+      const leading = (firstTagIdx === -1 ? rest : rest.slice(0, firstTagIdx)).trim();
+      if(leading) words.push(leading);
+      let wm; wordRe.lastIndex = 0;
+      while((wm = wordRe.exec(rest))){ const w = wm[3].trim(); if(w) words.push(w); }
+      const t = words.join(" ").trim();
+      return t ? { time: lineTime, text: t } : null;
+    }).filter(Boolean);
+  }
+
+  function fmtTime(s){
+    if(!isFinite(s)) return "0:00";
+    const m = Math.floor(s/60), sec = Math.floor(s%60);
+    return m + ":" + String(sec).padStart(2,"0");
+  }
+
+  // ── Name gate — deliberately plain ──────────────────────────────────────
+  function _askName() {
+    if (document.getElementById("_cr_gate") || document.getElementById("_cr_secret")) return;
+    const overlay = document.createElement("div");
+    overlay.id = "_cr_gate";
+    overlay.style.cssText = "position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:24px;";
+    overlay.innerHTML = `
+      <div style="width:100%;max-width:300px;text-align:center;font-family:'Georgia',serif;">
+        <div style="font-size:15px;color:rgba(255,255,255,0.7);margin-bottom:18px;letter-spacing:0.5px;">Who's there?</div>
+        <input id="_cr_name_input" type="text" autocomplete="off" spellcheck="false"
+          style="width:100%;padding:10px 14px;border-radius:4px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.85);font-size:15px;outline:none;text-align:center;box-sizing:border-box;font-family:inherit;">
+        <button id="_cr_name_submit"
+          style="margin-top:12px;width:100%;padding:9px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:4px;color:rgba(255,255,255,0.65);font-size:13px;cursor:pointer;font-family:inherit;letter-spacing:0.5px;">Continue</button>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    const input  = overlay.querySelector("#_cr_name_input");
+    const submit = overlay.querySelector("#_cr_name_submit");
+    setTimeout(() => input.focus(), 80);
+
+    const check = () => {
+      const val = input.value.trim();
+      overlay.remove();
+      if (_valid.includes(val)) _showSecret();
+      else setTimeout(() => window.location.reload(), 400);
+    };
+    submit.onclick = check;
+    input.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
+    overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+  }
+
+  // ── The letter ──────────────────────────────────────────────────────────
+  function _showSecret(){
     if (document.getElementById("_cr_secret")) return;
+
+    const style = document.createElement("style");
+    style.id = "_cr_secret_style";
+    style.textContent = `
+      @keyframes _crFade { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+      @media (prefers-reduced-motion: reduce) {
+        .crs-line { animation:none !important; opacity:1 !important; transform:none !important; }
+      }
+      #_cr_secret ::-webkit-scrollbar { width:5px; }
+      #_cr_secret ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.12); border-radius:3px; }
+      .crs-line { opacity:0; animation:_crFade 1.6s ease forwards; }
+      .crs-btn { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.13); color:rgba(255,255,255,0.6);
+                 border-radius:4px; cursor:pointer; font-family:inherit; transition:background .2s,color .2s; }
+      .crs-btn:hover { background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.9); }
+      .crs-track { display:flex; align-items:center; gap:9px; padding:7px 9px; border-radius:4px; cursor:pointer;
+                   font-size:12px; color:rgba(255,255,255,0.4); transition:background .2s,color .2s; }
+      .crs-track:hover { background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.7); }
+      .crs-track.active { background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.82); }
+      .crs-lyric { padding:5px 0; font-size:14px; line-height:1.55; color:rgba(255,255,255,0.22);
+                   transition:color .35s ease; font-family:'Georgia',serif; }
+      .crs-lyric.on { color:rgba(255,255,255,0.9); }
+      #_cr_seek, #_cr_vol { -webkit-appearance:none; appearance:none; height:3px; border-radius:2px;
+                            background:rgba(255,255,255,0.15); outline:none; cursor:pointer; }
+      #_cr_seek::-webkit-slider-thumb, #_cr_vol::-webkit-slider-thumb { -webkit-appearance:none; appearance:none;
+                            width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,0.7); }
+      #_cr_seek::-moz-range-thumb, #_cr_vol::-moz-range-thumb { width:10px; height:10px; border:none;
+                            border-radius:50%; background:rgba(255,255,255,0.7); }
+    `;
+    document.head.appendChild(style);
+
     const o = document.createElement("div");
     o.id = "_cr_secret";
-    o.style.cssText = "position:fixed;inset:0;z-index:99999;background:#000;display:flex;align-items:center;justify-content:center;";
-    o.innerHTML = `<div style="font-size:28px;font-weight:600;color:rgba(255,255,255,0.75);font-family:'Georgia',serif;">goodbye.</div>`;
-    const _scrollY = window.scrollY || window.pageYOffset || 0;
+    o.style.cssText = "position:fixed;inset:0;z-index:99999;background:linear-gradient(170deg,#0a0b0d,#050506 55%,#08070a);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;overscroll-behavior:contain;padding:0;";
+
+    o.innerHTML = `
+      <div style="width:100%;max-width:470px;padding:64px 26px 48px;font-family:'Georgia',serif;">
+
+        <div class="crs-line" style="animation-delay:.2s;font-size:27px;color:rgba(255,255,255,0.88);margin-bottom:26px;letter-spacing:0.3px;">Aiyana,</div>
+
+        <div class="crs-line" style="animation-delay:1.1s;font-size:16px;line-height:1.85;color:rgba(255,255,255,0.6);margin-bottom:15px;">If you're seeing this...</div>
+        <div class="crs-line" style="animation-delay:2.0s;font-size:16px;line-height:1.85;color:rgba(255,255,255,0.6);margin-bottom:15px;">I'll try my best to accept its the end</div>
+        <div class="crs-line" style="animation-delay:2.9s;font-size:16px;line-height:1.85;color:rgba(255,255,255,0.6);margin-bottom:34px;">I'll try to let go and not text now.</div>
+
+        <div class="crs-line" style="animation-delay:3.6s;height:1px;background:rgba(255,255,255,0.09);margin-bottom:26px;"></div>
+
+        <!-- Player -->
+        <div class="crs-line" style="animation-delay:4.0s;">
+
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:3px;">
+            <div id="_cr_title" style="font-size:14px;color:rgba(255,255,255,0.8);"></div>
+            <button id="_cr_lang" class="crs-btn" style="display:none;font-size:10px;padding:3px 8px;letter-spacing:0.5px;flex-shrink:0;">EN</button>
+          </div>
+          <div id="_cr_artist" style="font-size:11.5px;color:rgba(255,255,255,0.32);margin-bottom:13px;"></div>
+
+          <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px;">
+            <span id="_cr_cur" style="font-size:10.5px;color:rgba(255,255,255,0.3);min-width:30px;font-family:system-ui,sans-serif;">0:00</span>
+            <input type="range" id="_cr_seek" min="0" max="1000" value="0" style="flex:1;">
+            <span id="_cr_dur" style="font-size:10.5px;color:rgba(255,255,255,0.3);min-width:30px;text-align:right;font-family:system-ui,sans-serif;">0:00</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:16px;">
+            <button id="_cr_prev" class="crs-btn" style="padding:6px 11px;font-size:12px;">‹‹</button>
+            <button id="_cr_play" class="crs-btn" style="padding:6px 17px;font-size:12px;">Play</button>
+            <button id="_cr_next" class="crs-btn" style="padding:6px 11px;font-size:12px;">››</button>
+            <input type="range" id="_cr_vol" min="0" max="100" value="55" style="width:66px;margin-left:auto;">
+          </div>
+
+          <div id="_cr_lyrics" style="height:150px;overflow-y:auto;margin-bottom:18px;padding-right:6px;"></div>
+
+          <div style="font-size:10px;color:rgba(255,255,255,0.25);letter-spacing:1.3px;text-transform:uppercase;margin-bottom:7px;font-family:system-ui,sans-serif;">3 songs</div>
+          <div id="_cr_list"></div>
+        </div>
+
+        <div class="crs-line" style="animation-delay:4.4s;margin-top:38px;text-align:center;">
+          <button id="_cr_close" class="crs-btn" style="padding:9px 26px;font-size:12px;letter-spacing:1px;">Close</button>
+        </div>
+      </div>`;
+
+    const scrollY = window.scrollY || window.pageYOffset || 0;
     document.body.style.overflow = "hidden";
     document.body.appendChild(o);
+
+    // Safety net. Every line starts at opacity:0 and is revealed only by the
+    // fade animation, so anything that stops those animations — a background
+    // tab freezing compositing, an extension disabling animation, an engine
+    // that ignores the keyframes — would leave the letter completely blank.
+    // Once the timeline should have finished, force the final state.
+    const revealFallback = setTimeout(() => {
+      o.querySelectorAll(".crs-line").forEach(el => {
+        el.style.opacity = "1";
+        el.style.transform = "none";
+      });
+    }, 7000);
+
+    // ── Player state ──
+    const audio = new Audio();
+    audio.volume = 0.55;
+    audio.preload = "metadata";
+
+    let pi = 0;
+    let lrc = [];          // active (possibly translated) lines
+    let lrcNative = [];    // always the original-language lines
+    let lrcEn = null;      // English lines, once fetched; false = unavailable
+    let showEn = false;
+    let curLine = -1;
+    let seeking = false;
+
+    const $ = id => o.querySelector(id);
+    const titleEl = $("#_cr_title"), artistEl = $("#_cr_artist"), lyricsEl = $("#_cr_lyrics");
+    const listEl = $("#_cr_list"), playBtn = $("#_cr_play"), seekEl = $("#_cr_seek");
+    const curEl = $("#_cr_cur"), durEl = $("#_cr_dur"), volEl = $("#_cr_vol"), langBtn = $("#_cr_lang");
+
+    function renderList(){
+      listEl.innerHTML = "";
+      PLAYLIST.forEach((t, i) => {
+        const row = document.createElement("div");
+        row.className = "crs-track" + (i === pi ? " active" : "");
+        row.innerHTML = `<span style="opacity:.45;min-width:12px;font-family:system-ui,sans-serif;">${i+1}</span>
+                         <span style="flex:1;">${t.title}</span>
+                         <span style="opacity:.4;font-size:11px;">${t.artist}</span>`;
+        row.onclick = () => load(i, true);
+        listEl.appendChild(row);
+      });
+    }
+
+    function renderLyrics(){
+      lyricsEl.innerHTML = "";
+      if (!lrc.length) {
+        lyricsEl.innerHTML = `<div style="font-size:12.5px;color:rgba(255,255,255,0.22);font-family:system-ui,sans-serif;padding-top:6px;">No lyrics for this one.</div>`;
+        return;
+      }
+      lrc.forEach((l, i) => {
+        const d = document.createElement("div");
+        d.className = "crs-lyric";
+        d.dataset.i = i;
+        d.textContent = l.text;
+        lyricsEl.appendChild(d);
+      });
+      curLine = -1;
+    }
+
+    function syncLyrics(){
+      if (!lrc.length) return;
+      const t = audio.currentTime;
+      let idx = -1;
+      for (let i = 0; i < lrc.length; i++) { if (t >= lrc[i].time) idx = i; else break; }
+      if (idx === curLine) return;
+      curLine = idx;
+      const nodes = lyricsEl.children;
+      for (let i = 0; i < nodes.length; i++) nodes[i].classList.toggle("on", i === idx);
+      if (idx >= 0 && nodes[idx]) {
+        const n = nodes[idx];
+        lyricsEl.scrollTo({ top: n.offsetTop - lyricsEl.clientHeight / 2 + n.clientHeight / 2, behavior: "smooth" });
+      }
+    }
+
+    async function fetchLrc(url){
+      if (!url) return [];
+      try {
+        const r = await fetch(url);
+        if (!r.ok) return [];
+        return parseLRC(await r.text());
+      } catch (e) { return []; }
+    }
+
+    async function load(i, autoplay){
+      pi = (i + PLAYLIST.length) % PLAYLIST.length;
+      const t = PLAYLIST[pi];
+
+      titleEl.textContent = t.title;
+      artistEl.textContent = t.artist;
+      audio.src = t.src;
+      renderList();
+
+      // Reset translation state for the new track
+      lrcEn = null; showEn = false;
+      langBtn.style.display = "none";
+      langBtn.textContent = "EN";
+
+      lrcNative = await fetchLrc(t.lrc);
+      lrc = lrcNative;
+      renderLyrics();
+
+      // Only offer the toggle if a translation actually exists.
+      if (t.lrcEn) {
+        const en = await fetchLrc(t.lrcEn);
+        if (en.length) { lrcEn = en; langBtn.style.display = ""; }
+        else { lrcEn = false; }
+      }
+
+      if (autoplay) play();
+    }
+
+    function play(){
+      audio.play().then(() => { playBtn.textContent = "Pause"; })
+        .catch(() => { playBtn.textContent = "Play"; });
+    }
+    function toggle(){ if (audio.paused) play(); else { audio.pause(); playBtn.textContent = "Play"; } }
+
+    playBtn.onclick = toggle;
+    $("#_cr_prev").onclick = () => load(pi - 1, true);
+    $("#_cr_next").onclick = () => load(pi + 1, true);
+
+    langBtn.onclick = () => {
+      if (!lrcEn) return;
+      showEn = !showEn;
+      lrc = showEn ? lrcEn : lrcNative;
+      langBtn.textContent = showEn ? "ES" : "EN";
+      renderLyrics();
+      syncLyrics();
+    };
+
+    volEl.oninput = () => { audio.volume = volEl.value / 100; };
+    seekEl.addEventListener("input", () => { seeking = true; });
+    seekEl.addEventListener("change", () => {
+      if (isFinite(audio.duration)) audio.currentTime = (seekEl.value / 1000) * audio.duration;
+      seeking = false;
+    });
+
+    audio.addEventListener("loadedmetadata", () => { durEl.textContent = fmtTime(audio.duration); });
+    audio.addEventListener("timeupdate", () => {
+      curEl.textContent = fmtTime(audio.currentTime);
+      if (!seeking && isFinite(audio.duration) && audio.duration > 0) {
+        seekEl.value = (audio.currentTime / audio.duration) * 1000;
+      }
+      syncLyrics();
+    });
+    audio.addEventListener("play",  () => { playBtn.textContent = "Pause"; });
+    audio.addEventListener("pause", () => { playBtn.textContent = "Play"; });
+    // Roll straight into the next song rather than stopping.
+    audio.addEventListener("ended", () => { if (pi < PLAYLIST.length - 1) load(pi + 1, true); else playBtn.textContent = "Play"; });
+
+    // ── Close: explicit only. Clicking the background does NOT dismiss —
+    // that made it far too easy to lose the page by accident.
     const close = () => {
+      clearTimeout(revealFallback);
+      audio.pause();
+      audio.src = "";
       o.remove();
+      style.remove();
       document.body.style.overflow = "";
-      window.scrollTo(0, _scrollY);
+      window.scrollTo(0, scrollY);
       document.removeEventListener("keydown", onKey);
     };
     const onKey = e => { if (e.key === "Escape") close(); };
-    o.addEventListener("click", close);
+    $("#_cr_close").onclick = close;
     document.addEventListener("keydown", onKey);
+
+    // Start on Letter Home. Autoplay is allowed here because opening the page
+    // required a keypress or tap plus a form submit.
+    load(0, true);
   }
 })();
 
