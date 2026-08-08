@@ -1,0 +1,92 @@
+{
+  "rules": {
+
+    "users": {
+      ".read": "auth != null",
+
+      "$uid": {
+        ".read": true,
+
+        "profile": {
+          ".write": "$uid === auth.uid",
+          "followers": { ".write": "auth != null" },
+          "following": { ".write": "auth != null" }
+        },
+
+        "watchlist":    { ".write": "$uid === auth.uid" },
+        "history":      { ".write": "$uid === auth.uid" },
+        "achievements": { ".write": "$uid === auth.uid" },
+
+        "following":    { ".write": "$uid === auth.uid" },
+        "followers":    { ".write": "auth != null" },
+
+        "roles": {
+          ".write": "root.child('users').child(auth.uid).child('roles/owner').val() === true || root.child('users').child(auth.uid).child('roles/developer').val() === true"
+        },
+        "role": {
+          ".write": "root.child('users').child(auth.uid).child('roles/owner').val() === true || root.child('users').child(auth.uid).child('roles/developer').val() === true"
+        }
+      }
+    },
+
+    "usernames":  { ".read": true, ".write": "auth != null" },
+    "reviews":    { ".read": true, ".write": "auth != null" },
+    "supporters": { ".read": true, ".write": "auth != null" },
+    "rooms":      { ".read": "auth != null", ".write": "auth != null" },
+
+    "hd_override": { ".read": true, ".write": false },
+
+    "hd_votes": {
+      ".read": true,
+      "$voteKey": { ".write": true }
+    },
+
+    "ip_logs": {
+      ".read": "root.child('users').child(auth.uid).child('roles/owner').val() === true || root.child('users').child(auth.uid).child('roles/developer').val() === true",
+      "$fingerprint": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['ip','lastSeen'])"
+      }
+    },
+
+    "ban_appeals": {
+      ".read": "root.child('users').child(auth.uid).child('roles/owner').val() === true || root.child('users').child(auth.uid).child('roles/developer').val() === true",
+      "$appealKey": {
+        ".read": true,
+        ".write": "!data.exists() || root.child('users').child(auth.uid).child('roles/owner').val() === true || root.child('users').child(auth.uid).child('roles/developer').val() === true"
+      }
+    },
+
+    "bans": {
+      ".read": true,
+      ".write": "root.child('users').child(auth.uid).child('roles/owner').val() === true || root.child('users').child(auth.uid).child('roles/developer').val() === true"
+    },
+
+    "release_announcements": {
+      ".read": true,
+      ".write": "root.child('users').child(auth.uid).child('roles/owner').val() === true || root.child('users').child(auth.uid).child('roles/developer').val() === true"
+    },
+    "active_popup": {
+      ".read": true,
+      ".write": "root.child('users').child(auth.uid).child('roles/owner').val() === true || root.child('users').child(auth.uid).child('roles/developer').val() === true"
+    },
+    "popup_force_reset": {
+      ".read": true,
+      ".write": "root.child('users').child(auth.uid).child('roles/owner').val() === true || root.child('users').child(auth.uid).child('roles/developer').val() === true"
+    },
+
+    "admin_alerts": {
+      ".read": "root.child('users').child(auth.uid).child('roles/owner').val() === true || root.child('users').child(auth.uid).child('roles/developer').val() === true",
+      ".write": "root.child('users').child(auth.uid).child('roles/owner').val() === true || root.child('users').child(auth.uid).child('roles/developer').val() === true"
+    },
+
+    "broken_sources": {
+      ".read": true,
+      "$reportKey": { ".write": true }
+    },
+    "broken_source_counts": {
+      ".read": true,
+      "$sourceKey": { ".write": true }
+    }
+  }
+}
