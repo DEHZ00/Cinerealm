@@ -1901,12 +1901,15 @@ async function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
     chromecast: extraOpts.chromecast ?? true,
     hideServerControls: extraOpts.hideServerControls ?? false,
     fullscreenButton: extraOpts.fullscreenButton ?? true,
-    progress: extraOpts.progress ?? 0,
     startAt: extraOpts.startAt ?? 0,
     server: extraOpts.server ?? undefined,
     fontcolor: extraOpts.fontcolor ?? undefined,
     fontsize: extraOpts.fontsize ?? undefined,
-    progress: lastProgress ?? 0,
+    // Resume point. This key was previously declared twice in this literal —
+    // once from extraOpts and again from history — so the caller's value was
+    // silently discarded. Prefer an explicitly passed value, fall back to
+    // whatever history has for this title/episode.
+    progress: extraOpts.progress ?? lastProgress ?? 0,
     opacity: extraOpts.opacity ?? undefined
   };
 
