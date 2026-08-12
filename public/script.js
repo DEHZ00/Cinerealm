@@ -5292,369 +5292,382 @@ function _addOledToCloak() {
 //   }
 // })();
 
-// ── Easter egg ───────────────────────────────────────────────────────────
-// Konami code on desktop, 7 logo taps on mobile → name gate → letter.
-// The original bright-pink version is kept commented out above.
-(function(){
-  const _s=[38,38,40,40,37,39,37,39,66,65];
-  let _i=0;
+// ── Easter egg — DISABLED ────────────────────────────────────────────────
+//
+// The whole feature is commented out but kept intact: the Konami code and the
+// 7-tap logo listener, the name gate, the letter, the audio player and the LRC
+// parser. Nothing outside this block references any of it, and no page links to
+// it, so commenting it out is the entire off switch.
+//
+// To turn it back on: strip the leading "// " from the block below (the
+// original is the last commit that touched it, if that is easier). The audio
+// and .lrc files it wants are still in /public.
+//
+// An even older bright-pink version sits commented out above this.
 
-  // Exact match only — "aiyana" or "Aiyana", nothing else. Deliberately not
-  // case-folded, so AIYANA / aIyAnA / aryana all fail.
-  const _valid = ["aiyana", "Aiyana"];
-
-  const PLAYLIST = [
-    { title: "Letter Home",          artist: "Childish Gambino", src: "/letter-home.mp3",         lrc: "/letter-home.lrc" },
-    { title: "Te Sigo Extrañando",   artist: "Iván Cornejo",     src: "/te-sigo-extranando.mp3",  lrc: "/te-sigo-extranando.lrc",
-      // Optional English translation. Drop a te-sigo-extranando.en.lrc in
-      // /public and the EN/ES toggle appears on its own; if the file isn't
-      // there the toggle stays hidden and Spanish plays as normal.
-      lrcEn: "/te-sigo-extranando.en.lrc" },
-    { title: "Fade Into You",        artist: "Mazzy Star",       src: "/Mazzy Star - Fade into You.mp3", lrc: "/fiy.lrc" },
-  ];
-
-  document.addEventListener("keydown", function(e){
-    if(e.keyCode===_s[_i]){ _i++; if(_i===_s.length){ _i=0; _askName(); } } else { _i=0; }
-  });
-
-  window.addEventListener("load", () => {
-    const logo = document.querySelector("header h1, .header-left h1, #homeLink");
-    if (!logo) return;
-    let _tapCount = 0, _tapTimer = null;
-    logo.addEventListener("touchend", e => {
-      e.preventDefault();
-      _tapCount++;
-      clearTimeout(_tapTimer);
-      if (_tapCount >= 7) { _tapCount = 0; setTimeout(_askName, 200); return; }
-      _tapTimer = setTimeout(() => { _tapCount = 0; }, 1800);
-    });
-  });
-
-  function parseLRC(text){
-    if(!text) return [];
-    const lineRe = /^\[(\d+):(\d+(?:\.\d+)?)\](.*)$/;
-    const wordRe = /<(\d+):(\d+(?:\.\d+)?)>([^<]*)/g;
-    return text.split(/\r?\n/).map(raw=>{
-      const m = raw.match(lineRe);
-      if(!m) return null;
-      const lineTime = parseInt(m[1])*60 + parseFloat(m[2]);
-      const rest = m[3];
-      if(rest.indexOf("<") === -1){
-        const t = rest.trim();
-        return t ? { time: lineTime, text: t } : null;
-      }
-      // Strip word-level <mm:ss> tags — the letter shows whole lines only.
-      const words = [];
-      const firstTagIdx = rest.search(/</);
-      const leading = (firstTagIdx === -1 ? rest : rest.slice(0, firstTagIdx)).trim();
-      if(leading) words.push(leading);
-      let wm; wordRe.lastIndex = 0;
-      while((wm = wordRe.exec(rest))){ const w = wm[3].trim(); if(w) words.push(w); }
-      const t = words.join(" ").trim();
-      return t ? { time: lineTime, text: t } : null;
-    }).filter(Boolean);
-  }
-
-  function fmtTime(s){
-    if(!isFinite(s)) return "0:00";
-    const m = Math.floor(s/60), sec = Math.floor(s%60);
-    return m + ":" + String(sec).padStart(2,"0");
-  }
-
-  // ── Name gate — deliberately plain ──────────────────────────────────────
-  function _askName() {
-    if (document.getElementById("_cr_gate") || document.getElementById("_cr_secret")) return;
-    const overlay = document.createElement("div");
-    overlay.id = "_cr_gate";
-    overlay.style.cssText = "position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:24px;";
-    overlay.innerHTML = `
-      <div style="width:100%;max-width:300px;text-align:center;font-family:'Georgia',serif;">
-        <div style="font-size:15px;color:rgba(255,255,255,0.7);margin-bottom:18px;letter-spacing:0.5px;">Who's there?</div>
-        <input id="_cr_name_input" type="text" autocomplete="off" spellcheck="false"
-          style="width:100%;padding:10px 14px;border-radius:4px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.85);font-size:15px;outline:none;text-align:center;box-sizing:border-box;font-family:inherit;">
-        <button id="_cr_name_submit"
-          style="margin-top:12px;width:100%;padding:9px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:4px;color:rgba(255,255,255,0.65);font-size:13px;cursor:pointer;font-family:inherit;letter-spacing:0.5px;">Continue</button>
-      </div>`;
-    document.body.appendChild(overlay);
-
-    const input  = overlay.querySelector("#_cr_name_input");
-    const submit = overlay.querySelector("#_cr_name_submit");
-    setTimeout(() => input.focus(), 80);
-
-    const check = () => {
-      const val = input.value.trim();
-      overlay.remove();
-      if (_valid.includes(val)) _showSecret();
-      else setTimeout(() => window.location.reload(), 400);
-    };
-    submit.onclick = check;
-    input.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
-    overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
-  }
-
-  // ── The letter ──────────────────────────────────────────────────────────
-  function _showSecret(){
-    if (document.getElementById("_cr_secret")) return;
-
-    const style = document.createElement("style");
-    style.id = "_cr_secret_style";
-    style.textContent = `
-      @keyframes _crFade { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
-      @media (prefers-reduced-motion: reduce) {
-        .crs-line { animation:none !important; opacity:1 !important; transform:none !important; }
-      }
-      #_cr_secret ::-webkit-scrollbar { width:5px; }
-      #_cr_secret ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.12); border-radius:3px; }
-      .crs-line { opacity:0; animation:_crFade 1.6s ease forwards; }
-      .crs-btn { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.13); color:rgba(255,255,255,0.6);
-                 border-radius:4px; cursor:pointer; font-family:inherit; transition:background .2s,color .2s; }
-      .crs-btn:hover { background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.9); }
-      .crs-track { display:flex; align-items:center; gap:9px; padding:7px 9px; border-radius:4px; cursor:pointer;
-                   font-size:12px; color:rgba(255,255,255,0.4); transition:background .2s,color .2s; }
-      .crs-track:hover { background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.7); }
-      .crs-track.active { background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.82); }
-      .crs-lyric { padding:5px 0; font-size:14px; line-height:1.55; color:rgba(255,255,255,0.22);
-                   transition:color .35s ease; font-family:'Georgia',serif; }
-      .crs-lyric.on { color:rgba(255,255,255,0.9); }
-      #_cr_seek, #_cr_vol { -webkit-appearance:none; appearance:none; height:3px; border-radius:2px;
-                            background:rgba(255,255,255,0.15); outline:none; cursor:pointer; }
-      #_cr_seek::-webkit-slider-thumb, #_cr_vol::-webkit-slider-thumb { -webkit-appearance:none; appearance:none;
-                            width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,0.7); }
-      #_cr_seek::-moz-range-thumb, #_cr_vol::-moz-range-thumb { width:10px; height:10px; border:none;
-                            border-radius:50%; background:rgba(255,255,255,0.7); }
-    `;
-    document.head.appendChild(style);
-
-    const o = document.createElement("div");
-    o.id = "_cr_secret";
-    o.style.cssText = "position:fixed;inset:0;z-index:99999;background:linear-gradient(170deg,#0a0b0d,#050506 55%,#08070a);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;overscroll-behavior:contain;padding:0;";
-
-    o.innerHTML = `
-      <div style="width:100%;max-width:470px;padding:64px 26px 48px;font-family:'Georgia',serif;">
-
-        <div class="crs-line" style="animation-delay:.2s;font-size:27px;color:rgba(255,255,255,0.88);margin-bottom:26px;letter-spacing:0.3px;">Aiyana,</div>
-
-        <div class="crs-line" style="animation-delay:1.1s;font-size:16px;line-height:1.85;color:rgba(255,255,255,0.6);margin-bottom:15px;">If you're seeing this...</div>
-        <div class="crs-line" style="animation-delay:2.0s;font-size:16px;line-height:1.85;color:rgba(255,255,255,0.6);margin-bottom:15px;">I'll try my best to accept its the end</div>
-        <div class="crs-line" style="animation-delay:2.9s;font-size:16px;line-height:1.85;color:rgba(255,255,255,0.6);margin-bottom:34px;">I'll try to let go and not text now.</div>
-
-        <div class="crs-line" style="animation-delay:3.6s;height:1px;background:rgba(255,255,255,0.09);margin-bottom:26px;"></div>
-
-        <!-- Player -->
-        <div class="crs-line" style="animation-delay:4.0s;">
-
-          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:3px;">
-            <div id="_cr_title" style="font-size:14px;color:rgba(255,255,255,0.8);"></div>
-            <button id="_cr_lang" class="crs-btn" style="display:none;font-size:10px;padding:3px 8px;letter-spacing:0.5px;flex-shrink:0;">EN</button>
-          </div>
-          <div id="_cr_artist" style="font-size:11.5px;color:rgba(255,255,255,0.32);margin-bottom:13px;"></div>
-
-          <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px;">
-            <span id="_cr_cur" style="font-size:10.5px;color:rgba(255,255,255,0.3);min-width:30px;font-family:system-ui,sans-serif;">0:00</span>
-            <input type="range" id="_cr_seek" min="0" max="1000" value="0" style="flex:1;">
-            <span id="_cr_dur" style="font-size:10.5px;color:rgba(255,255,255,0.3);min-width:30px;text-align:right;font-family:system-ui,sans-serif;">0:00</span>
-          </div>
-
-          <div style="display:flex;align-items:center;gap:7px;margin-bottom:16px;">
-            <button id="_cr_prev" class="crs-btn" style="padding:6px 11px;font-size:12px;">‹‹</button>
-            <button id="_cr_play" class="crs-btn" style="padding:6px 17px;font-size:12px;">Play</button>
-            <button id="_cr_next" class="crs-btn" style="padding:6px 11px;font-size:12px;">››</button>
-            <input type="range" id="_cr_vol" min="0" max="100" value="55" style="width:66px;margin-left:auto;">
-          </div>
-
-          <div id="_cr_lyrics" style="height:150px;overflow-y:auto;margin-bottom:18px;padding-right:6px;"></div>
-
-          <div style="font-size:10px;color:rgba(255,255,255,0.25);letter-spacing:1.3px;text-transform:uppercase;margin-bottom:7px;font-family:system-ui,sans-serif;">3 songs</div>
-          <div id="_cr_list"></div>
-        </div>
-
-        <div class="crs-line" style="animation-delay:4.4s;margin-top:38px;text-align:center;">
-          <button id="_cr_close" class="crs-btn" style="padding:9px 26px;font-size:12px;letter-spacing:1px;">Close</button>
-        </div>
-      </div>`;
-
-    const scrollY = window.scrollY || window.pageYOffset || 0;
-    document.body.style.overflow = "hidden";
-    document.body.appendChild(o);
-
-    // Safety net. Every line starts at opacity:0 and is revealed only by the
-    // fade animation, so anything that stops those animations — a background
-    // tab freezing compositing, an extension disabling animation, an engine
-    // that ignores the keyframes — would leave the letter completely blank.
-    // Once the timeline should have finished, force the final state.
-    const revealFallback = setTimeout(() => {
-      o.querySelectorAll(".crs-line").forEach(el => {
-        el.style.opacity = "1";
-        el.style.transform = "none";
-      });
-    }, 7000);
-
-    // ── Player state ──
-    const audio = new Audio();
-    audio.volume = 0.55;
-    audio.preload = "metadata";
-
-    let pi = 0;
-    let lrc = [];          // active (possibly translated) lines
-    let lrcNative = [];    // always the original-language lines
-    let lrcEn = null;      // English lines, once fetched; false = unavailable
-    let showEn = false;
-    let curLine = -1;
-    let seeking = false;
-
-    const $ = id => o.querySelector(id);
-    const titleEl = $("#_cr_title"), artistEl = $("#_cr_artist"), lyricsEl = $("#_cr_lyrics");
-    const listEl = $("#_cr_list"), playBtn = $("#_cr_play"), seekEl = $("#_cr_seek");
-    const curEl = $("#_cr_cur"), durEl = $("#_cr_dur"), volEl = $("#_cr_vol"), langBtn = $("#_cr_lang");
-
-    function renderList(){
-      listEl.innerHTML = "";
-      PLAYLIST.forEach((t, i) => {
-        const row = document.createElement("div");
-        row.className = "crs-track" + (i === pi ? " active" : "");
-        row.innerHTML = `<span style="opacity:.45;min-width:12px;font-family:system-ui,sans-serif;">${i+1}</span>
-                         <span style="flex:1;">${t.title}</span>
-                         <span style="opacity:.4;font-size:11px;">${t.artist}</span>`;
-        row.onclick = () => load(i, true);
-        listEl.appendChild(row);
-      });
-    }
-
-    function renderLyrics(){
-      lyricsEl.innerHTML = "";
-      if (!lrc.length) {
-        lyricsEl.innerHTML = `<div style="font-size:12.5px;color:rgba(255,255,255,0.22);font-family:system-ui,sans-serif;padding-top:6px;">No lyrics for this one.</div>`;
-        return;
-      }
-      lrc.forEach((l, i) => {
-        const d = document.createElement("div");
-        d.className = "crs-lyric";
-        d.dataset.i = i;
-        d.textContent = l.text;
-        lyricsEl.appendChild(d);
-      });
-      curLine = -1;
-    }
-
-    function syncLyrics(){
-      if (!lrc.length) return;
-      const t = audio.currentTime;
-      let idx = -1;
-      for (let i = 0; i < lrc.length; i++) { if (t >= lrc[i].time) idx = i; else break; }
-      if (idx === curLine) return;
-      curLine = idx;
-      const nodes = lyricsEl.children;
-      for (let i = 0; i < nodes.length; i++) nodes[i].classList.toggle("on", i === idx);
-      if (idx >= 0 && nodes[idx]) {
-        const n = nodes[idx];
-        // Measure against the scroll container directly. offsetTop resolves
-        // against the nearest *positioned* ancestor — which here is the fixed
-        // overlay, not this box — so it included the whole letter above and
-        // overscrolled the active line clean out of view.
-        const nRect = n.getBoundingClientRect();
-        const cRect = lyricsEl.getBoundingClientRect();
-        const delta = (nRect.top - cRect.top) - (lyricsEl.clientHeight - n.clientHeight) / 2;
-        lyricsEl.scrollTo({ top: lyricsEl.scrollTop + delta, behavior: "smooth" });
-      }
-    }
-
-    async function fetchLrc(url){
-      if (!url) return [];
-      try {
-        const r = await fetch(url);
-        if (!r.ok) return [];
-        return parseLRC(await r.text());
-      } catch (e) { return []; }
-    }
-
-    async function load(i, autoplay){
-      pi = (i + PLAYLIST.length) % PLAYLIST.length;
-      const t = PLAYLIST[pi];
-
-      titleEl.textContent = t.title;
-      artistEl.textContent = t.artist;
-      audio.src = t.src;
-      renderList();
-
-      // Reset translation state for the new track
-      lrcEn = null; showEn = false;
-      langBtn.style.display = "none";
-      langBtn.textContent = "EN";
-
-      lrcNative = await fetchLrc(t.lrc);
-      lrc = lrcNative;
-      renderLyrics();
-
-      // Only offer the toggle if a translation actually exists.
-      if (t.lrcEn) {
-        const en = await fetchLrc(t.lrcEn);
-        if (en.length) { lrcEn = en; langBtn.style.display = ""; }
-        else { lrcEn = false; }
-      }
-
-      if (autoplay) play();
-    }
-
-    function play(){
-      audio.play().then(() => { playBtn.textContent = "Pause"; })
-        .catch(() => { playBtn.textContent = "Play"; });
-    }
-    function toggle(){ if (audio.paused) play(); else { audio.pause(); playBtn.textContent = "Play"; } }
-
-    playBtn.onclick = toggle;
-    $("#_cr_prev").onclick = () => load(pi - 1, true);
-    $("#_cr_next").onclick = () => load(pi + 1, true);
-
-    langBtn.onclick = () => {
-      if (!lrcEn) return;
-      showEn = !showEn;
-      lrc = showEn ? lrcEn : lrcNative;
-      langBtn.textContent = showEn ? "ES" : "EN";
-      renderLyrics();
-      syncLyrics();
-    };
-
-    volEl.oninput = () => { audio.volume = volEl.value / 100; };
-    seekEl.addEventListener("input", () => { seeking = true; });
-    seekEl.addEventListener("change", () => {
-      if (isFinite(audio.duration)) audio.currentTime = (seekEl.value / 1000) * audio.duration;
-      seeking = false;
-    });
-
-    audio.addEventListener("loadedmetadata", () => { durEl.textContent = fmtTime(audio.duration); });
-    audio.addEventListener("timeupdate", () => {
-      curEl.textContent = fmtTime(audio.currentTime);
-      if (!seeking && isFinite(audio.duration) && audio.duration > 0) {
-        seekEl.value = (audio.currentTime / audio.duration) * 1000;
-      }
-      syncLyrics();
-    });
-    audio.addEventListener("play",  () => { playBtn.textContent = "Pause"; });
-    audio.addEventListener("pause", () => { playBtn.textContent = "Play"; });
-    // Roll straight into the next song rather than stopping.
-    audio.addEventListener("ended", () => { if (pi < PLAYLIST.length - 1) load(pi + 1, true); else playBtn.textContent = "Play"; });
-
-    // ── Close: explicit only. Clicking the background does NOT dismiss —
-    // that made it far too easy to lose the page by accident.
-    const close = () => {
-      clearTimeout(revealFallback);
-      audio.pause();
-      audio.src = "";
-      o.remove();
-      style.remove();
-      document.body.style.overflow = "";
-      window.scrollTo(0, scrollY);
-      document.removeEventListener("keydown", onKey);
-    };
-    const onKey = e => { if (e.key === "Escape") close(); };
-    $("#_cr_close").onclick = close;
-    document.addEventListener("keydown", onKey);
-
-    // Start on Letter Home. Autoplay is allowed here because opening the page
-    // required a keypress or tap plus a form submit.
-    load(0, true);
-  }
-})();
+// // ── Easter egg ───────────────────────────────────────────────────────────
+// // Konami code on desktop, 7 logo taps on mobile → name gate → letter.
+// // The original bright-pink version is kept commented out above.
+// (function(){
+//   const _s=[38,38,40,40,37,39,37,39,66,65];
+//   let _i=0;
+//
+//   // Exact match only — "aiyana" or "Aiyana", nothing else. Deliberately not
+//   // case-folded, so AIYANA / aIyAnA / aryana all fail.
+//   const _valid = ["aiyana", "Aiyana"];
+//
+//   const PLAYLIST = [
+//     { title: "Letter Home",          artist: "Childish Gambino", src: "/letter-home.mp3",         lrc: "/letter-home.lrc" },
+//     { title: "Te Sigo Extrañando",   artist: "Iván Cornejo",     src: "/te-sigo-extranando.mp3",  lrc: "/te-sigo-extranando.lrc",
+//       // Optional English translation. Drop a te-sigo-extranando.en.lrc in
+//       // /public and the EN/ES toggle appears on its own; if the file isn't
+//       // there the toggle stays hidden and Spanish plays as normal.
+//       lrcEn: "/te-sigo-extranando.en.lrc" },
+//     { title: "Fade Into You",        artist: "Mazzy Star",       src: "/Mazzy Star - Fade into You.mp3", lrc: "/fiy.lrc" },
+//   ];
+//
+//   document.addEventListener("keydown", function(e){
+//     if(e.keyCode===_s[_i]){ _i++; if(_i===_s.length){ _i=0; _askName(); } } else { _i=0; }
+//   });
+//
+//   window.addEventListener("load", () => {
+//     const logo = document.querySelector("header h1, .header-left h1, #homeLink");
+//     if (!logo) return;
+//     let _tapCount = 0, _tapTimer = null;
+//     logo.addEventListener("touchend", e => {
+//       e.preventDefault();
+//       _tapCount++;
+//       clearTimeout(_tapTimer);
+//       if (_tapCount >= 7) { _tapCount = 0; setTimeout(_askName, 200); return; }
+//       _tapTimer = setTimeout(() => { _tapCount = 0; }, 1800);
+//     });
+//   });
+//
+//   function parseLRC(text){
+//     if(!text) return [];
+//     const lineRe = /^\[(\d+):(\d+(?:\.\d+)?)\](.*)$/;
+//     const wordRe = /<(\d+):(\d+(?:\.\d+)?)>([^<]*)/g;
+//     return text.split(/\r?\n/).map(raw=>{
+//       const m = raw.match(lineRe);
+//       if(!m) return null;
+//       const lineTime = parseInt(m[1])*60 + parseFloat(m[2]);
+//       const rest = m[3];
+//       if(rest.indexOf("<") === -1){
+//         const t = rest.trim();
+//         return t ? { time: lineTime, text: t } : null;
+//       }
+//       // Strip word-level <mm:ss> tags — the letter shows whole lines only.
+//       const words = [];
+//       const firstTagIdx = rest.search(/</);
+//       const leading = (firstTagIdx === -1 ? rest : rest.slice(0, firstTagIdx)).trim();
+//       if(leading) words.push(leading);
+//       let wm; wordRe.lastIndex = 0;
+//       while((wm = wordRe.exec(rest))){ const w = wm[3].trim(); if(w) words.push(w); }
+//       const t = words.join(" ").trim();
+//       return t ? { time: lineTime, text: t } : null;
+//     }).filter(Boolean);
+//   }
+//
+//   function fmtTime(s){
+//     if(!isFinite(s)) return "0:00";
+//     const m = Math.floor(s/60), sec = Math.floor(s%60);
+//     return m + ":" + String(sec).padStart(2,"0");
+//   }
+//
+//   // ── Name gate — deliberately plain ──────────────────────────────────────
+//   function _askName() {
+//     if (document.getElementById("_cr_gate") || document.getElementById("_cr_secret")) return;
+//     const overlay = document.createElement("div");
+//     overlay.id = "_cr_gate";
+//     overlay.style.cssText = "position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:24px;";
+//     overlay.innerHTML = `
+//       <div style="width:100%;max-width:300px;text-align:center;font-family:'Georgia',serif;">
+//         <div style="font-size:15px;color:rgba(255,255,255,0.7);margin-bottom:18px;letter-spacing:0.5px;">Who's there?</div>
+//         <input id="_cr_name_input" type="text" autocomplete="off" spellcheck="false"
+//           style="width:100%;padding:10px 14px;border-radius:4px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.85);font-size:15px;outline:none;text-align:center;box-sizing:border-box;font-family:inherit;">
+//         <button id="_cr_name_submit"
+//           style="margin-top:12px;width:100%;padding:9px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:4px;color:rgba(255,255,255,0.65);font-size:13px;cursor:pointer;font-family:inherit;letter-spacing:0.5px;">Continue</button>
+//       </div>`;
+//     document.body.appendChild(overlay);
+//
+//     const input  = overlay.querySelector("#_cr_name_input");
+//     const submit = overlay.querySelector("#_cr_name_submit");
+//     setTimeout(() => input.focus(), 80);
+//
+//     const check = () => {
+//       const val = input.value.trim();
+//       overlay.remove();
+//       if (_valid.includes(val)) _showSecret();
+//       else setTimeout(() => window.location.reload(), 400);
+//     };
+//     submit.onclick = check;
+//     input.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
+//     overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+//   }
+//
+//   // ── The letter ──────────────────────────────────────────────────────────
+//   function _showSecret(){
+//     if (document.getElementById("_cr_secret")) return;
+//
+//     const style = document.createElement("style");
+//     style.id = "_cr_secret_style";
+//     style.textContent = `
+//       @keyframes _crFade { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+//       @media (prefers-reduced-motion: reduce) {
+//         .crs-line { animation:none !important; opacity:1 !important; transform:none !important; }
+//       }
+//       #_cr_secret ::-webkit-scrollbar { width:5px; }
+//       #_cr_secret ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.12); border-radius:3px; }
+//       .crs-line { opacity:0; animation:_crFade 1.6s ease forwards; }
+//       .crs-btn { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.13); color:rgba(255,255,255,0.6);
+//                  border-radius:4px; cursor:pointer; font-family:inherit; transition:background .2s,color .2s; }
+//       .crs-btn:hover { background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.9); }
+//       .crs-track { display:flex; align-items:center; gap:9px; padding:7px 9px; border-radius:4px; cursor:pointer;
+//                    font-size:12px; color:rgba(255,255,255,0.4); transition:background .2s,color .2s; }
+//       .crs-track:hover { background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.7); }
+//       .crs-track.active { background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.82); }
+//       .crs-lyric { padding:5px 0; font-size:14px; line-height:1.55; color:rgba(255,255,255,0.22);
+//                    transition:color .35s ease; font-family:'Georgia',serif; }
+//       .crs-lyric.on { color:rgba(255,255,255,0.9); }
+//       #_cr_seek, #_cr_vol { -webkit-appearance:none; appearance:none; height:3px; border-radius:2px;
+//                             background:rgba(255,255,255,0.15); outline:none; cursor:pointer; }
+//       #_cr_seek::-webkit-slider-thumb, #_cr_vol::-webkit-slider-thumb { -webkit-appearance:none; appearance:none;
+//                             width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,0.7); }
+//       #_cr_seek::-moz-range-thumb, #_cr_vol::-moz-range-thumb { width:10px; height:10px; border:none;
+//                             border-radius:50%; background:rgba(255,255,255,0.7); }
+//     `;
+//     document.head.appendChild(style);
+//
+//     const o = document.createElement("div");
+//     o.id = "_cr_secret";
+//     o.style.cssText = "position:fixed;inset:0;z-index:99999;background:linear-gradient(170deg,#0a0b0d,#050506 55%,#08070a);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;overscroll-behavior:contain;padding:0;";
+//
+//     o.innerHTML = `
+//       <div style="width:100%;max-width:470px;padding:64px 26px 48px;font-family:'Georgia',serif;">
+//
+//         <div class="crs-line" style="animation-delay:.2s;font-size:27px;color:rgba(255,255,255,0.88);margin-bottom:26px;letter-spacing:0.3px;">Aiyana,</div>
+//
+//         <div class="crs-line" style="animation-delay:1.1s;font-size:16px;line-height:1.85;color:rgba(255,255,255,0.6);margin-bottom:15px;">If you're seeing this...</div>
+//         <div class="crs-line" style="animation-delay:2.0s;font-size:16px;line-height:1.85;color:rgba(255,255,255,0.6);margin-bottom:15px;">I'll try my best to accept its the end</div>
+//         <div class="crs-line" style="animation-delay:2.9s;font-size:16px;line-height:1.85;color:rgba(255,255,255,0.6);margin-bottom:34px;">I'll try to let go and not text now.</div>
+//
+//         <div class="crs-line" style="animation-delay:3.6s;height:1px;background:rgba(255,255,255,0.09);margin-bottom:26px;"></div>
+//
+//         <!-- Player -->
+//         <div class="crs-line" style="animation-delay:4.0s;">
+//
+//           <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:3px;">
+//             <div id="_cr_title" style="font-size:14px;color:rgba(255,255,255,0.8);"></div>
+//             <button id="_cr_lang" class="crs-btn" style="display:none;font-size:10px;padding:3px 8px;letter-spacing:0.5px;flex-shrink:0;">EN</button>
+//           </div>
+//           <div id="_cr_artist" style="font-size:11.5px;color:rgba(255,255,255,0.32);margin-bottom:13px;"></div>
+//
+//           <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px;">
+//             <span id="_cr_cur" style="font-size:10.5px;color:rgba(255,255,255,0.3);min-width:30px;font-family:system-ui,sans-serif;">0:00</span>
+//             <input type="range" id="_cr_seek" min="0" max="1000" value="0" style="flex:1;">
+//             <span id="_cr_dur" style="font-size:10.5px;color:rgba(255,255,255,0.3);min-width:30px;text-align:right;font-family:system-ui,sans-serif;">0:00</span>
+//           </div>
+//
+//           <div style="display:flex;align-items:center;gap:7px;margin-bottom:16px;">
+//             <button id="_cr_prev" class="crs-btn" style="padding:6px 11px;font-size:12px;">‹‹</button>
+//             <button id="_cr_play" class="crs-btn" style="padding:6px 17px;font-size:12px;">Play</button>
+//             <button id="_cr_next" class="crs-btn" style="padding:6px 11px;font-size:12px;">››</button>
+//             <input type="range" id="_cr_vol" min="0" max="100" value="55" style="width:66px;margin-left:auto;">
+//           </div>
+//
+//           <div id="_cr_lyrics" style="height:150px;overflow-y:auto;margin-bottom:18px;padding-right:6px;"></div>
+//
+//           <div style="font-size:10px;color:rgba(255,255,255,0.25);letter-spacing:1.3px;text-transform:uppercase;margin-bottom:7px;font-family:system-ui,sans-serif;">3 songs</div>
+//           <div id="_cr_list"></div>
+//         </div>
+//
+//         <div class="crs-line" style="animation-delay:4.4s;margin-top:38px;text-align:center;">
+//           <button id="_cr_close" class="crs-btn" style="padding:9px 26px;font-size:12px;letter-spacing:1px;">Close</button>
+//         </div>
+//       </div>`;
+//
+//     const scrollY = window.scrollY || window.pageYOffset || 0;
+//     document.body.style.overflow = "hidden";
+//     document.body.appendChild(o);
+//
+//     // Safety net. Every line starts at opacity:0 and is revealed only by the
+//     // fade animation, so anything that stops those animations — a background
+//     // tab freezing compositing, an extension disabling animation, an engine
+//     // that ignores the keyframes — would leave the letter completely blank.
+//     // Once the timeline should have finished, force the final state.
+//     const revealFallback = setTimeout(() => {
+//       o.querySelectorAll(".crs-line").forEach(el => {
+//         el.style.opacity = "1";
+//         el.style.transform = "none";
+//       });
+//     }, 7000);
+//
+//     // ── Player state ──
+//     const audio = new Audio();
+//     audio.volume = 0.55;
+//     audio.preload = "metadata";
+//
+//     let pi = 0;
+//     let lrc = [];          // active (possibly translated) lines
+//     let lrcNative = [];    // always the original-language lines
+//     let lrcEn = null;      // English lines, once fetched; false = unavailable
+//     let showEn = false;
+//     let curLine = -1;
+//     let seeking = false;
+//
+//     const $ = id => o.querySelector(id);
+//     const titleEl = $("#_cr_title"), artistEl = $("#_cr_artist"), lyricsEl = $("#_cr_lyrics");
+//     const listEl = $("#_cr_list"), playBtn = $("#_cr_play"), seekEl = $("#_cr_seek");
+//     const curEl = $("#_cr_cur"), durEl = $("#_cr_dur"), volEl = $("#_cr_vol"), langBtn = $("#_cr_lang");
+//
+//     function renderList(){
+//       listEl.innerHTML = "";
+//       PLAYLIST.forEach((t, i) => {
+//         const row = document.createElement("div");
+//         row.className = "crs-track" + (i === pi ? " active" : "");
+//         row.innerHTML = `<span style="opacity:.45;min-width:12px;font-family:system-ui,sans-serif;">${i+1}</span>
+//                          <span style="flex:1;">${t.title}</span>
+//                          <span style="opacity:.4;font-size:11px;">${t.artist}</span>`;
+//         row.onclick = () => load(i, true);
+//         listEl.appendChild(row);
+//       });
+//     }
+//
+//     function renderLyrics(){
+//       lyricsEl.innerHTML = "";
+//       if (!lrc.length) {
+//         lyricsEl.innerHTML = `<div style="font-size:12.5px;color:rgba(255,255,255,0.22);font-family:system-ui,sans-serif;padding-top:6px;">No lyrics for this one.</div>`;
+//         return;
+//       }
+//       lrc.forEach((l, i) => {
+//         const d = document.createElement("div");
+//         d.className = "crs-lyric";
+//         d.dataset.i = i;
+//         d.textContent = l.text;
+//         lyricsEl.appendChild(d);
+//       });
+//       curLine = -1;
+//     }
+//
+//     function syncLyrics(){
+//       if (!lrc.length) return;
+//       const t = audio.currentTime;
+//       let idx = -1;
+//       for (let i = 0; i < lrc.length; i++) { if (t >= lrc[i].time) idx = i; else break; }
+//       if (idx === curLine) return;
+//       curLine = idx;
+//       const nodes = lyricsEl.children;
+//       for (let i = 0; i < nodes.length; i++) nodes[i].classList.toggle("on", i === idx);
+//       if (idx >= 0 && nodes[idx]) {
+//         const n = nodes[idx];
+//         // Measure against the scroll container directly. offsetTop resolves
+//         // against the nearest *positioned* ancestor — which here is the fixed
+//         // overlay, not this box — so it included the whole letter above and
+//         // overscrolled the active line clean out of view.
+//         const nRect = n.getBoundingClientRect();
+//         const cRect = lyricsEl.getBoundingClientRect();
+//         const delta = (nRect.top - cRect.top) - (lyricsEl.clientHeight - n.clientHeight) / 2;
+//         lyricsEl.scrollTo({ top: lyricsEl.scrollTop + delta, behavior: "smooth" });
+//       }
+//     }
+//
+//     async function fetchLrc(url){
+//       if (!url) return [];
+//       try {
+//         const r = await fetch(url);
+//         if (!r.ok) return [];
+//         return parseLRC(await r.text());
+//       } catch (e) { return []; }
+//     }
+//
+//     async function load(i, autoplay){
+//       pi = (i + PLAYLIST.length) % PLAYLIST.length;
+//       const t = PLAYLIST[pi];
+//
+//       titleEl.textContent = t.title;
+//       artistEl.textContent = t.artist;
+//       audio.src = t.src;
+//       renderList();
+//
+//       // Reset translation state for the new track
+//       lrcEn = null; showEn = false;
+//       langBtn.style.display = "none";
+//       langBtn.textContent = "EN";
+//
+//       lrcNative = await fetchLrc(t.lrc);
+//       lrc = lrcNative;
+//       renderLyrics();
+//
+//       // Only offer the toggle if a translation actually exists.
+//       if (t.lrcEn) {
+//         const en = await fetchLrc(t.lrcEn);
+//         if (en.length) { lrcEn = en; langBtn.style.display = ""; }
+//         else { lrcEn = false; }
+//       }
+//
+//       if (autoplay) play();
+//     }
+//
+//     function play(){
+//       audio.play().then(() => { playBtn.textContent = "Pause"; })
+//         .catch(() => { playBtn.textContent = "Play"; });
+//     }
+//     function toggle(){ if (audio.paused) play(); else { audio.pause(); playBtn.textContent = "Play"; } }
+//
+//     playBtn.onclick = toggle;
+//     $("#_cr_prev").onclick = () => load(pi - 1, true);
+//     $("#_cr_next").onclick = () => load(pi + 1, true);
+//
+//     langBtn.onclick = () => {
+//       if (!lrcEn) return;
+//       showEn = !showEn;
+//       lrc = showEn ? lrcEn : lrcNative;
+//       langBtn.textContent = showEn ? "ES" : "EN";
+//       renderLyrics();
+//       syncLyrics();
+//     };
+//
+//     volEl.oninput = () => { audio.volume = volEl.value / 100; };
+//     seekEl.addEventListener("input", () => { seeking = true; });
+//     seekEl.addEventListener("change", () => {
+//       if (isFinite(audio.duration)) audio.currentTime = (seekEl.value / 1000) * audio.duration;
+//       seeking = false;
+//     });
+//
+//     audio.addEventListener("loadedmetadata", () => { durEl.textContent = fmtTime(audio.duration); });
+//     audio.addEventListener("timeupdate", () => {
+//       curEl.textContent = fmtTime(audio.currentTime);
+//       if (!seeking && isFinite(audio.duration) && audio.duration > 0) {
+//         seekEl.value = (audio.currentTime / audio.duration) * 1000;
+//       }
+//       syncLyrics();
+//     });
+//     audio.addEventListener("play",  () => { playBtn.textContent = "Pause"; });
+//     audio.addEventListener("pause", () => { playBtn.textContent = "Play"; });
+//     // Roll straight into the next song rather than stopping.
+//     audio.addEventListener("ended", () => { if (pi < PLAYLIST.length - 1) load(pi + 1, true); else playBtn.textContent = "Play"; });
+//
+//     // ── Close: explicit only. Clicking the background does NOT dismiss —
+//     // that made it far too easy to lose the page by accident.
+//     const close = () => {
+//       clearTimeout(revealFallback);
+//       audio.pause();
+//       audio.src = "";
+//       o.remove();
+//       style.remove();
+//       document.body.style.overflow = "";
+//       window.scrollTo(0, scrollY);
+//       document.removeEventListener("keydown", onKey);
+//     };
+//     const onKey = e => { if (e.key === "Escape") close(); };
+//     $("#_cr_close").onclick = close;
+//     document.addEventListener("keydown", onKey);
+//
+//     // Start on Letter Home. Autoplay is allowed here because opening the page
+//     // required a keypress or tap plus a form submit.
+//     load(0, true);
+//   }
+// })();
 
 
 // ══════════════════════════════════════════════════════════════════════════

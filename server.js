@@ -58,6 +58,11 @@ function rateLimit(req, res, next) {
   const entry = _rateLimits.get(ip);
 
   if (!entry || now > entry.reset) {
+    // Sweep expired entries occasionally — without this the map keeps one row
+    // per IP that ever hit the API, for the life of the process.
+    if (_rateLimits.size > 5000) {
+      for (const [k, v] of _rateLimits) if (now > v.reset) _rateLimits.delete(k);
+    }
     _rateLimits.set(ip, { count: 1, reset: now + RATE_LIMIT_WINDOW });
     return next();
   }
@@ -126,7 +131,14 @@ app.get("/notification.json", (req, res) => {
 app.get("/manifest.json", (req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Content-Type", "application/manifest+json");
-  res.sendFile(path.join(__dirname, "public", "manifest.json"), err => {
+  // The real manifest lives at the repo root, next to notification.json —
+  // this pointed at public/manifest.json, which does not exist, so every
+  // install prompt silently got the stripped-down fallback below instead of
+  // the full icon set.
+  const manifestPath = fs.existsSync(path.join(__dirname, "manifest.json"))
+    ? path.join(__dirname, "manifest.json")
+    : path.join(__dirname, "public", "manifest.json");
+  res.sendFile(manifestPath, err => {
     if (err) res.json({
       name: "CineRealm", short_name: "CineRealm", start_url: "/",
       display: "standalone", background_color: "#080808", theme_color: "#ff2c2c",
@@ -139,6 +151,11 @@ app.get("/manifest.json", (req, res) => {
 app.use(express.static(path.join(__dirname, "public"), {
   etag: true,
   lastModified: true,
+  // public/movies and public/trending are real directories, so the default
+  // behaviour 301'd /movies to /movies/ before the route table ever saw it —
+  // an extra round-trip on two of the main nav links. Directory requests now
+  // fall straight through to the routes below.
+  redirect: false,
   setHeaders: (res, filePath) => {
     const ext = path.extname(filePath).toLowerCase();
     if ([".css", ".js", ".html"].includes(ext)) {
@@ -196,10 +213,17 @@ app.post("/api/anilist", rateLimit, async (req, res) => {
       timeout: 8000,
     };
 
+    // Three handlers below can each finish the request, and destroy() on
+    // timeout makes "error" fire straight after "timeout" — without this guard
+    // the second one throws ERR_HTTP_HEADERS_SENT.
+    let settled = false;
+
     const proxyReq = https.request(options, proxyRes => {
       let data = "";
       proxyRes.on("data", chunk => data += chunk);
       proxyRes.on("end", () => {
+        if (settled) return;
+        settled = true;
         // Cache successful responses
         if (proxyRes.statusCode === 200) setCached(cacheKey, data);
         res.setHeader("Content-Type", "application/json");
@@ -210,11 +234,15 @@ app.post("/api/anilist", rateLimit, async (req, res) => {
     });
 
     proxyReq.on("error", err => {
+      if (settled) return;
+      settled = true;
       console.error("AniList proxy error:", err.message);
       res.status(502).json({ error: "AniList proxy failed" });
     });
 
     proxyReq.on("timeout", () => {
+      if (settled) return;
+      settled = true;
       proxyReq.destroy();
       res.status(504).json({ error: "AniList request timed out" });
     });
@@ -263,8 +291,10 @@ const routes = {
   "/donate":    "donate.html",
   "/admin":     "admin.html",
   "/browser":   "browser.html",
-  "/games-proxy": "games-proxy.html",
-   "/banned":   "banned.html",
+  "/banned":    "banned.html",
+  // "/games-proxy": "games-proxy.html",  — public/games-proxy.html does not
+  // exist and nothing links to it. While the route was registered it answered
+  // with a bare "Not Found" string instead of falling through to 404.html.
 };
 
 app.get("/user/:username", (req, res) => sendHTML(res, path.join(__dirname, "public", "profile.html")));

@@ -17,6 +17,31 @@
 <link rel="stylesheet" href="/style.min.css">
   <link rel="icon" href="/favicon.ico">
   <script src="/ban-utils.js"></script>
+  <script>
+  // Shown whenever the ban lookup can't complete. Lives in a classic script on
+  // purpose: if the Firebase CDN is blocked, the module below fails at its
+  // import statements and its body — including its own error handling — never
+  // runs at all, so the fallback cannot live inside it.
+  window._crBanFallback = function () {
+    const loading = document.getElementById("banLoading");
+    if (!loading || loading.style.display === "none") return;
+    loading.innerHTML = '<div style="font-size:14px;color:rgba(255,255,255,0.6);line-height:1.7;">' +
+      "Couldn't reach the ban service.<br>" +
+      '<span style="font-size:12px;color:rgba(255,255,255,0.35);">Check your connection or disable any content blocker, then reload.</span>' +
+      "</div>";
+  };
+
+  // Watchdog: if nothing has resolved after 10s, the check is not coming back.
+  window.addEventListener("load", function () {
+    setTimeout(function () {
+      const content   = document.getElementById("banContent");
+      const notBanned = document.getElementById("notBannedMsg");
+      const settled = (content && content.style.display === "block") ||
+                      (notBanned && notBanned.style.display === "block");
+      if (!settled) window._crBanFallback();
+    }, 10000);
+  });
+  </script>
   <style>
     body { background: #080404; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
     .ban-wrap {
@@ -194,7 +219,21 @@ async function checkBan() {
     const { getAuth, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
     const auth = getAuth(app);
     uid = await new Promise(resolve => {
-      const unsub = onAuthStateChanged(auth, user => { unsub(); resolve(user?.uid || null); });
+      // `let` + a guard, not `const unsub` called straight from the callback:
+      // if the listener ever fires synchronously, touching unsub before the
+      // assignment completes throws inside the executor, the promise never
+      // settles, and this page hangs on "Checking access…" forever.
+      let unsub = null, done = false;
+      const finish = user => {
+        if (done) return;
+        done = true;
+        if (typeof unsub === "function") unsub();
+        resolve(user?.uid || null);
+      };
+      unsub = onAuthStateChanged(auth, finish);
+      // Auth is a nice-to-have here — IP and fingerprint still identify the
+      // visitor — so never let it hold the check up.
+      setTimeout(() => finish(null), 5000);
     });
   } catch(e) {}
 
@@ -315,7 +354,14 @@ window.submitAppeal = async () => {
   }
 };
 
-checkBan();
+// Never leave the visitor staring at "Checking access…". If the lookup fails —
+// database unreachable, rules rejecting the read — say so instead of spinning
+// forever. (The watchdog in the head covers the case where this module never
+// runs at all because its imports were blocked.)
+checkBan().catch(err => {
+  console.error("Ban check failed:", err);
+  window._crBanFallback();
+});
 </script>
 </body>
 </html>
