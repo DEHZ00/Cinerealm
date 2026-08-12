@@ -233,88 +233,12 @@ async function _getVisitorFingerprint() {
   return _fpCache;
 }
 
-// Network-level key: the /64 prefix for IPv6, the /24 for IPv4. Lets you group
-// "same household / same network" without discarding the exact address, which
-// is what the old truncate-in-place did.
-function _networkKey(ip) {
-  if (!ip || ip === "Unknown_IP") return null;
-  if (ip.includes(":")) {
-    const parts = ip.split(":");
-    return parts.slice(0, 4).join(":") + "::/64";
-  }
-  const oct = ip.split(".");
-  return oct.length === 4 ? oct.slice(0, 3).join(".") + ".0/24" : null;
-}
-
+// The visitor IP lookup, the /64-or-/24 network key and the ban matcher all
+// live in /ban-utils.js now — banned.html loads none of this bundle and had
+// grown its own divergent copies of the first two. This stays as a thin alias
+// so the call sites below read unchanged.
 async function _getIPData() {
-  try {
-    const cached = sessionStorage.getItem("cr_ip_data");
-    if (cached) return JSON.parse(cached);
-
-    const timeout = ms => (AbortSignal.timeout ? AbortSignal.timeout(ms) : undefined);
-    let data = null;
-
-    // Primary: ipwho.is — free, HTTPS, no key, and the only one of the three
-    // that reports VPN/proxy/Tor plus ISP/ASN, so masked traffic is visible.
-    try {
-      const res = await fetch("https://ipwho.is/", { signal: timeout(4500) });
-      const raw = await res.json();
-      if (raw && raw.success !== false && raw.ip) {
-        data = {
-          status: "success",
-          query: raw.ip,
-          country: raw.country || "Unknown",
-          city: raw.city || "Unknown",
-          region: raw.region || null,
-          isp: raw.connection?.isp || raw.connection?.org || null,
-          asn: raw.connection?.asn != null ? String(raw.connection.asn) : null,
-          proxy: !!(raw.security?.proxy || raw.security?.vpn || raw.security?.tor),
-          vpn: !!raw.security?.vpn,
-          tor: !!raw.security?.tor,
-          hosting: !!raw.security?.hosting,
-        };
-      }
-    } catch (e) {}
-
-    if (!data) {
-      try {
-        const res = await fetch("https://ipapi.co/json/", { signal: timeout(4000) });
-        const raw = await res.json();
-        if (raw.ip) {
-          data = {
-            status: "success", query: raw.ip,
-            country: raw.country_name || "Unknown", city: raw.city || "Unknown",
-            region: raw.region || null, isp: raw.org || null,
-            asn: raw.asn || null,
-            proxy: false, vpn: false, tor: false, hosting: false,
-          };
-        }
-      } catch (e) {}
-    }
-
-    if (!data) {
-      try {
-        const res = await fetch("https://api.ipify.org?format=json", { signal: timeout(4000) });
-        const raw = await res.json();
-        if (raw.ip) {
-          data = {
-            status: "success", query: raw.ip, country: "Unknown", city: "Unknown",
-            region: null, isp: null, asn: null,
-            proxy: false, vpn: false, tor: false, hosting: false,
-          };
-        }
-      } catch (e) {}
-    }
-
-    if (!data) return null;
-
-    // Keep the full address AND the network key. The old code overwrote the
-    // address with its own /64, so exact-device lookups were impossible.
-    data.network = _networkKey(data.query);
-
-    sessionStorage.setItem("cr_ip_data", JSON.stringify(data));
-    return data;
-  } catch (e) { return null; }
+  return window.CRBan ? await window.CRBan.ipData() : null;
 }
 
 // ── IP Logging — runs once per browser session ───────────────────────────
@@ -392,46 +316,34 @@ if (!window.location.pathname.startsWith("/banned") && !window.location.pathname
         lastSeen: Date.now(),
       };
 
-      // 🛑 FIX FIRST SEEN OVERWRITE: Guests don't have read permission, so get() fails for them.
-      // We handle logged-in users and guests differently.
-      if (uid) {
-        // Logged in user: has read permission, so we can check if they exist
-        const logSnap = await get(logRef).catch(() => null);
+      // One path for everyone. There used to be a second, read-then-set branch
+      // for logged-in users, on the assumption that being logged in granted
+      // read access to ip_logs. It does not — firebase-rules.json gives
+      // ip_logs/.read to owner and developer only, so for every ordinary
+      // account the get() was rejected, the code concluded "brand new device",
+      // and the set() overwrote the whole row — resetting firstSeen on every
+      // single session, which is the exact bug that branch existed to prevent.
+      //
+      // update() never sends firstSeen, so it cannot clobber it.
+      console.log("🔒 IP Log: Updating ip_logs/" + fp);
+      await update(logRef, payload);
 
-        if (logSnap && logSnap.exists()) {
-          console.log("🔒 IP Log: Device exists. Updating lastSeen...");
-          await update(logRef, {
-            ...payload,
-            // Preserve firstSeen if it exists, otherwise set it now
-            firstSeen: logSnap.val().firstSeen || Date.now()
-          });
-        } else {
-          // Logged in, but brand new device
-          console.log("🔒 IP Log: Writing to Firebase -> ip_logs/" + fp);
-          await set(logRef, { ...payload, firstSeen: Date.now() });
-        }
-      } else {
-        // Guest: no read permission, so get() fails and we cannot tell a new
-        // device from a returning one. update() therefore omits firstSeen —
-        // sending it unconditionally would reset it on every single visit.
-        console.log("🔒 IP Log: Guest user. Updating lastSeen...");
-        await update(logRef, payload);
-
-        // Seed firstSeen exactly once, as a separate best-effort write.
-        // The local marker is keyed by fingerprint so it survives everything
-        // except a storage wipe. For a guarantee, add this to your rules:
-        //   "ip_logs": { "$fp": { "firstSeen": { ".write": "!data.exists()" } } }
-        // which makes the field immutable server-side — this write is then
-        // simply rejected on later visits and the catch below swallows it.
-        const seenKey = "cr_fs_" + fp;
-        let alreadySeeded = false;
-        try { alreadySeeded = localStorage.getItem(seenKey) === "1"; } catch (e) {}
-        if (!alreadySeeded) {
-          try {
-            await set(ref(db, "ip_logs/" + fp + "/firstSeen"), Date.now());
-          } catch (e) { /* rule rejected it — already set, which is correct */ }
-          try { localStorage.setItem(seenKey, "1"); } catch (e) {}
-        }
+      // Seed firstSeen exactly once, as a separate best-effort write.
+      // The local marker is keyed by fingerprint so it survives everything
+      // except a storage wipe. For a guarantee, make the field immutable in
+      // firebase-rules.json with a .validate (NOT a .write — $fingerprint
+      // already grants ".write": true, and a child .write cannot revoke a
+      // grant that cascades down from its parent):
+      //   "firstSeen": { ".validate": "!data.exists() || newData.val() === data.val()" }
+      // The later writes are then rejected and the catch below swallows them.
+      const seenKey = "cr_fs_" + fp;
+      let alreadySeeded = false;
+      try { alreadySeeded = localStorage.getItem(seenKey) === "1"; } catch (e) {}
+      if (!alreadySeeded) {
+        try {
+          await set(ref(db, "ip_logs/" + fp + "/firstSeen"), Date.now());
+        } catch (e) { /* rule rejected it — already set, which is correct */ }
+        try { localStorage.setItem(seenKey, "1"); } catch (e) {}
       }
 
       console.log("✅ IP Log: SUCCESS! Written to database.");
@@ -5790,19 +5702,15 @@ onAuthStateChanged(_fbAuth, async user => {
     try {
       const uid = user?.uid || null;
       const [fp, ipData] = await Promise.all([_getVisitorFingerprint(), _getIPData()]);
-      const ip = ipData?.query;
       const bansSnap = await get(ref(_fbDb, "bans"));
-      if (bansSnap.exists()) {
-        let isBanned = false;
-        bansSnap.forEach(child => {
-          const ban = child.val();
-          if (ban.active === false) return;
-          if (ban.expiresAt && ban.expiresAt < Date.now()) return;
-          if ((uid && ban.uid === uid) || (ip && ban.ip === ip) || (fp && ban.fingerprint === fp)) {
-            isBanned = true;
-          }
+      if (bansSnap.exists() && window.CRBan) {
+        const hit = window.CRBan.findMatch(bansSnap, {
+          uid,
+          ip: ipData?.query,
+          network: ipData?.network,
+          fingerprint: fp,
         });
-        if (isBanned) window.location.href = "/banned";
+        if (hit) window.location.href = "/banned";
       }
     } catch(e) {}
   }

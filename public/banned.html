@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
 <link rel="stylesheet" href="/style.min.css">
   <link rel="icon" href="/favicon.ico">
+  <script src="/ban-utils.js"></script>
   <style>
     body { background: #080404; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
     .ban-wrap {
@@ -154,35 +155,21 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
 
-async function getFingerprint() {
-  // Use the exact same UUID logic as script.js so they match perfectly!
-  let fp = localStorage.getItem("cr_device_fp");
-  if (!fp) {
-    fp = "fp_" + (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
-    localStorage.setItem("cr_device_fp", fp);
-  }
-  return fp;
+function getFingerprint() {
+  // script.js derives this from device characteristics and caches it here on
+  // every normal page view, so by the time anyone reaches /banned it is set.
+  //
+  // If it is missing we return null rather than minting a random id: this page
+  // does not load the bundle, so it cannot compute the real fingerprint, and
+  // inventing one both fails to match any ban and overwrites the key that
+  // script.js would otherwise reuse.
+  try { return localStorage.getItem("cr_device_fp") || null; } catch(e) { return null; }
 }
 
-async function _getIPData() {
-  try {
-    const cached = sessionStorage.getItem("cr_ip_data");
-    if (cached) return JSON.parse(cached);
-    const res = await fetch("https://ipapi.co/json/");
-    const raw = await res.json();
-    const data = {
-      status: "success",
-      query: raw.ip,
-      country: raw.country_name,
-      city: raw.city,
-      proxy: false,
-      hosting: false,
-    };
-    sessionStorage.setItem("cr_ip_data", JSON.stringify(data));
-    return data;
-  } catch(e) {}
-  return null;
-}
+// IP lookup comes from /ban-utils.js — the copy that used to live here hit a
+// single provider and wrote a thinner object into the shared "cr_ip_data"
+// cache, which then blanked the ISP/ASN/VPN columns for the rest of the session.
+const _getIPData = () => window.CRBan.ipData();
 
 function formatDuration(ms) {
   if (ms <= 0) return "Expired";
@@ -198,7 +185,7 @@ function formatDuration(ms) {
 }
 
 async function checkBan() {
-  const fp = await getFingerprint();
+  const fp = getFingerprint();
   const ipData = await _getIPData();
   const ip = ipData?.query;
 
@@ -218,22 +205,14 @@ async function checkBan() {
     return;
   }
 
-  let matchedBan = null;
-  let matchedKey = null;
-
-  bansSnap.forEach(child => {
-    const ban = child.val();
-    if (ban.active === false) return;
-    if (ban.expiresAt && ban.expiresAt < Date.now()) return;
-    if (
-      (uid && ban.uid === uid) ||
-      (ip && ban.ip === ip) ||
-      (fp && ban.fingerprint === fp)
-    ) {
-      matchedBan = ban;
-      matchedKey = child.key;
-    }
+  const hit = window.CRBan.findMatch(bansSnap, {
+    uid,
+    ip,
+    network: ipData?.network,
+    fingerprint: fp,
   });
+  const matchedBan = hit?.ban || null;
+  const matchedKey = hit?.key || null;
 
   document.getElementById("banLoading").style.display = "none";
 

@@ -246,7 +246,8 @@
           </div>
           <div>
             <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">IP Address (optional)</div>
-            <input class="adm-input" id="banIp" placeholder="e.g. 123.45.67.89" autocomplete="off">
+            <input class="adm-input" id="banIp" placeholder="IPv4 or IPv6 — e.g. 123.45.67.89 or 2a02:1234:5678:9abc::1" autocomplete="off">
+            <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:5px;">IPv6 also bans the visitor's /64 prefix, since v6 addresses rotate. IPv4 is an exact match.</div>
           </div>
           <div>
             <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Fingerprint (optional)</div>
@@ -445,6 +446,7 @@
 </main>
 
 <script src="/cloak-config.js"></script>
+<script src="/ban-utils.js"></script>
 <script src="/script.min.js"></script>
 <script>
 let _db, _admUser, _admRoles;
@@ -899,7 +901,10 @@ async function lookupUserForBan() {
 
 async function issueBan() {
   const username    = document.getElementById("banUsername").value.trim().toLowerCase();
-  const ip          = document.getElementById("banIp").value.trim();
+  const ipRaw       = document.getElementById("banIp").value.trim();
+  // Store the canonical spelling, not whatever was typed: "2001:0DB8::0001"
+  // and "2001:db8::1" are the same host but would never compare equal.
+  const ip          = window.CRBan.normalizeIp(ipRaw) || ipRaw;
   const fingerprint = document.getElementById("banFingerprint").value.trim();
   const reason      = document.getElementById("banReason").value.trim();
   const duration    = document.getElementById("banDuration").value;
@@ -908,6 +913,15 @@ async function issueBan() {
 
   if (!reason) { msgEl.textContent = "Enter a reason"; msgEl.style.color = "#ff6b6b"; return; }
   if (!username && !ip && !fingerprint) { msgEl.textContent = "Enter at least a username, IP, or fingerprint"; msgEl.style.color = "#ff6b6b"; return; }
+  if (ipRaw && !window.CRBan.normalizeIp(ipRaw)) {
+    msgEl.textContent = `"${ipRaw}" is not a valid IPv4 or IPv6 address`;
+    msgEl.style.color = "#ff6b6b";
+    return;
+  }
+
+  // IPv6 only — banPrefix returns null for IPv4, where a /24 would sweep up
+  // hundreds of unrelated subscribers.
+  const banNetwork = window.CRBan.banPrefix(ip) || null;
 
   try {
     const { push, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
@@ -928,6 +942,10 @@ async function issueBan() {
       uid: uid || null,
       username: username || null,
       ip: ip || null,
+      // The /64 (IPv6) or /24 (IPv4) the address sits in. An IPv6 client
+      // rotates its exact address within its own /64 every few hours, so an
+      // address-only ban lapses on its own — this is the half that sticks.
+      network: banNetwork,
       fingerprint: fingerprint || null,
       reason,
       expiresAt,
@@ -939,7 +957,7 @@ async function issueBan() {
 
     await push(window._admRef(_db, "bans"), ban);
 
-    msgEl.textContent = `✓ Ban issued${username ? " for @" + username : ""}${ip ? " / IP: " + ip : ""}`;
+    msgEl.textContent = `✓ Ban issued${username ? " for @" + username : ""}${ip ? " / IP: " + ip : ""}${banNetwork ? " (+ network " + banNetwork + ")" : ""}`;
     msgEl.style.color = "#34d399";
 
     // Clear fields
@@ -972,11 +990,12 @@ async function loadBans() {
           return `
           <tr>
             <td>
-              ${b.username ? `<div style="font-weight:700;color:#fff;">@${b.username}</div>` : ""}
-              ${b.ip ? `<div style="font-size:11px;color:rgba(255,255,255,0.4);">IP: ${b.ip}</div>` : ""}
-              ${b.uid ? `<div style="font-size:10px;color:rgba(255,255,255,0.25);">${b.uid.slice(0,14)}…</div>` : ""}
+              ${b.username ? `<div style="font-weight:700;color:#fff;">@${_esc(b.username)}</div>` : ""}
+              ${b.ip ? `<div style="font-size:11px;color:rgba(255,255,255,0.4);">IP: ${_esc(b.ip)}</div>` : ""}
+              ${b.network ? `<div style="font-size:10px;color:rgba(255,255,255,0.3);">Network: ${_esc(b.network)}</div>` : ""}
+              ${b.uid ? `<div style="font-size:10px;color:rgba(255,255,255,0.25);">${_esc(b.uid.slice(0,14))}…</div>` : ""}
             </td>
-            <td style="font-size:12px;max-width:150px;">${b.reason||"—"}</td>
+            <td style="font-size:12px;max-width:150px;">${_esc(b.reason||"—")}</td>
             <td style="font-size:11px;">${b.expiresAt ? new Date(b.expiresAt).toLocaleDateString() : "Permanent"}</td>
             <td><span class="adm-badge ${active?"adm-badge-banned":"adm-badge-resolved"}">${active?"Active":expired?"Expired":"Inactive"}</span></td>
             <td style="display:flex;gap:4px;">
