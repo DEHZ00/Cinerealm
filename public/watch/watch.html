@@ -895,6 +895,14 @@ async function initWatchPage() {
     const iframe = document.createElement("iframe");
     iframe.src = url;
     iframe.setAttribute("allow", "autoplay; encrypted-media; fullscreen; picture-in-picture");
+    // Legacy fullscreen attributes — required by TV browsers, older WebViews
+    // and Safari, which ignore the Permissions-Policy "allow" form. The
+    // episode-change path below already set these; this one did not, so
+    // fullscreen worked after switching episode but not on first load.
+    iframe.setAttribute("allowfullscreen", "");
+    iframe.setAttribute("webkitallowfullscreen", "");
+    iframe.setAttribute("mozallowfullscreen", "");
+    iframe.allowFullscreen = true;
     iframe.loading = "lazy";
     iframePlaceholder.appendChild(iframe);
     return iframe;

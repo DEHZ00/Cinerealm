@@ -1876,6 +1876,14 @@ function insertIframe(url, useSandbox = false) {
     );
   }
   iframe.setAttribute("allow", "autoplay; encrypted-media; fullscreen; picture-in-picture; clipboard-write");
+  // The legacy boolean attribute is still required alongside the allow policy.
+  // TV browsers (webOS, Tizen), older WebViews and Safari do not honour the
+  // Permissions-Policy "allow" form, so requestFullscreen() inside the player
+  // silently failed on them while working fine in current desktop Chrome.
+  iframe.setAttribute("allowfullscreen", "");
+  iframe.setAttribute("webkitallowfullscreen", "");
+  iframe.setAttribute("mozallowfullscreen", "");
+  iframe.allowFullscreen = true;
 iframe.style.width = "100%";
 iframe.style.height = "600px";
 iframe.style.border = "none";
