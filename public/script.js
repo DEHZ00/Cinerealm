@@ -4547,13 +4547,39 @@ function updateReviewBadgeInPanel(id, type) {
     // Skip swipe gestures in lite mode (TVs don't have touch)
     if (window._crLite) return;
     
-    let sx = 0, sy = 0, moved = false;
-    card.addEventListener("touchstart", e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; moved = false; }, { passive: true });
+    // Axis is locked on the first significant movement of each gesture.
+    //
+    // Previously touchmove gated only the *visual* feedback on horizontal
+    // dominance while touchend fired the action on |dx| >= 60 alone. Scrolling
+    // a row vertically with a thumb that drifts sideways therefore triggered
+    // watchlist-add or dismiss constantly, because a 400px vertical scroll with
+    // 60px of horizontal drift satisfied that test. Once a gesture is judged
+    // vertical it can no longer become a swipe, however far sideways it wanders.
+    let sx = 0, sy = 0, moved = false, axis = null;
+
+    const resetCard = () => {
+      card.style.transform = "";
+      card.style.opacity = "";
+      card.querySelector(".swipe-hint")?.remove();
+    };
+
+    card.addEventListener("touchstart", e => {
+      sx = e.touches[0].clientX;
+      sy = e.touches[0].clientY;
+      moved = false;
+      axis = null;
+    }, { passive: true });
+
     card.addEventListener("touchmove", e => {
       const dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy;
       if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
       moved = true;
-      if (Math.abs(dx) > Math.abs(dy) * 1.5 && Math.abs(dx) > 20) {
+
+      // Decide once per gesture, then stick to it.
+      if (axis === null) axis = Math.abs(dx) > Math.abs(dy) * 1.5 ? "x" : "y";
+      if (axis !== "x") return;
+
+      if (Math.abs(dx) > 20) {
         card.style.transform = "translateX(" + (dx * 0.5) + "px)";
         card.style.transition = "none";
         card.style.opacity = String(Math.max(0, 1 - Math.abs(dx) / 200));
@@ -4569,10 +4595,19 @@ function updateReviewBadgeInPanel(id, type) {
         hint.style.color = dx > 30 ? "#ffd700" : "#ff6b6b";
       }
     }, { passive: true });
+
+    card.addEventListener("touchcancel", () => {
+      card.style.transition = "transform 0.3s, opacity 0.3s";
+      resetCard();
+      axis = null;
+    }, { passive: true });
+
     card.addEventListener("touchend", e => {
       const dx = e.changedTouches[0].clientX - sx;
       card.style.transition = "transform 0.3s, opacity 0.3s";
-      if (Math.abs(dx) >= 60 && moved) {
+
+      // A gesture that was ever judged vertical never acts, regardless of dx.
+      if (axis === "x" && Math.abs(dx) >= 60 && moved) {
         if (dx > 0) {
           if (typeof isInWatchlist === "function" && !isInWatchlist(movie.id, type)) {
             if (typeof toggleWatchlist === "function") toggleWatchlist(movie.id, type, movie);
@@ -4587,6 +4622,7 @@ function updateReviewBadgeInPanel(id, type) {
         }
       } else { card.style.transform = ""; card.style.opacity = ""; }
       card.querySelector(".swipe-hint")?.remove();
+      axis = null;
     });
   };
 
@@ -6966,11 +7002,15 @@ updateWatchlistBadge();
     if (!ctx || ctx.type !== "tv") return;
 
     if (dx < 0) {
-      // Swipe left → next episode
+      // Swipe left → next episode. Uses the bounds-checked target resolved
+      // for the Up Next card; a bare episode + 1 ran past the end of a season
+      // and navigated to an episode that does not exist.
+      const nextUp = window._watchNextUp;
+      if (!nextUp) { showToast("No next episode", "info"); return; }
       showToast("Next Episode →", "info");
       setTimeout(() => {
         window.location.href = "/watch/tv/" + ctx.tmdbId +
-          "/season/" + ctx.season + "/episode/" + (ctx.episode + 1);
+          "/season/" + nextUp.season + "/episode/" + nextUp.episode;
       }, 400);
     } else {
       // Swipe right → previous episode
