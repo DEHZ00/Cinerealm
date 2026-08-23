@@ -1525,6 +1525,7 @@ const PROVIDERS = [
   { name: "111Movies", key: "111movies",  tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "King",      key: "vidking",    tier: "premium", chromebook: false, sandbox: false,  supports: { movie: true, tv: true, anime: false } },
   { name: "Jupiter",   key: "VidZen",     tier: "premium", chromebook: true, sandbox: false,  supports: { movie: true, tv: true, anime: true  } },
+  { name: "Peach",     key: "peachify",   tier: "premium", chromebook: true, sandbox: false,  supports: { movie: true, tv: true, anime: false } },
 ];
 
 
@@ -1659,6 +1660,53 @@ function buildProviderUrl(providerKey, media, opts = {}) {
     if (opts.autoNext !== undefined) params.autoNext = opts.autoNext ? 'true' : 'false';
     if (opts.chromecast !== undefined) params.chromecast = opts.chromecast ? 'true' : 'false';
     if (Number.isFinite(opts.startAt) && opts.startAt > 0) params.startAt = Math.floor(opts.startAt);
+    return base + buildQuery(params);
+  }
+
+  if (providerKey === 'peachify') {
+    // Peachify accepts a TMDB numeric id or an IMDb id, provided the "tt"
+    // prefix is kept so it can tell them apart. Everything else we hold is a
+    // TMDB id, so pass it straight through.
+    let base = '';
+    if (t === 'movie') base = 'https://peachify.top/embed/movie/' + id;
+    if (t === 'tv')    base = 'https://peachify.top/embed/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
+    if (!base) return '';
+
+    const params = {};
+    if (opts.color) params.accent = opts.color.replace('#', '');
+
+    // Resume point. Peachify takes startAt/progress/t interchangeably.
+    if (Number.isFinite(opts.progress) && opts.progress > 0) params.startAt = Math.floor(opts.progress);
+    else if (Number.isFinite(opts.startAt) && opts.startAt > 0) params.startAt = Math.floor(opts.startAt);
+
+    // autoPlay defaults to true upstream — only send it to turn autoplay off,
+    // so the default path stays as short a URL as possible.
+    if (opts.autoPlay === false || opts.autoplay === false) params.autoPlay = 'false';
+
+    // Language/quality preferences are STRINGS here. opts.dub is a boolean in
+    // this codebase (meaning "prefer a dub"), so it deliberately is NOT mapped
+    // to Peachify's dub param, which wants a language name like "English".
+    if (typeof opts.audioLang === 'string' && opts.audioLang) params.audio = opts.audioLang;
+    if (typeof opts.subtitle  === 'string' && opts.subtitle)  params.sub = opts.subtitle;
+    if (opts.quality) params.quality = String(opts.quality).replace(/p$/i, '');
+    if (typeof opts.server === 'string' && opts.server) params.server = opts.server;
+
+    if (t === 'tv') {
+      // autoNext takes a boolean-like OR a second threshold; forward a number
+      // as-is so a custom threshold survives.
+      if (Number.isFinite(opts.autoNext)) params.autoNext = Math.floor(opts.autoNext);
+      else if (opts.autoNext !== undefined) params.autoNext = opts.autoNext ? 'true' : 'false';
+      if (opts.nextButton !== undefined) params.showNextBtn = opts.nextButton ? 'true' : 'false';
+    }
+
+    // Control hiding: Peachify wants the literal string "hide".
+    if (opts.hideServerControls === true) params.servers = 'hide';
+    if (Array.isArray(opts.hideControls)) {
+      const allowed = ['pip','cast','fullscreen','volume','servers','captions','quality',
+                       'play','rewind','forward','timegroup','timeslider','settings'];
+      for (const c of opts.hideControls) if (allowed.includes(c)) params[c] = 'hide';
+    }
+
     return base + buildQuery(params);
   }
 
@@ -3224,14 +3272,16 @@ window.addEventListener("message", function (event) {
     const {
       currentTime,
       duration,
-      id,
       mediaType,
       season,
       episode,
       event: evtName
     } = msg.data;
 
-    const tmdbId = parseInt(id, 10);
+    // Providers disagree on the id field: most send "id", Peachify sends
+    // "tmdbId". Reading only "id" meant Peachify progress silently never
+    // saved — parseInt(undefined) is NaN, so the guard below always bailed.
+    const tmdbId = parseInt(msg.data.id ?? msg.data.tmdbId ?? msg.data.mediaId, 10);
     if (!tmdbId || !mediaType) return;
 
     // Find existing entry for this show/movie — for TV match by show ID only
@@ -3272,6 +3322,106 @@ window.addEventListener("message", function (event) {
     // ignore
   }
 });
+
+// ---- Peachify MEDIA_DATA handler ----
+// Peachify posts a second message type carrying its full progress object,
+// which is richer than PLAYER_EVENT (title, poster, per-episode progress).
+//
+// Unlike PLAYER_EVENT — which every provider emits and so cannot be locked to
+// one origin — MEDIA_DATA belongs to Peachify alone, so the origin is checked
+// strictly. Embeds are untrusted third parties; without this, any iframe on
+// the page could post a MEDIA_DATA message and rewrite the user's history.
+const PEACHIFY_ORIGIN = "https://peachify.top";
+
+window.addEventListener("message", function (event) {
+  if (event.origin !== PEACHIFY_ORIGIN) return;
+
+  let msg = event.data;
+  if (typeof msg === "string") {
+    try { msg = JSON.parse(msg); } catch { return; }
+  }
+  if (!msg || msg.type !== "MEDIA_DATA" || !msg.data || typeof msg.data !== "object") return;
+
+  try {
+    // Keep the raw object too — it is Peachify's own resume format.
+    localStorage.setItem("peachifyProgress", JSON.stringify(msg.data));
+  } catch (e) {}
+
+  // Proof the active source is playing, same as a PLAYER_EVENT.
+  try { _srcHealth.signal(); } catch (e) {}
+
+  try {
+    mergePeachifyProgress(msg.data);
+  } catch (e) {}
+});
+
+// Fold Peachify's progress object into CineRealm's own history format so
+// Continue Watching, resume and the stats page all see it. History keeps a
+// single entry per title (tracking the latest episode for TV), so this
+// updates in place rather than appending per episode.
+function mergePeachifyProgress(payload) {
+  if (!payload || typeof payload !== "object") return;
+  let touched = false;
+
+  for (const key of Object.keys(payload)) {
+    const item = payload[key];
+    if (!item || typeof item !== "object") continue;
+
+    const tmdbId = parseInt(item.id ?? key, 10);
+    const type   = item.type === "tv" ? "tv" : item.type === "movie" ? "movie" : null;
+    if (!tmdbId || !type) continue;
+
+    const watched  = Number(item.progress?.watched) || 0;
+    const duration = Number(item.progress?.duration) || 0;
+    if (watched <= 0) continue;
+
+    let entry = historyData.find(m => m.type === type && String(m.tmdbId || m.id) === String(tmdbId));
+    if (!entry) {
+      entry = { tmdbId, type, progress: 0, duration: 0, addedAt: 0 };
+      historyData.push(entry);
+    }
+
+    // Only move forward. A late-arriving message must not rewind a position
+    // the user has since passed, and must not clobber a newer local update.
+    const incomingAt = Number(item.last_updated) || Date.now();
+    if (incomingAt < (entry.addedAt || 0)) continue;
+
+    if (item.title)        entry.title       = item.title;
+    if (item.poster_path)  entry.poster_path = item.poster_path;
+    if (item.backdrop_path) entry.backdrop_path = item.backdrop_path;
+
+    if (type === "tv") {
+      const s = parseInt(item.last_season_watched, 10);
+      const e = parseInt(item.last_episode_watched, 10);
+      if (Number.isFinite(s)) entry.season  = s;
+      if (Number.isFinite(e)) entry.episode = e;
+
+      // Prefer the matching per-episode record when present — the top-level
+      // progress can lag behind show_progress.
+      const epKey = "s" + s + "e" + e;
+      const ep = item.show_progress?.[epKey];
+      if (ep?.progress) {
+        entry.progress = Number(ep.progress.watched) || watched;
+        entry.duration = Number(ep.progress.duration) || duration;
+      } else {
+        entry.progress = watched;
+        entry.duration = duration;
+      }
+    } else {
+      entry.progress = watched;
+      entry.duration = duration;
+    }
+
+    entry.addedAt = incomingAt;
+    touched = true;
+  }
+
+  if (touched) {
+    saveHistory();
+    if (typeof renderContinueWatching === "function") renderContinueWatching();
+  }
+}
+
 
 
 window.addEventListener("message", function (event) {
