@@ -855,8 +855,11 @@ async function initWatchPage() {
   const lastProgress = getHistoryProgress(tmdbId, type, season, episode);
 
   const opts = {
-    color: "#ffffff", colour: "#ffffff",
-    theme: "#ffffff",
+    // Brand red, shared with script.js. Falls back in case the deferred
+    // bundle has not defined the constant yet.
+    color:  (typeof PLAYER_ACCENT !== "undefined" ? PLAYER_ACCENT : "#ff2c2c"),
+    colour: (typeof PLAYER_ACCENT !== "undefined" ? PLAYER_ACCENT : "#ff2c2c"),
+    theme:  (typeof PLAYER_ACCENT !== "undefined" ? PLAYER_ACCENT : "#ff2c2c"),
     autoplay: true, autoNext: true,
     autonextepisode: true, autoplayNextEpisode: true,
     nextButton: true, episodeSelector: true,

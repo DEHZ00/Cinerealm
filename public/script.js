@@ -541,7 +541,12 @@ const detailsModal = document.getElementById("detailsModal");
 const detailsBody = document.getElementById("detailsBody");
 const closeBtn = document.querySelector(".close-btn");
 // ---- THEME ----
-const THEME_COLOR = "#4E0000"; // main CineRealm red
+// Brand red — the single source of truth for player accent colours.
+// Matches the theme-color meta and the ~90 uses across style.css. The old
+// value here was #4E0000, a dark maroon that was declared and never read,
+// while every embed was being handed plain white instead of brand colour.
+const THEME_COLOR   = "#ff2c2c";
+const PLAYER_ACCENT = THEME_COLOR;
 
 // State
 let historyData = [];
@@ -2066,11 +2071,11 @@ async function loadPlayer(id, type = "movie", title = "", extraOpts = {}) {
   }
 
   const opts = {
-    color: extraOpts.color || "#ffffff",
-    colour: extraOpts.color || "#ffffff",
+    color: extraOpts.color || PLAYER_ACCENT,
+    colour: extraOpts.color || PLAYER_ACCENT,
     autonextepisode: extraOpts.autoplayNextEpisode ?? true,
 
-    theme: extraOpts.theme || "#ffffff",
+    theme: extraOpts.theme || PLAYER_ACCENT,
     autoplay: extraOpts.autoplay ?? true,
     autoNext: extraOpts.autoNext ?? true,
     autoplayNextEpisode: extraOpts.autoplayNextEpisode ?? true,
