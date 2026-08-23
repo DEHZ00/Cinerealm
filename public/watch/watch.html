@@ -1038,6 +1038,7 @@ async function initWatchPage() {
       try {
         const showData = await apiCall("/tv/" + tmdbId);
         const currentSeason = showData?.seasons?.find(s => s.season_number === season);
+        window._watchNextUp = null;   // reset; stays null on a series finale
         let nextSeason = season, nextEp = episode + 1;
 
         if (currentSeason && episode >= currentSeason.episode_count) {
@@ -1058,6 +1059,9 @@ async function initWatchPage() {
           if (epThumb) upNextThumb.src = epThumb;
           else upNextThumb.style.display = "none";
           upNextEl.style.display = "block";
+          // Share the validated target so the auto-next countdown reuses it
+          // instead of recomputing it without bounds checks.
+          window._watchNextUp = { season: nextSeason, episode: nextEp, title: epTitle };
         }
       } catch(e) {}
     }
@@ -1294,8 +1298,12 @@ window.addEventListener("message", function(event) {
     const ctx = window._watchContext;
     if (!ctx || ctx.type !== "tv") return;
 
-    const nextEp = ctx.episode + 1;
-    startAutoNext(ctx.season, nextEp, "S" + ctx.season + " E" + nextEp);
+    // Use the bounds-checked target computed for the Up Next card. A bare
+    // episode + 1 ran past the end of a season and navigated to an episode
+    // that does not exist, leaving a dead player on every season finale.
+    const nextUp = window._watchNextUp;
+    if (!nextUp) return;   // series finale, or target not resolved yet
+    startAutoNext(nextUp.season, nextUp.episode, nextUp.title || ("S" + nextUp.season + " E" + nextUp.episode));
   } catch(e) {}
 });
 
