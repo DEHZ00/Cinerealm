@@ -5734,7 +5734,7 @@ function _addOledToCloak() {
       '<div style="width:100%;max-width:520px;padding:56px 24px;">' +
 
         '<div class="crs-in" style="animation-delay:.05s;text-align:center;margin-bottom:38px;">' +
-          '<div class="crs-serif" style="font-size:31px;letter-spacing:.5px;color:#fff;font-weight:600;">Quiet Hours</div>' +
+          '<div class="crs-serif" style="font-size:27px;line-height:1.25;letter-spacing:.4px;color:#fff;font-weight:600;">To Whom It May Concern</div>' +
           '<div class="crs-label" style="margin-top:9px;">' + esc(dateLine) + '</div>' +
           '<div style="width:34px;height:2px;background:linear-gradient(90deg,transparent,#ff2c2c,transparent);margin:16px auto 0;border-radius:2px;"></div>' +
         '</div>' +
