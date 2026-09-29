@@ -5677,7 +5677,7 @@ function _addOledToCloak() {
   function parseLRC(text){
     if(!text) return [];
     const lineRe = /^\[(\d+):(\d+(?:\.\d+)?)\](.*)$/;
-    const wordRe = /<(\d+):(\d+(?:\.\d+)?)>([^<]*)/g;
+    const tagRe = /<(\d+):(\d+(?:\.\d+)?)>/g;
     return text.split(/\r?\n/).map(raw=>{
       const m = raw.match(lineRe);
       if(!m) return null;
@@ -5685,17 +5685,25 @@ function _addOledToCloak() {
       const rest = m[3];
       if(rest.indexOf("<") === -1){
         const t = rest.trim();
-        return t ? { time, text: t } : null;
+        return t ? { time, text: t, words: null } : null;
       }
-      // Strip word-level <mm:ss> tags — whole lines only here.
-      const parts = [];
-      const firstTag = rest.search(/</);
-      const lead = (firstTag === -1 ? rest : rest.slice(0, firstTag)).trim();
-      if(lead) parts.push(lead);
-      let wm; wordRe.lastIndex = 0;
-      while((wm = wordRe.exec(rest))){ const w = wm[3].trim(); if(w) parts.push(w); }
-      const t = parts.join(" ").trim();
-      return t ? { time, text: t } : null;
+      // Enhanced LRC. The text before the first tag carries the line's own
+      // timestamp; every <mm:ss.xx> stamps the chunk that follows it. These
+      // timings drive the word-by-word highlight, so they are kept rather
+      // than flattened into a plain line.
+      const words = [];
+      let cursor = 0, stamp = time, mt;
+      tagRe.lastIndex = 0;
+      while((mt = tagRe.exec(rest))){
+        const chunk = rest.slice(cursor, mt.index).trim();
+        if(chunk) words.push({ t: stamp, w: chunk });
+        stamp = parseInt(mt[1])*60 + parseFloat(mt[2]);
+        cursor = tagRe.lastIndex;
+      }
+      const tail = rest.slice(cursor).trim();
+      if(tail) words.push({ t: stamp, w: tail });
+      if(!words.length) return null;
+      return { time, text: words.map(x => x.w).join(" "), words };
     }).filter(Boolean);
   }
 
@@ -5736,6 +5744,8 @@ function _addOledToCloak() {
       ".crs-line.on { opacity:1; }",
       ".crs-orig { font-size:16.5px; line-height:1.45; color:rgba(255,255,255,0.9); font-weight:600; }",
       ".crs-line.on .crs-orig { color:#fff; }",
+      ".crs-line.on .crs-w { color:rgba(255,255,255,0.33); transition:color .16s ease; }",
+      ".crs-line.on .crs-w.lit { color:#fff; }",
       ".crs-tr { font-size:13px; line-height:1.45; margin-top:3px; color:rgba(255,255,255,0.42); font-style:italic; }",
       "#_cr_seek, #_cr_vol { -webkit-appearance:none; appearance:none; height:3px; border-radius:2px; background:rgba(255,255,255,0.14); outline:none; cursor:pointer; }",
       "#_cr_seek::-webkit-slider-thumb, #_cr_vol::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:11px; height:11px; border-radius:50%; background:#ff2c2c; }",
@@ -5846,7 +5856,19 @@ function _addOledToCloak() {
         d.dataset.i = i;
         const orig = document.createElement("div");
         orig.className = "crs-orig";
-        orig.textContent = l.text;
+        if (l.words && l.words.length) {
+          // One span per timed chunk so each can light up on cue.
+          l.words.forEach((wd, wi) => {
+            const sp = document.createElement("span");
+            sp.className = "crs-w";
+            sp.dataset.t = String(wd.t);
+            sp.textContent = wd.w;
+            orig.appendChild(sp);
+            if (wi < l.words.length - 1) orig.appendChild(document.createTextNode(" "));
+          });
+        } else {
+          orig.textContent = l.text;
+        }
         d.appendChild(orig);
         if (showTr && l.tr) {
           const tr = document.createElement("div");
@@ -5864,10 +5886,26 @@ function _addOledToCloak() {
       const t = audio.currentTime;
       let idx = -1;
       for (let i = 0; i < lines.length; i++) { if (t >= lines[i].time) idx = i; else break; }
-      if (idx === curLine) return;
-      curLine = idx;
       const nodes = lyricsEl.children;
+
+      const paintWords = () => {
+        if (idx < 0 || !nodes[idx]) return;
+        const ws = nodes[idx].querySelectorAll(".crs-w");
+        for (let i = 0; i < ws.length; i++) {
+          ws[i].classList.toggle("lit", t >= parseFloat(ws[i].dataset.t));
+        }
+      };
+
+      // Same line: only the word highlight needs advancing, no re-scroll.
+      if (idx === curLine) { paintWords(); return; }
+
+      curLine = idx;
       for (let i = 0; i < nodes.length; i++) nodes[i].classList.toggle("on", i === idx);
+      // Clear stale highlights so seeking backwards does not leave words lit
+      // on a line that has not been reached again yet.
+      const stale = lyricsEl.querySelectorAll(".crs-w.lit");
+      for (let i = 0; i < stale.length; i++) stale[i].classList.remove("lit");
+      paintWords();
       if (idx >= 0 && nodes[idx]) {
         // Measure against the scroll box, not offsetTop — this box is not the
         // offset parent, so offsetTop would overscroll the active line away.
@@ -5957,7 +5995,9 @@ function _addOledToCloak() {
           for (const e2 of en) { const d = Math.abs(e2.time - l.time); if (d < bestD) { bestD = d; best = e2; } }
           if (bestD <= 0.35 && best) tr = best.text;
         }
-        return { time: l.time, text: l.text, tr: tr || "" };
+        // Carry the per-word timings through — rebuilding the line without
+        // them was silently dropping the word-by-word highlight.
+        return { time: l.time, text: l.text, words: l.words, tr: tr || "" };
       });
 
       if (lines.some(l => l.tr)) langBtn.style.display = "";
