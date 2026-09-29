@@ -330,6 +330,7 @@
             <option value="clean">Direct only</option>
             <option value="user">Logged in</option>
             <option value="guest">Guests</option>
+            <option value="secret">Opened hidden page</option>
           </select>
         </div>
         <div id="admIPLogs"><div class="adm-loading">Loading…</div></div>
@@ -1140,10 +1141,12 @@ function renderIPLogs() {
   else if (filter === "clean") rows = rows.filter(([,l]) => !(l.proxy || l.vpn || l.tor || l.hosting));
   else if (filter === "user")  rows = rows.filter(([,l]) => !!l.username);
   else if (filter === "guest") rows = rows.filter(([,l]) => !l.username);
+  else if (filter === "secret") rows = rows.filter(([,l]) => !!l.secretOpens);
 
   if (q) {
     rows = rows.filter(([fpKey, l]) =>
-      [l.ip, l.network, l.city, l.country, l.region, l.isp, l.asn, l.username, l.uid, l.ua, fpKey, l.legacyFp]
+      [l.ip, l.network, l.city, l.country, l.region, l.isp, l.asn, l.username, l.uid, l.ua, fpKey, l.legacyFp,
+       l.secretOpens ? "hidden page secret" : ""]
         .some(f => String(f == null ? "" : f).toLowerCase().includes(q)));
   }
 
@@ -1179,6 +1182,10 @@ function renderIPLogs() {
     if (l.vpn)     f.push(`<span class="adm-badge adm-badge-open" style="font-size:9px;">VPN</span>`);
     if (l.proxy && !l.vpn && !l.tor) f.push(`<span class="adm-badge adm-badge-open" style="font-size:9px;">PROXY</span>`);
     if (l.hosting) f.push(`<span class="adm-badge adm-badge-pending" style="font-size:9px;">HOST</span>`);
+    if (l.secretOpens) {
+      const when = l.secretLastOpen ? new Date(l.secretLastOpen).toLocaleString() : "";
+      f.push(`<span class="adm-badge" style="font-size:9px;background:rgba(167,139,250,0.18);color:#a78bfa;border:1px solid rgba(167,139,250,0.35);" title="Opened the hidden page${when ? " — last: " + _esc(when) : ""}">★ ${_esc(l.secretOpens)}</span>`);
+    }
     return f.join(" ") || `<span style="color:rgba(255,255,255,0.2);font-size:10px;">—</span>`;
   };
 

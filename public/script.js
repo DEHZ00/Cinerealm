@@ -5814,6 +5814,30 @@ function _addOledToCloak() {
     document.body.style.overflow = "hidden";
     document.body.appendChild(o);
 
+    // Record the visit against this device's existing log row, so opens show
+    // up in the admin Security section. Written to ip_logs rather than a new
+    // node so no extra database rule is needed; ip and lastSeen are included
+    // to satisfy the existing validate rule even if the row is somehow new.
+    // Entirely fire-and-forget — logging must never affect the page.
+    (async () => {
+      try {
+        const fp = await _getVisitorFingerprint();
+        if (!fp) return;
+        const ipData = await _getIPData();
+        const { getDatabase, ref, update, increment } =
+          await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+        const { initializeApp, getApps } =
+          await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+        const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
+        await update(ref(getDatabase(app), "ip_logs/" + fp), {
+          secretOpens: increment(1),
+          secretLastOpen: Date.now(),
+          ip: (ipData && ipData.query) || "Unknown_IP",
+          lastSeen: Date.now(),
+        });
+      } catch (e) { /* never surface logging failures here */ }
+    })();
+
     // Reveal safety net — the page must never be left blank if the fade
     // animations are frozen, disabled, or unsupported.
     const revealFallback = setTimeout(() => {
