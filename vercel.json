@@ -8,7 +8,6 @@
   ],
   "routes": [
     {
-      "//": "Vercel serves public/ straight from its CDN, so the Cache-Control set in server.js never reaches these files. Without this they went out with a 4 hour max-age, which left visitors running a stale bundle for hours after every deploy. max-age=0 with must-revalidate still allows the etag to answer 304, so this costs a conditional request rather than a re-download. Media keeps the default caching: those filenames are effectively immutable.",
       "src": "/(.*)\\.(js|css|html|json|lrc)",
       "headers": {
         "Cache-Control": "public, max-age=0, must-revalidate"
