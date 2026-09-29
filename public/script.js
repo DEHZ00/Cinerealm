@@ -5633,8 +5633,32 @@ function _addOledToCloak() {
     return QUOTES[wrap(since, QUOTES.length)];
   }
 
-  document.addEventListener("keydown", function(e){
-    if(e.keyCode===_s[_i]){ _i++; if(_i===_s.length){ _i=0; _showSecret(); } } else { _i=0; }
+  // A sliding window of the last N keys, compared against the sequence.
+  //
+  // Matched on e.key, with keyCode only as a fallback: keyCode is deprecated
+  // and some layouts, key remappers and extensions leave it at 0. Modifier
+  // keys are skipped entirely so holding Shift for an uppercase B does not
+  // break the run, and a stray key simply shifts out of the window instead of
+  // forcing the whole sequence to be retyped.
+  const _seq = ["arrowup","arrowup","arrowdown","arrowdown","arrowleft","arrowright","arrowleft","arrowright","b","a"];
+  const _codeNames = { 37:"arrowleft", 38:"arrowup", 39:"arrowright", 40:"arrowdown", 65:"a", 66:"b" };
+  const _modifiers = new Set(["shift","control","alt","meta","capslock","altgraph","os"]);
+  let _buf = [];
+
+  function _keyName(ev) {
+    if (typeof ev.key === "string" && ev.key) return ev.key.toLowerCase();
+    return _codeNames[ev.keyCode] || null;
+  }
+
+  document.addEventListener("keydown", function(ev){
+    const k = _keyName(ev);
+    if (!k || _modifiers.has(k)) return;
+    _buf.push(k);
+    if (_buf.length > _seq.length) _buf.shift();
+    if (_buf.length === _seq.length && _seq.every((v, i) => v === _buf[i])) {
+      _buf = [];
+      _showSecret();
+    }
   });
 
   window.addEventListener("load", () => {
