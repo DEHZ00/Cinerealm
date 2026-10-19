@@ -5600,39 +5600,21 @@ function _addOledToCloak() {
   // English-language tracks have no translation, and a Spanish one without a
   // translation file simply shows the original with the toggle hidden.
   const SONGS = [
-    { title: "Aquí Te Espero",     artist: "Iván Cornejo",
-      src: "/aqui-te-espero.mp3",     lrc: "/aqui-te-espero.lrc",     lrcEn: "/aqui-te-espero.en.lrc" },
-    { title: "Mientras Duermes",   artist: "Junior H",
-      src: "/mientras-duermes.mp3",   lrc: "/mientras-duermes.lrc",   lrcEn: "/mientras-duermes.en.lrc" },
-    { title: "Dame Amor",          artist: "Officialalex425",
-      src: "/dame-amor.mp3",          lrc: "/dame-amor.lrc",          lrcEn: "/dame-amor.en.lrc" },
-    { title: "LAGUNAS",            artist: "Peso Pluma & Jasiel Nuñez",
-      src: "/lagunas.mp3",            lrc: "/lagunas.lrc",            lrcEn: "/lagunas.en.lrc" },
-    { title: "Te Sigo Extrañando", artist: "Iván Cornejo",
-      src: "/te-sigo-extranando.mp3", lrc: "/te-sigo-extranando.lrc" },
-    { title: "Heart To Heart",     artist: "Mac DeMarco",
-      src: "/heart-to-heart.mp3",     lrc: "/heart-to-heart.lrc" },
-    { title: "Still Beating",      artist: "Mac DeMarco",
-      src: "/still-beating.mp3",      lrc: "/still-beating.lrc" },
-    { title: "Letter Home",        artist: "Childish Gambino",
-      src: "/letter-home.mp3",        lrc: "/letter-home.lrc" },
+    { title: "Dame Amor",      artist: "Officialalex425",
+      src: "/dame-amor.mp3",      lrc: "/dame-amor.lrc",      lrcEn: "/dame-amor.en.lrc" },
+    { title: "LAGUNAS",        artist: "Peso Pluma & Jasiel Nuñez",
+      src: "/lagunas.mp3",        lrc: "/lagunas.lrc",        lrcEn: "/lagunas.en.lrc" },
+    { title: "Heart To Heart", artist: "Mac DeMarco",
+      src: "/heart-to-heart.mp3", lrc: "/heart-to-heart.lrc" },
+    { title: "Still Beating",  artist: "Mac DeMarco",
+      src: "/still-beating.mp3",  lrc: "/still-beating.lrc" },
   ];
-
-  // Held until ROTATION_START, then the list below takes over daily.
-  const WEEK_ONE_QUOTE = { text: "When you fall in love with the moon all the stars disappear." };
 
   // Daily rotation, top to bottom, then repeating.
   //   q: true      → heading reads "Question of the Day"
   //   quoted: true → rendered inside quotation marks
   //   ask: "..."   → optional sub-prompt beneath, also flips the heading
   const QUOTES = [
-    { text: "Love and being loved, requires more than just giving love" },
-    { text: "It is better to have loved and lost than never to have loved at all", ask: "Agree or disagree — why?", quoted: true },
-    { text: "The door never locked" },
-    { text: "The ocean returned every wave but you." },
-    { text: "The clock forgot our favorite hour." },
-    { text: "The chair across the table stayed empty" },
-    { text: "When you fall in love with the moon all the stars disappear." },
     { text: "Moving on isn't caring less, it's carrying it better." },
     { text: "An apology and a change are not the same thing." },
     { text: "Letting someone go isn't giving up, it's admitting you can't do it for both of you." },
@@ -5659,9 +5641,9 @@ function _addOledToCloak() {
   }
 
   function quoteOfTheDay(now) {
-    const since = daysBetween(ROTATION_START, now);
-    if (since < 0) return WEEK_ONE_QUOTE;            // still week 1
-    return QUOTES[wrap(since, QUOTES.length)];
+    // wrap() handles a negative day count, so a clock set before the anchor
+    // still lands on a real entry rather than falling off the list.
+    return QUOTES[wrap(daysBetween(ROTATION_START, now), QUOTES.length)];
   }
 
   // A sliding window of the last N keys, compared against the sequence.
