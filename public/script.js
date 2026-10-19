@@ -5589,32 +5589,63 @@ function _addOledToCloak() {
   const _s=[38,38,40,40,37,39,37,39,66,65];
   let _i=0;
 
-  // Week 1 runs from Mon 28 Sep 2026; each later Monday advances the song by
-  // one and, from 5 Oct, rotates the quote daily. Local dates on purpose —
-  // this should turn over at the viewer's midnight, not UTC's.
-  const WEEK_ANCHOR    = new Date(2026, 8, 28);  // Mon 28 Sep 2026
+  // The song advances every 3 days from SONG_ANCHOR; the quote advances daily
+  // from ROTATION_START. Local dates on purpose — both should turn over at the
+  // viewer's midnight, not UTC's.
+  const SONG_ANCHOR    = new Date(2026, 9, 19);  // Mon 19 Oct 2026
+  const SONG_EVERY_DAYS = 3;
   const ROTATION_START = new Date(2026, 9, 5);   // Mon  5 Oct 2026
 
-  // One entry per week, cycling.
+  // Rotates every SONG_EVERY_DAYS, in order, then repeats. lrcEn is optional:
+  // English-language tracks have no translation, and a Spanish one without a
+  // translation file simply shows the original with the toggle hidden.
   const SONGS = [
-    { title: "Aquí Te Espero",   artist: "Iván Cornejo",
-      src: "/aqui-te-espero.mp3",   lrc: "/aqui-te-espero.lrc",   lrcEn: "/aqui-te-espero.en.lrc" },
-    { title: "Mientras Duermes", artist: "Junior H",
-      src: "/mientras-duermes.mp3", lrc: "/mientras-duermes.lrc", lrcEn: "/mientras-duermes.en.lrc" },
+    { title: "Aquí Te Espero",     artist: "Iván Cornejo",
+      src: "/aqui-te-espero.mp3",     lrc: "/aqui-te-espero.lrc",     lrcEn: "/aqui-te-espero.en.lrc" },
+    { title: "Mientras Duermes",   artist: "Junior H",
+      src: "/mientras-duermes.mp3",   lrc: "/mientras-duermes.lrc",   lrcEn: "/mientras-duermes.en.lrc" },
+    { title: "Dame Amor",          artist: "Officialalex425",
+      src: "/dame-amor.mp3",          lrc: "/dame-amor.lrc",          lrcEn: "/dame-amor.en.lrc" },
+    { title: "LAGUNAS",            artist: "Peso Pluma & Jasiel Nuñez",
+      src: "/lagunas.mp3",            lrc: "/lagunas.lrc",            lrcEn: "/lagunas.en.lrc" },
+    { title: "Te Sigo Extrañando", artist: "Iván Cornejo",
+      src: "/te-sigo-extranando.mp3", lrc: "/te-sigo-extranando.lrc" },
+    { title: "Heart To Heart",     artist: "Mac DeMarco",
+      src: "/heart-to-heart.mp3",     lrc: "/heart-to-heart.lrc" },
+    { title: "Still Beating",      artist: "Mac DeMarco",
+      src: "/still-beating.mp3",      lrc: "/still-beating.lrc" },
+    { title: "Letter Home",        artist: "Childish Gambino",
+      src: "/letter-home.mp3",        lrc: "/letter-home.lrc" },
   ];
 
-  // Held for the whole of week 1, then the list below takes over daily.
+  // Held until ROTATION_START, then the list below takes over daily.
   const WEEK_ONE_QUOTE = { text: "When you fall in love with the moon all the stars disappear." };
 
-  // Daily rotation from Mon 5 Oct, top to bottom, then repeating.
+  // Daily rotation, top to bottom, then repeating.
+  //   q: true      → heading reads "Question of the Day"
+  //   quoted: true → rendered inside quotation marks
+  //   ask: "..."   → optional sub-prompt beneath, also flips the heading
   const QUOTES = [
     { text: "Love and being loved, requires more than just giving love" },
-    { text: "It is better to have loved and lost than never to have loved at all", ask: "Agree or disagree — why?" },
+    { text: "It is better to have loved and lost than never to have loved at all", ask: "Agree or disagree — why?", quoted: true },
     { text: "The door never locked" },
     { text: "The ocean returned every wave but you." },
     { text: "The clock forgot our favorite hour." },
     { text: "The chair across the table stayed empty" },
     { text: "When you fall in love with the moon all the stars disappear." },
+    { text: "Moving on isn't caring less, it's carrying it better." },
+    { text: "An apology and a change are not the same thing." },
+    { text: "Letting someone go isn't giving up, it's admitting you can't do it for both of you." },
+    { text: "Nostalgia is memory with the hard parts blocked off." },
+    { text: "Waiting is the loudest way to say you haven't let go." },
+    { text: "Do you want them back, or do you want to stop hurting?", q: true },
+    { text: "Do you want closure, or do you want them to miss you too?", q: true },
+    { text: "Missing someone is just love with nowhere to go." },
+    { text: "Letting go isn't one decision, it's the same decision every day." },
+    { text: "Being chosen and being kept are not the same thing." },
+    { text: "Healing isn't forgetting, it's remembering without hurting." },
+    { text: "Some people leave slowly, then all at once you notice." },
+    { text: "Do you miss the person, or the idea of them?", q: true },
   ];
 
   const DAY = 86400000;
@@ -5622,9 +5653,9 @@ function _addOledToCloak() {
   const daysBetween = (a, b) => Math.floor((midnight(b) - midnight(a)) / DAY);
   const wrap = (n, len) => ((n % len) + len) % len;
 
-  function songOfTheWeek(now) {
-    const week = Math.floor(daysBetween(WEEK_ANCHOR, now) / 7);
-    return SONGS[wrap(week, SONGS.length)];
+  function songForToday(now) {
+    const slot = Math.floor(daysBetween(SONG_ANCHOR, now) / SONG_EVERY_DAYS);
+    return SONGS[wrap(slot, SONGS.length)];
   }
 
   function quoteOfTheDay(now) {
@@ -5723,7 +5754,7 @@ function _addOledToCloak() {
     if (document.getElementById("_cr_secret")) return;
 
     const now  = new Date();
-    const song = songOfTheWeek(now);
+    const song = songForToday(now);
     const q    = quoteOfTheDay(now);
 
     const style = document.createElement("style");
@@ -5759,10 +5790,14 @@ function _addOledToCloak() {
     o.id = "_cr_secret";
     o.style.cssText = "position:fixed;inset:0;z-index:99999;background:radial-gradient(120% 90% at 50% 0%,#141017 0%,#0a0a0c 45%,#060607 100%);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;overscroll-behavior:contain;";
 
-    const quoteBlock = q.ask
-      ? '<div class="crs-serif" style="margin-top:13px;font-size:21px;line-height:1.55;color:rgba(255,255,255,0.93);">&ldquo;' + esc(q.text) + '&rdquo;</div>' +
-        '<div style="margin-top:11px;font-family:system-ui,sans-serif;font-size:13.5px;color:rgba(255,255,255,0.45);">' + esc(q.ask) + '</div>'
-      : '<div class="crs-serif" style="margin-top:13px;font-size:21px;line-height:1.55;color:rgba(255,255,255,0.93);">' + esc(q.text) + '</div>';
+    // A direct question is shown plainly; only an entry marked quoted is
+    // wrapped in quotation marks, since putting a question in quotes reads as
+    // though it were being cited rather than asked.
+    const isQuestion = !!(q.ask || q.q);
+    const shown = q.quoted ? '&ldquo;' + esc(q.text) + '&rdquo;' : esc(q.text);
+    const quoteBlock =
+      '<div class="crs-serif" style="margin-top:13px;font-size:21px;line-height:1.55;color:rgba(255,255,255,0.93);">' + shown + '</div>' +
+      (q.ask ? '<div style="margin-top:11px;font-family:system-ui,sans-serif;font-size:13.5px;color:rgba(255,255,255,0.45);">' + esc(q.ask) + '</div>' : '');
 
     o.innerHTML =
       '<div style="width:100%;max-width:520px;padding:56px 24px;">' +
@@ -5774,13 +5809,13 @@ function _addOledToCloak() {
         '</div>' +
 
         '<div class="crs-card crs-in" style="animation-delay:.35s;margin-bottom:18px;">' +
-          '<div class="crs-label">' + (q.ask ? "Question of the Day" : "Quote of the Day") + '</div>' +
+          '<div class="crs-label">' + (isQuestion ? "Question of the Day" : "Quote of the Day") + '</div>' +
           quoteBlock +
         '</div>' +
 
         '<div class="crs-card crs-in" style="animation-delay:.6s;">' +
           '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;">' +
-            '<div class="crs-label">Song of the Week</div>' +
+            '<div class="crs-label">Today’s Song</div>' +
             '<button id="_cr_lang" class="crs-btn" style="display:none;font-size:9.5px;font-weight:700;letter-spacing:1.2px;padding:3px 9px;flex-shrink:0;">HIDE ENGLISH</button>' +
           '</div>' +
 
@@ -6010,11 +6045,16 @@ function _addOledToCloak() {
     (async () => {
       const [es, en] = await Promise.all([fetchLrc(song.lrc), fetchLrc(song.lrcEn)]);
 
-      // Both files carry the same timestamps, so pair by index; fall back to
-      // nearest-timestamp if a translation ever drifts out of step.
+      // Matched by index when both files have the same number of lines, and
+      // purely by timestamp when they do not. Falling back to the index in the
+      // mismatched case made a line inherit a NEIGHBOURING line's translation
+      // whenever its own was missing — some translations legitimately leave
+      // lines blank, so an unmatched line must simply have none.
       lines = es.map((l, i) => {
-        let tr = en[i] ? en[i].text : "";
-        if (en.length && (!tr || en.length !== es.length)) {
+        let tr = "";
+        if (en.length === es.length) {
+          tr = en[i] ? en[i].text : "";
+        } else if (en.length) {
           let best = null, bestD = Infinity;
           for (const e2 of en) { const d = Math.abs(e2.time - l.time); if (d < bestD) { bestD = d; best = e2; } }
           if (bestD <= 0.35 && best) tr = best.text;
