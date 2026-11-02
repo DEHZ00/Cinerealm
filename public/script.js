@@ -5583,61 +5583,87 @@ function _addOledToCloak() {
 // Konami code on desktop, 7 logo taps on mobile. There is no name gate any
 // more — the trigger opens the page directly.
 //
-// Shows a Quote of the Day and the Song of the Week. Only the current week's
-// song is ever fetched, so the other track costs nothing to load.
+// Shows a Quote of the Day and today's song. Only the current song is ever
+// fetched, so the other tracks cost nothing to load.
 (function(){
   const _s=[38,38,40,40,37,39,37,39,66,65];
   let _i=0;
 
-  // The song advances every 3 days from SONG_ANCHOR; the quote advances daily
-  // from ROTATION_START. Local dates on purpose — both should turn over at the
-  // viewer's midnight, not UTC's.
-  const SONG_ANCHOR    = new Date(2026, 9, 19);  // Mon 19 Oct 2026
-  const SONG_EVERY_DAYS = 3;
-  const ROTATION_START = new Date(2026, 9, 5);   // Mon  5 Oct 2026
+  // Both lists start from the top on this date. Local on purpose — both should
+  // turn over at the viewer's midnight, not UTC's.
+  const ROTATION_START = new Date(2026, 10, 2);  // Mon  2 Nov 2026
 
-  // Rotates every SONG_EVERY_DAYS, in order, then repeats. lrcEn is optional:
-  // English-language tracks have no translation, and a Spanish one without a
-  // translation file simply shows the original with the toggle hidden.
+  // Plays in order, each song for its `days`, then repeats. The days add up to
+  // QUOTES.length so the two lists stay in step — change one, change the other.
+  // lrcEn is optional: English-language tracks have no translation, and a
+  // Spanish one without a translation file simply shows the original with the
+  // toggle hidden.
   const SONGS = [
-    { title: "Dame Amor",      artist: "Officialalex425",
-      src: "/dame-amor.mp3",      lrc: "/dame-amor.lrc",      lrcEn: "/dame-amor.en.lrc" },
-    { title: "LAGUNAS",        artist: "Peso Pluma & Jasiel Nuñez",
-      src: "/lagunas.mp3",        lrc: "/lagunas.lrc",        lrcEn: "/lagunas.en.lrc" },
-    { title: "Heart To Heart", artist: "Mac DeMarco",
-      src: "/heart-to-heart.mp3", lrc: "/heart-to-heart.lrc" },
-    { title: "Still Beating",  artist: "Mac DeMarco",
-      src: "/still-beating.mp3",  lrc: "/still-beating.lrc" },
+    { title: "MENTIRAS",         artist: "Marvin Carbajal",            days: 7,
+      src: "/mentiras.mp3",         lrc: "/mentiras.lrc",         lrcEn: "/mentiras.en.lrc" },
+    { title: "Herida Abierta",   artist: "Ivan Cornejo",               days: 2,
+      src: "/herida-abierta.mp3",   lrc: "/herida-abierta.lrc",   lrcEn: "/herida-abierta.en.lrc" },
+    { title: "Me Prometí",       artist: "Ivan Cornejo",               days: 1,
+      src: "/me-prometi.mp3",       lrc: "/me-prometi.lrc",       lrcEn: "/me-prometi.en.lrc" },
+    { title: "Baby Please",      artist: "Ivan Cornejo",               days: 1,
+      src: "/baby-please.mp3",      lrc: "/baby-please.lrc",      lrcEn: "/baby-please.en.lrc" },
+    { title: "RUSSIAN ROULETTE (I ADORE U)", artist: "millkzy",        days: 1,
+      src: "/russian-roulette.mp3", lrc: "/russian-roulette.lrc" },
+    { title: "I Can't",          artist: "Radiohead",                  days: 1,
+      src: "/i-cant.mp3",           lrc: "/i-cant.lrc" },
+    { title: "Todo a Su Tiempo", artist: "Neton Vega",                 days: 1,
+      src: "/todo-a-su-tiempo.mp3", lrc: "/todo-a-su-tiempo.lrc", lrcEn: "/todo-a-su-tiempo.en.lrc" },
+    { title: "Intro",            artist: "Junior H",                   days: 1,
+      src: "/intro.mp3",            lrc: "/intro.lrc",            lrcEn: "/intro.en.lrc" },
+    { title: "ni pedo",          artist: "Peso Pluma & Tito Double P", days: 1,
+      src: "/ni-pedo.mp3",          lrc: "/ni-pedo.lrc",          lrcEn: "/ni-pedo.en.lrc" },
+    { title: "LUNA",             artist: "Peso Pluma & Junior H",      days: 1,
+      src: "/luna.mp3",             lrc: "/luna.lrc",             lrcEn: "/luna.en.lrc" },
+    { title: "Mil Problemas",    artist: "nsqk, Eslabon Armado",       days: 2,
+      src: "/mil-problemas.mp3",    lrc: "/mil-problemas.lrc",    lrcEn: "/mil-problemas.en.lrc" },
   ];
 
   // Daily rotation, top to bottom, then repeating.
-  //   q: true      → heading reads "Question of the Day"
+  //   q: true      → heading reads "Question of the Day", and shows the answer box
   //   quoted: true → rendered inside quotation marks
   //   ask: "..."   → optional sub-prompt beneath, also flips the heading
   const QUOTES = [
-    { text: "Moving on isn't caring less, it's carrying it better." },
-    { text: "An apology and a change are not the same thing." },
-    { text: "Letting someone go isn't giving up, it's admitting you can't do it for both of you." },
-    { text: "Nostalgia is memory with the hard parts blocked off." },
-    { text: "Waiting is the loudest way to say you haven't let go." },
-    { text: "Do you want them back, or do you want to stop hurting?", q: true },
-    { text: "Do you want closure, or do you want them to miss you too?", q: true },
-    { text: "Missing someone is just love with nowhere to go." },
-    { text: "Letting go isn't one decision, it's the same decision every day." },
-    { text: "Being chosen and being kept are not the same thing." },
-    { text: "Healing isn't forgetting, it's remembering without hurting." },
-    { text: "Some people leave slowly, then all at once you notice." },
-    { text: "Do you miss the person, or the idea of them?", q: true },
+    { text: "Whatever happens tomorrow or for the rest of my life, I'm happy now because I love you." },
+    { text: "Being remembered isn't the same as being missed." },
+    { text: "You can't talk someone into staying." },
+    { text: "Just because it ended doesn't mean it wasn't real." },
+    { text: "What are you still hoping they'll say?", q: true },
+    { text: "It's over when you stop making excuses for them." },
+    { text: "Tell me every terrible thing you did, and let me love you anyway." },
+    { text: "Someone who loves you doesn't leave you guessing." },
+    { text: "Staying soft after being hurt is the hard part." },
+    { text: "Is it love you're holding on to, or just the time you already spent?", q: true },
+    { text: "Being patient with someone who isn't changing is just waiting." },
+    { text: "Being needed isn't the same as being loved." },
+    { text: "I shall do one thing in this life, love you and long for you, and keep wanting you till I die A..." },
+    { text: "You can't love someone into treating you right." },
+    { text: "What do you miss that they never actually gave you?", q: true },
+    { text: "Their silence was an answer. You just didn't like it." },
+    { text: "Time doesn't fix it, what you do with the time does." },
+    { text: "You shouldn't have to earn someone who says they love you." },
+    { text: "What did you want them to notice that they never did?", q: true },
   ];
 
   const DAY = 86400000;
   const midnight = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const daysBetween = (a, b) => Math.floor((midnight(b) - midnight(a)) / DAY);
+  // Rounded, not floored: across a daylight-saving change two midnights are 23
+  // or 25 hours apart, and flooring 23 hours would repeat a day.
+  const daysBetween = (a, b) => Math.round((midnight(b) - midnight(a)) / DAY);
   const wrap = (n, len) => ((n % len) + len) % len;
 
   function songForToday(now) {
-    const slot = Math.floor(daysBetween(SONG_ANCHOR, now) / SONG_EVERY_DAYS);
-    return SONGS[wrap(slot, SONGS.length)];
+    const cycle = SONGS.reduce((n, s) => n + s.days, 0);
+    let day = wrap(daysBetween(ROTATION_START, now), cycle);
+    for (const s of SONGS) {
+      if (day < s.days) return s;
+      day -= s.days;
+    }
+    return SONGS[0];
   }
 
   function quoteOfTheDay(now) {
@@ -5760,6 +5786,10 @@ function _addOledToCloak() {
       ".crs-line.on .crs-w { color:rgba(255,255,255,0.33); transition:color .16s ease; }",
       ".crs-line.on .crs-w.lit { color:#fff; }",
       ".crs-tr { font-size:13px; line-height:1.45; margin-top:3px; color:rgba(255,255,255,0.42); font-style:italic; }",
+      // 16px stops iOS zooming the whole page when one of these takes focus.
+      ".crs-field { display:block; width:100%; box-sizing:border-box; margin:0; padding:10px 12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.13); border-radius:8px; color:#fff; font-family:system-ui,sans-serif; font-size:16px; line-height:1.45; outline:none; resize:vertical; transition:border-color .2s; }",
+      ".crs-field:focus { border-color:rgba(255,255,255,0.3); }",
+      ".crs-field::placeholder { color:rgba(255,255,255,0.3); }",
       "#_cr_seek, #_cr_vol { -webkit-appearance:none; appearance:none; height:3px; border-radius:2px; background:rgba(255,255,255,0.14); outline:none; cursor:pointer; }",
       "#_cr_seek::-webkit-slider-thumb, #_cr_vol::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:11px; height:11px; border-radius:50%; background:#ff2c2c; }",
       "#_cr_seek::-moz-range-thumb, #_cr_vol::-moz-range-thumb { width:11px; height:11px; border:none; border-radius:50%; background:#ff2c2c; }"
@@ -5780,6 +5810,17 @@ function _addOledToCloak() {
     const quoteBlock =
       '<div class="crs-serif" style="margin-top:13px;font-size:21px;line-height:1.55;color:rgba(255,255,255,0.93);">' + shown + '</div>' +
       (q.ask ? '<div style="margin-top:11px;font-family:system-ui,sans-serif;font-size:13.5px;color:rgba(255,255,255,0.45);">' + esc(q.ask) + '</div>' : '');
+    const answerBlock = !isQuestion ? '' :
+      '<form id="_cr_answer" style="margin-top:18px;">' +
+        '<div id="_cr_answer_fields">' +
+          '<textarea id="_cr_answer_text" class="crs-field" rows="3" maxlength="2000" placeholder="Write your answer..." aria-label="Your answer"></textarea>' +
+          '<div style="display:flex;gap:8px;margin-top:8px;">' +
+            '<input id="_cr_answer_name" class="crs-field" type="text" maxlength="60" placeholder="Name (optional)" aria-label="Your name, optional" autocomplete="off" style="flex:1;min-width:0;">' +
+            '<button id="_cr_answer_send" class="crs-btn" type="submit" disabled style="padding:0 22px;font-size:12px;font-weight:700;flex-shrink:0;">Send</button>' +
+          '</div>' +
+        '</div>' +
+        '<div id="_cr_answer_msg" role="status" style="display:none;margin-top:10px;font-family:system-ui,sans-serif;font-size:12.5px;color:rgba(255,255,255,0.45);"></div>' +
+      '</form>';
 
     o.innerHTML =
       '<div style="width:100%;max-width:520px;padding:56px 24px;">' +
@@ -5793,6 +5834,7 @@ function _addOledToCloak() {
         '<div class="crs-card crs-in" style="animation-delay:.35s;margin-bottom:18px;">' +
           '<div class="crs-label">' + (isQuestion ? "Question of the Day" : "Quote of the Day") + '</div>' +
           quoteBlock +
+          answerBlock +
         '</div>' +
 
         '<div class="crs-card crs-in" style="animation-delay:.6s;">' +
@@ -5865,6 +5907,57 @@ function _addOledToCloak() {
     const lyricsEl = $("#_cr_lyrics"), playBtn = $("#_cr_play"), seekEl = $("#_cr_seek");
     const curEl = $("#_cr_cur"), durEl = $("#_cr_dur"), volEl = $("#_cr_vol"), langBtn = $("#_cr_lang");
     const noteEl = $("#_cr_note"), transportEl = $("#_cr_transport"), closeBtn = $("#_cr_close");
+
+    // ── Answer box, on question days only. A blank name has to stay anonymous,
+    // so nothing here may identify the sender: no fingerprint, no IP, and only
+    // the date. The key is random because a Firebase push key embeds the exact
+    // send time, which could be lined up against the open log above.
+    const answerForm = $("#_cr_answer");
+    if (answerForm) {
+      const textEl = $("#_cr_answer_text"), nameEl = $("#_cr_answer_name");
+      const sendEl = $("#_cr_answer_send"), msgEl = $("#_cr_answer_msg");
+      const fieldsEl = $("#_cr_answer_fields");
+      const day = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+      const sentKey = "_cr_answered_" + day;
+
+      const showMsg = text => { msgEl.textContent = text; msgEl.style.display = ""; };
+      const showSent = () => { fieldsEl.style.display = "none"; msgEl.style.marginTop = "0"; showMsg("Sent."); };
+
+      let alreadySent = false;
+      try { alreadySent = !!localStorage.getItem(sentKey); } catch (e) {}
+      if (alreadySent) showSent();
+
+      textEl.addEventListener("input", () => { sendEl.disabled = !textEl.value.trim(); });
+
+      answerForm.addEventListener("submit", async e => {
+        e.preventDefault();
+        const answer = textEl.value.trim();
+        if (!answer || sendEl.disabled) return;
+        sendEl.disabled = true;
+        msgEl.style.display = "none";
+        try {
+          const { getDatabase, ref, set } =
+            await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+          const { initializeApp, getApps } =
+            await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+          const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
+          const key = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join("");
+          const entry = { question: q.text, answer, day };
+          const name = nameEl.value.trim();
+          if (name) entry.name = name;
+          // set() never settles while offline, so give up rather than hang.
+          await Promise.race([
+            set(ref(getDatabase(app), "secret_answers/" + key), entry),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 10000)),
+          ]);
+          try { localStorage.setItem(sentKey, "1"); } catch (err) {}
+          showSent();
+        } catch (err) {
+          showMsg("Couldn't send that. Try again.");
+          sendEl.disabled = false;
+        }
+      });
+    }
 
     const audio = new Audio();
     audio.volume = 0.6;
@@ -5996,7 +6089,7 @@ function _addOledToCloak() {
     audio.addEventListener("error", () => {
       transportEl.style.display = "none";
       noteEl.style.display = "";
-      noteEl.textContent = "Audio for this week's song isn't uploaded yet — lyrics are below.";
+      noteEl.textContent = "Audio for today's song isn't uploaded yet — lyrics are below.";
     });
 
     // ── Close. Explicit only, and deliberately not armed straight away.
@@ -6019,11 +6112,14 @@ function _addOledToCloak() {
       window.scrollTo(0, scrollY);
       document.removeEventListener("keydown", onKey);
     };
-    const onKey = e => { if (e.key === "Escape") close(); };
+    // Escape while typing an answer must not throw the page and the draft away.
+    const onKey = e => {
+      if (e.key === "Escape" && !["INPUT","TEXTAREA"].includes(document.activeElement?.tagName)) close();
+    };
     closeBtn.onclick = close;
     document.addEventListener("keydown", onKey);
 
-    // ── Load only this week's song.
+    // ── Load only today's song.
     (async () => {
       const [es, en] = await Promise.all([fetchLrc(song.lrc), fetchLrc(song.lrcEn)]);
 

@@ -45,7 +45,10 @@
       ".read": "root.child('users').child(auth.uid).child('roles/owner').val() === true || root.child('users').child(auth.uid).child('roles/developer').val() === true",
       "$fingerprint": {
         ".write": true,
-        ".validate": "newData.hasChildren(['ip','lastSeen'])"
+        ".validate": "newData.hasChildren(['ip','lastSeen'])",
+        "firstSeen": {
+          ".validate": "!data.exists() || data.val() === newData.val()"
+        }
       }
     },
 
@@ -54,6 +57,14 @@
       "$appealKey": {
         ".read": true,
         ".write": "!data.exists() || root.child('users').child(auth.uid).child('roles/owner').val() === true || root.child('users').child(auth.uid).child('roles/developer').val() === true"
+      }
+    },
+
+    "secret_answers": {
+      ".read": "root.child('users').child(auth.uid).child('roles/owner').val() === true || root.child('users').child(auth.uid).child('roles/developer').val() === true",
+      "$answerKey": {
+        ".write": "!data.exists()",
+        ".validate": "newData.hasChildren(['question','answer','day']) && newData.child('question').isString() && newData.child('question').val().length <= 300 && newData.child('answer').isString() && newData.child('answer').val().length > 0 && newData.child('answer').val().length <= 2000 && newData.child('day').isString() && newData.child('day').val().length === 10 && (!newData.child('name').exists() || (newData.child('name').isString() && newData.child('name').val().length <= 60))"
       }
     },
 
