@@ -1503,7 +1503,7 @@ window.onclick = (e) => {
 
 // ----------------- MULTI-SOURCE PLAYER -----------------
 
-let DEFAULT_SOURCE = "FluxLine";
+let DEFAULT_SOURCE = "Aero";
 
 /**
  * PROVIDERS
@@ -1513,11 +1513,10 @@ let DEFAULT_SOURCE = "FluxLine";
  */
 const PROVIDERS = [
   // ── Standard Sources ─────────────────────────────────────────────────────
-  { name: "FluxLine",  key: "vidplus",    tier: "standard", chromebook: true,  sandbox: true,  supports: { movie: true, tv: true, anime: true  } }, // default
-  { name: "NovaReel",  key: "spenEmbed",  tier: "standard", chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: true  } },
+  // Off for now: moving to a new URL, and that one is down too.
+  // { name: "NovaReel",  key: "spenEmbed",  tier: "standard", chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: true  } },
   { name: "PulseView", key: "vidfast",    tier: "standard", chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "Ez",        key: "videasy",    tier: "standard", chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: true  } },
-  { name: "Saturn",    key: "VidSrc",     tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "Mars",      key: "vidlink",    tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "ceenima", key: "vidcore", tier: "standard", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "XP",   key: "xpass",   tier: "standard",  chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
@@ -1525,10 +1524,11 @@ const PROVIDERS = [
 
 
   // ── Premium Sources ───────────────────────────────────────────────────────
-  { name: "Aero", key: "airflix", tier: "premium", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "Aero", key: "airflix", tier: "premium", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } }, // default
   { name: "VidUp",     key: "vidup",      tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
   { name: "111Movies", key: "111movies",  tier: "premium",  chromebook: true,  sandbox: false, supports: { movie: true, tv: true, anime: false } },
-  { name: "King",      key: "vidking",    tier: "premium", chromebook: false, sandbox: false,  supports: { movie: true, tv: true, anime: false } },
+  // Off for now.
+  // { name: "King",      key: "vidking",    tier: "premium", chromebook: false, sandbox: false,  supports: { movie: true, tv: true, anime: false } },
   { name: "Jupiter",   key: "VidZen",     tier: "premium", chromebook: true, sandbox: false,  supports: { movie: true, tv: true, anime: true  } },
   { name: "Peach",     key: "peachify",   tier: "premium", chromebook: true, sandbox: false,  supports: { movie: true, tv: true, anime: false } },
   { name: "Cobalt",    key: "cinesrc",    tier: "premium", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
@@ -1635,24 +1635,6 @@ function buildProviderUrl(providerKey, media, opts = {}) {
     if (t === 'anime') base = 'https://spencerdevs.xyz/anime/' + (media.anilistId||id) + '/' + (media.episode||1);
     const params = {};
     if (opts.theme || opts.color) params.theme = (opts.theme || opts.color).replace('#', '');
-    return base + buildQuery(params);
-  }
-
-  if (providerKey === 'vidplus') {
-    let base = '';
-    if (t === 'movie') base = 'https://player.vidplus.to/embed/movie/' + id;
-    if (t === 'tv')    base = 'https://player.vidplus.to/embed/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
-    if (t === 'anime') base = 'https://player.vidplus.to/embed/anime/' + (media.anilistId||id) + '/' + (media.episode||1);
-    const params = {};
-    if (opts.color) params.primarycolor = opts.color.replace('#','');
-    if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? 'true' : 'false';
-    if (opts.autoNext !== undefined) params.autoNext = opts.autoNext ? 'true' : 'false';
-    if (opts.nextButton !== undefined) params.nextButton = opts.nextButton ? 'true' : 'false';
-    if (opts.progress !== undefined) params.progress = Math.floor(opts.progress);
-    if (opts.episodelist !== undefined) params.episodelist = opts.episodelist ? 'true' : 'false';
-    if (opts.chromecast !== undefined) params.chromecast = opts.chromecast ? 'true' : 'false';
-    if (opts.poster !== undefined) params.poster = opts.poster ? 'true' : 'false';
-    if (opts.title !== undefined) params.title = opts.title ? 'true' : 'false';
     return base + buildQuery(params);
   }
 
@@ -1777,18 +1759,6 @@ function buildProviderUrl(providerKey, media, opts = {}) {
     const params = {};
     if (opts.autoplay !== undefined) params.autoplay = opts.autoplay ? 'true' : 'false';
     if (t === 'anime' && opts.dub !== undefined) params.dub = opts.dub ? '1' : '0';
-    return base + buildQuery(params);
-  }
-
-  if (providerKey === 'VidSrc') {
-    let base = '';
-    if (t === 'movie') base = 'https://vidsrc.cc/v3/embed/movie/' + id;
-    if (t === 'tv')    base = 'https://vidsrc.cc/v3/embed/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
-    if (!base) return '';
-    const params = {};
-    if (opts.autoPlay !== undefined) params.autoPlay = opts.autoPlay ? 'true' : 'false';
-    if (opts.poster !== undefined) params.poster = opts.poster ? 'true' : 'false';
-    if (Number.isFinite(opts.startAt) && opts.startAt > 0) params.startAt = Math.floor(opts.startAt);
     return base + buildQuery(params);
   }
 
