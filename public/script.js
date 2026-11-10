@@ -1531,6 +1531,8 @@ const PROVIDERS = [
   { name: "King",      key: "vidking",    tier: "premium", chromebook: false, sandbox: false,  supports: { movie: true, tv: true, anime: false } },
   { name: "Jupiter",   key: "VidZen",     tier: "premium", chromebook: true, sandbox: false,  supports: { movie: true, tv: true, anime: true  } },
   { name: "Peach",     key: "peachify",   tier: "premium", chromebook: true, sandbox: false,  supports: { movie: true, tv: true, anime: false } },
+  { name: "Cobalt",    key: "cinesrc",    tier: "premium", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: false } },
+  { name: "Venus",     key: "vidy",       tier: "premium", chromebook: false, sandbox: false, supports: { movie: true, tv: true, anime: true  } },
 ];
 
 
@@ -1847,6 +1849,57 @@ if (providerKey === 'airflix') {
   if (!base) return '';
   return base;
 }
+
+  if (providerKey === 'cinesrc') {
+    let base = '';
+    const params = {};
+    if (t === 'movie') base = 'https://cinesrc.st/embed/movie/' + id;
+    if (t === 'tv') {
+      base = 'https://cinesrc.st/embed/tv/' + id;
+      params.s = media.season || 1;
+      params.e = media.episode || 1;
+    }
+    if (!base) return '';
+    // CineSrc wants the "#" kept; buildQuery encodes it to the %23 it expects.
+    if (opts.color) params.color = '#' + opts.color.replace('#', '');
+    // autoplay and autonext default to true upstream — only send them to turn
+    // them off, so the default path stays as short a URL as possible.
+    if (opts.autoplay === false) params.autoplay = 'false';
+    if (t === 'tv' && opts.autoNext === false) params.autonext = 'false';
+    // Resume point. CineSrc's own Continue/Restart prompt is switched off
+    // because the site already raises its own resume bar for the same offset.
+    const resume = Number.isFinite(opts.progress) && opts.progress > 0 ? opts.progress : opts.startAt;
+    if (Number.isFinite(resume) && resume > 0) {
+      params.t = Math.floor(resume);
+      params.continueprompt = 'false';
+    }
+    return base + buildQuery(params);
+  }
+
+  if (providerKey === 'vidy') {
+    // www on purpose: the bare domain redirects there, and allow="autoplay"
+    // only covers the origin written in src, so the redirect blocks autoplay.
+    let base = '';
+    if (t === 'movie') base = 'https://www.vidy.st/movie/' + id;
+    if (t === 'tv')    base = 'https://www.vidy.st/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
+    // The anime route takes an AniList id. Without one, id is a TMDB id, which
+    // the TV route understands and the anime route would misread as AniList.
+    if (t === 'anime') base = media.anilistId
+      ? 'https://www.vidy.st/anime/' + media.anilistId + '/' + (media.episode||1)
+      : 'https://www.vidy.st/tv/' + id + '/' + (media.season||1) + '/' + (media.episode||1);
+    if (!base) return '';
+    // Every flag is opt-in upstream, so only "true" is ever worth sending.
+    const params = {};
+    if (opts.color) params.color = opts.color.replace('#', '');
+    if (opts.autoplay) params.autoplay = 'true';
+    if (Number.isFinite(opts.progress) && opts.progress > 0) params.progress = Math.floor(opts.progress);
+    if (t !== 'movie') {
+      if (opts.nextEpisode ?? opts.nextButton) params.nextEpisode = 'true';
+      if (opts.episodeSelector) params.episodeSelector = 'true';
+      if (opts.autoplayNextEpisode) params.autoplayNextEpisode = 'true';
+    }
+    return base + buildQuery(params);
+  }
 
   return '';
 }
@@ -3297,43 +3350,116 @@ window.addEventListener("message", function (event) {
     const tmdbId = parseInt(msg.data.id ?? msg.data.tmdbId ?? msg.data.mediaId, 10);
     if (!tmdbId || !mediaType) return;
 
-    // Find existing entry for this show/movie — for TV match by show ID only
-    // (we always update the single entry per show to track latest episode)
-    let entry = historyData.find((m) => {
-      if (m.type !== mediaType) return false;
-      const entryId = m.tmdbId || m.id;
-      return String(entryId) === String(tmdbId);
-    });
-
-    if (!entry) {
-      entry = {
-        tmdbId,
-        type: mediaType,
-        progress: 0,
-        duration: 0,
-        addedAt: Date.now(),
-      };
-      historyData.push(entry);
-    }
-
-    // Always update to latest episode for TV
-    if (mediaType === "tv") {
-      entry.season  = season;
-      entry.episode = episode;
-    }
-
-    entry.progress = currentTime || 0;
-    entry.duration = duration || 0;
-    entry.addedAt = Date.now();
-    saveHistory();
-
-    // Re-render row when an episode fully ends
-    if (evtName === "ended") {
-      renderContinueWatching();
-    }
+    _recordPlayback({ tmdbId, mediaType, season, episode, currentTime, duration, evtName });
   } catch (e) {
     // ignore
   }
+});
+
+// Writes a playback position into history, whichever provider's message
+// format it arrived in.
+function _recordPlayback({ tmdbId, mediaType, season, episode, currentTime, duration, evtName }) {
+  // Find existing entry for this show/movie — for TV match by show ID only
+  // (we always update the single entry per show to track latest episode)
+  let entry = historyData.find((m) => {
+    if (m.type !== mediaType) return false;
+    const entryId = m.tmdbId || m.id;
+    return String(entryId) === String(tmdbId);
+  });
+
+  if (!entry) {
+    entry = {
+      tmdbId,
+      type: mediaType,
+      progress: 0,
+      duration: 0,
+      addedAt: Date.now(),
+    };
+    historyData.push(entry);
+  }
+
+  // Always update to latest episode for TV
+  if (mediaType === "tv") {
+    entry.season  = season;
+    entry.episode = episode;
+  }
+
+  entry.progress = currentTime || 0;
+  entry.duration = duration || 0;
+  entry.addedAt = Date.now();
+  saveHistory();
+
+  // Re-render row when an episode fully ends
+  if (evtName === "ended") {
+    renderContinueWatching();
+  }
+}
+
+// ---- CineSrc (Cobalt) events ----
+// CineSrc posts its own "cinesrc:*" objects instead of PLAYER_EVENT, and they
+// never say which title is playing, so the title is read back off the embed's
+// own URL. Locked to CineSrc's origin for the same reason as Peachify below:
+// otherwise any frame on the page could post these and rewrite history.
+const CINESRC_ORIGIN = "https://cinesrc.st";
+let _cinesrcState = null;   // { frame, src, season, episode, currentTime, duration }
+
+window.addEventListener("message", function (event) {
+  if (event.origin !== CINESRC_ORIGIN) return;
+  const msg = event.data;
+  if (!msg || typeof msg !== "object" || typeof msg.type !== "string") return;
+
+  try {
+    const frame = [...document.querySelectorAll("iframe")].find(f => f.contentWindow === event.source);
+    if (!frame) return;
+    const url = new URL(frame.src);
+    const m = url.pathname.match(/^\/embed\/(movie|tv)\/(\d+)/);
+    if (!m) return;
+
+    // A new embed starts at the episode in its URL. The player can move on by
+    // itself afterwards (autonext, its own episode list) and reports that with
+    // cinesrc:nextepisode, so the episode is tracked here rather than re-read.
+    if (!_cinesrcState || _cinesrcState.frame !== frame || _cinesrcState.src !== frame.src) {
+      _cinesrcState = {
+        frame, src: frame.src,
+        season:  parseInt(url.searchParams.get("s"), 10) || 1,
+        episode: parseInt(url.searchParams.get("e"), 10) || 1,
+        currentTime: 0, duration: 0,
+      };
+    }
+    const st = _cinesrcState;
+
+    switch (msg.type) {
+      case "cinesrc:nextepisode": {
+        const s = parseInt(msg.season, 10), e = parseInt(msg.episode, 10);
+        if (Number.isFinite(s)) st.season  = s;
+        if (Number.isFinite(e)) st.episode = e;
+        st.currentTime = 0;
+        return;
+      }
+      case "cinesrc:loadedmetadata":
+        st.duration = Number(msg.duration) || st.duration;
+        return;
+      case "cinesrc:play":
+        _srcHealth.signal();   // Proof the active source is genuinely playing.
+        return;
+      case "cinesrc:timeupdate":
+        _srcHealth.signal();
+        st.currentTime = Number(msg.currentTime) || 0;
+        st.duration    = Number(msg.duration) || st.duration;
+        break;
+      case "cinesrc:ended":
+        break;
+      default:
+        return;
+    }
+
+    _recordPlayback({
+      tmdbId: parseInt(m[2], 10), mediaType: m[1],
+      season: st.season, episode: st.episode,
+      currentTime: st.currentTime, duration: st.duration,
+      evtName: msg.type === "cinesrc:ended" ? "ended" : "timeupdate",
+    });
+  } catch (e) {}
 });
 
 // ---- Peachify MEDIA_DATA handler ----
