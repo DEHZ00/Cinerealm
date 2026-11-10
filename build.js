@@ -80,6 +80,9 @@ const SCRIPT_MIN = path.join(__dirname, "public", "script.min.js");
   console.log("✅ Obfuscation complete");
   console.log(`   Minified:   ${(source.length / 1024).toFixed(1)}kb`);
   console.log(`   Obfuscated: ${(result.getObfuscatedCode().length / 1024).toFixed(1)}kb`);
+
+  // Obfuscating changed the bundle, so the pages need its new hash.
+  require("./stamp-assets.js")();
 })().catch(err => {
   console.error("❌ Build failed:", err.message);
   process.exit(1);

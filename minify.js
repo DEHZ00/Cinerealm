@@ -65,6 +65,8 @@ async function run() {
   console.log(`✅ script.min.js   ${kb(js.from)} → ${kb(js.to)}`);
   const css = minifyCSS();
   console.log(`✅ style.min.css   ${kb(css.from)} → ${kb(css.to)}`);
+  const pages = require("./stamp-assets.js")();
+  console.log(`✅ asset versions  ${pages} page(s) updated`);
 }
 
 // Export the promise so build.js can `await require("./minify.js")` and be sure
